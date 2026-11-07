@@ -734,7 +734,7 @@ function startBuild(type) { lastHint = null;
   $('placeText').textContent = type === 'ut' ? tr('Koppints a mezőkre, ahová ösvényt szeretnél. Ha végeztél, nyomd meg a Kész gombot.') : trf('Hová kerüljön {0}? Koppints egy szabad mezőre.', withArt(DEF[type].name));
 }
 function startMove(b) { lastHint = null; tool = { mode: 'move', type: b.type, id: b.id }; hideInfo(); $('placebar').hidden = false; $('nav').hidden = true; $('placeText').textContent = trf('Hová tegyük át {0}? Koppints az új helyére.', withArt(DEF[b.type].name)); }
-function endTool() { tool = null; $('placebar').hidden = true; $('nav').hidden = false; }
+function endTool() { hover = null; tool = null; $('placebar').hidden = true; $('nav').hidden = false; }
 
 function riverOk(type, i, j) { const d = DEF[type]; return !d.river || j + d.size === N; }
 function place(i, j) {
@@ -1154,7 +1154,7 @@ function draw(now) {
     ctx.lineWidth = 1.6; AT.forEach(([i, j]) => diamond(i, j, 1, null, 'rgba(255,255,255,0.8)'));
     ctx.lineWidth = 6; diamondRaw(0, 0, N, null, 'rgba(40,25,5,0.3)');
     ctx.lineWidth = 3; diamondRaw(0, 0, N, null, 'rgba(255,236,170,0.95)');
-    if (hover) { const k = DEF[tool.type].size; const ok = free(tool.type, hover[0], hover[1], tool.mode === 'move' ? S.buildings.find(b => b.id === tool.id) : null);
+    if (hover && tool) { const k = DEF[tool.type].size; const ok = free(tool.type, hover[0], hover[1], tool.mode === 'move' ? S.buildings.find(b => b.id === tool.id) : null);
       const noRoad = ok && DEF[tool.type].road && !connected({ type: tool.type, i: hover[0], j: hover[1] });
       diamondRaw(hover[0], hover[1], k, !ok ? 'rgba(230,70,50,0.45)' : noRoad ? 'rgba(240,180,40,0.45)' : 'rgba(60,200,120,0.45)', !ok ? '#E64632' : noRoad ? '#F0B428' : '#3CC878');
       roadHint(noRoad); }
@@ -1164,10 +1164,10 @@ function draw(now) {
   const items = S.buildings.filter(b => !(tool && tool.mode === 'move' && b.id === tool.id));
   if (ghostB) items.push(ghostB);
   const order = depthOrder(items);
-  order.forEach(b => drawBuilding(b, now, 0));
+  order.forEach(b => { try { drawBuilding(b, now, 0); } catch (e) { noteErr(e); } });
   drawLots();
   drawSurprises(now);
-  order.forEach(b => drawBuilding(b, now, 1));
+  order.forEach(b => { try { drawBuilding(b, now, 1); } catch (e) { noteErr(e); } });
   if (tool && tool.type === 'ut' && hover && inArea(hover[0], hover[1])) { const [x, y] = tileTop(hover[0], hover[1]); ctx.save(); ctx.globalAlpha = .7; ctx.fillStyle = '#D69C5E'; ctx.beginPath(); ctx.ellipse(x, y + TH / 2, TW * 0.17, TH * 0.17, 0, 0, 7); ctx.fill(); ctx.restore(); }
 
   // lebegő szövegek
