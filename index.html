@@ -1274,7 +1274,6 @@ function showSettings() {
     <div class="snd">
       <div class="snd-row"><span>${tr('Zene')}</span><button class="tab" type="button" id="sMusic" aria-pressed="${AS.music}">${AS.music ? tr('Be') : tr('Ki')}</button><label for="sVol" class="vis">${tr('Zene hangereje')}</label><input type="range" id="sVol" min="0" max="100" value="${Math.round(AS.vol * 100)}"></div>
       <div class="snd-row"><span>${tr('Kattintás hangja')}</span><button class="tab" type="button" id="sSfx" aria-pressed="${AS.sfx}">${AS.sfx ? tr('Be') : tr('Ki')}</button><label for="sSfxVol" class="vis">${tr('Kattintás hangereje')}</label><input type="range" id="sSfxVol" min="0" max="100" value="${Math.round(AS.sfxVol * 100)}"></div>
-    </div>
     <div class="snd-row"><span>${tr('Nyelv')}</span><button class="tab" type="button" data-lang="hu" aria-pressed="${LANG === 'hu'}">Magyar</button><button class="tab" type="button" data-lang="en" aria-pressed="${LANG === 'en'}">English</button></div>
     <p>${tr('A tesztsebességgel gyorsabban telik a játékidő: a termelés, a Tudás és a tél is.')}</p>
     <div class="row" id="spd">${[1, 2, 5, 10].map(s => `<button class="tab" type="button" data-s="${s}" aria-pressed="${S.speed === s}">${s}×</button>`).join('')}</div>
@@ -2016,7 +2015,7 @@ const SOC_EN = {"Áldomásivó": "Toast Keeper", "Az áldomás után három napi
   'Árulni korszakonként egyszer lehet. Az Áruló kitűző örökre rajtad marad. Ha két napon belül lépsz ki a vérszerződés után, Kétszínű leszel.': 'You can betray once per era. The Traitor badge stays forever. Leave within two days of a blood oath and you become Two-Faced.',
   'ÁRULÁS': 'BETRAYAL', 'Biztos vagy benne?': 'Are you sure?', 'Viszem a felét': 'Take half', 'Mégsem': 'Cancel', 'Megérte': 'Worth it', 'Elvitted a kincstár felét: {0} Pénz': 'You took half the treasury: {0} Money',
   'A régi társaid már tudják. Holnapra az egész megye tudni fogja. A kitűződet örökre viseled.': 'Your old companions already know. By tomorrow the whole county will. You wear the badge forever.',
-  'most': 'now', 'Kifosztottad {0} városát. {1}': 'You plundered {0}\'s town. {1}', 'Valódi játékosokkal a közös törzsszövetség a következő frissítésben jön. Addig kalákázz és ajándékozz nekik!': 'Alliances with real players come in the next update. Until then, help them and send gifts!', 'Szomszédok · Törzs': 'Neighbours · Tribe', '{0} épület vár begyűjtésre ebben a városban.': '{0} buildings in this town are ready to collect.', '{0} perc': '{0} min', '{0} óra': '{0} h', 'Rovásíró': 'Rune Writer', '{0} perce': '{0} min ago', '{0} órája': '{0} h ago', '{0} napja': '{0} d ago'
+  'most': 'now', 'A játékod a szerverre mentődik, és bármelyik gépen vagy telefonon ott folytatod, ahol abbahagytad.': 'Your game is saved on the server, and you can continue on any computer or phone where you left off.', 'Szia Kedves!': 'Hi there!', 'Örülök, hogy itt vagy!': 'I am glad you are here!', 'A játék jelenleg teszt üzemben van, kérlek bármit találtok, vagy tapasztaltok, írjatok nekem!': 'The game is in test mode right now. Whatever you find or experience, please write to me!', 'Puszi': 'Hugs', 'Visszajelzést a Beállításokban vagy a jobb felső Hiba? gombbal tudsz küldeni.': 'You can send feedback from Settings or with the Bug? button at the top right.', 'Kezdjük!': 'Let us start!', 'VISSZAJELZÉS': 'FEEDBACK', 'Írj Lorkának!': 'Write to Lorka!', 'Hibát találtál, valami furcsa, vagy van egy ötleted? Írd le, és egyenesen Lorkához jut.': 'Found a bug, something odd, or have an idea? Write it down and it goes straight to Lorka.', 'Hiba': 'Bug', 'Ötlet': 'Idea', 'Egyéb': 'Other', 'Mi történt? Hol voltál a játékban, mire kattintottál?': 'What happened? Where were you in the game, what did you click?', 'Elküldöm': 'Send', 'Írj pár szót, kérlek.': 'Please write a few words.', 'Köszönöm! Megkaptam.': 'Thank you! Got it.', 'Nem sikerült elküldeni. Próbáld újra kicsit később.': 'Could not send it. Please try again a bit later.', 'Hiba?': 'Bug?', 'Visszajelzés Lorkának': 'Feedback for Lorka', 'Kifosztottad {0} városát. {1}': 'You plundered {0}\'s town. {1}', 'Valódi játékosokkal a közös törzsszövetség a következő frissítésben jön. Addig kalákázz és ajándékozz nekik!': 'Alliances with real players come in the next update. Until then, help them and send gifts!', 'Szomszédok · Törzs': 'Neighbours · Tribe', '{0} épület vár begyűjtésre ebben a városban.': '{0} buildings in this town are ready to collect.', '{0} perc': '{0} min', '{0} óra': '{0} h', 'Rovásíró': 'Rune Writer', '{0} perce': '{0} min ago', '{0} órája': '{0} h ago', '{0} napja': '{0} d ago'
 };
 // ---------- online: Supabase (csak a GitHub Pages változatban, vagy ?online paraméterrel) ----------
 const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publishable_DUIYY1o4LXgNkmzLmHjlCg_WlsFJX5_';
@@ -2196,9 +2195,68 @@ const NET_EN = { 'TESZTSZERVER': 'TEST SERVER', 'Belépés': 'Sign in', 'Add meg
   'Elküldtük! Nyisd meg a levelet, és kattints a linkre. Ezt az ablakot bezárhatod.': 'Sent! Open the email and click the link. You can close this window.', 'Bejelentkezve. A mentésed a szerveren van, {0}. megye.': 'Signed in. Your save is on the server, county {0}.',
   'Letöltöttem a mentésedet a szerverről. Újratöltöm a játékot.': 'I downloaded your save from the server. Reloading the game.', 'Nem sikerült elérni a szervert. Offline játszol, a mentés ezen a gépen marad.': 'Could not reach the server. You are playing offline, the save stays on this device.',
   'Egy szomszéd': 'A neighbour', 'valódi játékos': 'real player', 'Kijelentkezés': 'Sign out', 'Belépés a szerverre': 'Sign in to the server', 'Szerver: {0}. megye': 'Server: county {0}' };
+
+// ---------- tesztszerver: üdvözlés, visszajelzés, nincs gyorsítás ----------
+const FEEDBACK_TO = 'https://formsubmit.co/ajax/dorka1124@gmail.com';
+function showWelcome(after) {
+  let seen = false; try { seen = !!localStorage.getItem('panelvar-welcome'); } catch (e) {}
+  if (seen) { if (after) after(); return; }
+  const el = document.createElement('div'); el.id = 'netWelcome';
+  el.style.cssText = 'position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:rgba(30,18,8,.72);padding:16px';
+  el.innerHTML = `<div style="width:min(440px,100%);background:#F3E2BE;border-radius:22px 26px 20px 24px;box-shadow:0 0 0 4px #FFF4DF,0 0 0 7px #8A5A2B,0 20px 50px rgba(0,0,0,.5);padding:24px;color:#3A2410;font-size:17px;line-height:1.5">
+    <h2 style="margin:0 0 10px;font-size:26px">${T('Szia Kedves!')}</h2>
+    <p style="margin:0 0 8px">${T('Örülök, hogy itt vagy!')}</p>
+    <p style="margin:0 0 8px">${T('A játék jelenleg teszt üzemben van, kérlek bármit találtok, vagy tapasztaltok, írjatok nekem!')}</p>
+    <p style="margin:0 0 16px">${T('Puszi')}<br><b>Lorka</b></p>
+    <p style="margin:0 0 14px;font-size:14px">${T('Visszajelzést a Beállításokban vagy a jobb felső Hiba? gombbal tudsz küldeni.')}</p>
+    <button class="btn coral" type="button" id="nwOk">${T('Kezdjük!')}</button></div>`;
+  document.body.appendChild(el);
+  document.getElementById('nwOk').onclick = () => { try { localStorage.setItem('panelvar-welcome', '1'); } catch (e) {} el.remove(); if (after) after(); };
+}
+function showFeedback() {
+  try { hideInfo(); closeDrawer(); } catch (e) {}
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('VISSZAJELZÉS')}</span><h2>${T('Írj Lorkának!')}</h2>
+    <p>${T('Hibát találtál, valami furcsa, vagy van egy ötleted? Írd le, és egyenesen Lorkához jut.')}</p>
+    <div class="snd-row" style="gap:6px;flex-wrap:wrap">${[['hiba', 'Hiba'], ['otlet', 'Ötlet'], ['egyeb', 'Egyéb']].map(([k, l], i) => `<button class="tab" type="button" data-fk="${k}" aria-pressed="${i === 0}">${T(l)}</button>`).join('')}</div>
+    <textarea id="fbTxt" maxlength="2000" rows="6" placeholder="${T('Mi történt? Hol voltál a játékban, mire kattintottál?')}" style="width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border-radius:12px;border:2px solid #C9A46A;font:inherit;font-size:15px;background:#FFF8EA"></textarea>
+    <div class="row"><button class="btn coral" type="button" id="fbSend">${T('Elküldöm')}</button><span id="fbMsg" role="status" style="font-weight:700;font-size:14px"></span></div></div>`, '', 'feedback');
+  let kind = 'hiba'; const R = $('modalRoot');
+  R.querySelectorAll('[data-fk]').forEach(b => b.onclick = () => { kind = b.dataset.fk; R.querySelectorAll('[data-fk]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  $('fbSend').onclick = async () => {
+    const txt = ($('fbTxt').value || '').trim(); if (txt.length < 3) { $('fbMsg').textContent = T('Írj pár szót, kérlek.'); return; }
+    $('fbSend').disabled = true; $('fbMsg').textContent = T('Küldöm…');
+    let email = ''; try { if (NET.sb) { const u = (await NET.sb.auth.getUser()).data.user; email = (u && u.email) || ''; } } catch (e) {}
+    const info = { korszak: typeof CUR_ERA === 'number' ? CUR_ERA : '?', oldal: location.pathname, hiba_utoljara: (typeof lastErr !== 'undefined' && lastErr) ? String(lastErr).slice(0, 400) : '', bongeszo: navigator.userAgent };
+    let ok = false;
+    try { const r = await fetch(FEEDBACK_TO, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ _subject: 'HazaVár visszajelzés: ' + kind, _template: 'table', tipus: kind, jatekos: PROF.name || 'Törzsfő', email: email || '-', uzenet: txt, korszak: info.korszak, oldal: info.oldal, utolso_hiba: info.hiba_utoljara || '-', bongeszo: info.bongeszo }) });
+      ok = r.ok; } catch (e) {}
+    try { if (NET.on) await NET.sb.from('feedback').insert({ user_id: NET.me, kind, text: txt, info }); ok = true; } catch (e) {}
+    if (ok) { $('fbMsg').textContent = T('Köszönöm! Megkaptam.'); setTimeout(closeModal, 1400); } else { $('fbSend').disabled = false; $('fbMsg').textContent = T('Nem sikerült elküldeni. Próbáld újra kicsit később.'); }
+  };
+}
+function testServerTweaks() {
+  if (!ONLINE) return;
+  try { if (S.speed !== 1) { S.speed = 1; save(); } } catch (e) {}
+  const st = document.getElementById('speedTag'); if (st) st.style.display = 'none';
+  if (!document.getElementById('fbBtn')) {
+    const b = document.createElement('button'); b.id = 'fbBtn'; b.type = 'button'; b.className = 'ibtn wood'; b.textContent = T('Hiba?');
+    b.style.cssText = 'position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(var(--toph,72px) + 16px);z-index:7;width:auto;height:40px;padding:0 14px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer';
+    b.onclick = showFeedback; ($('app') || document.body).appendChild(b);
+  }
+  const orig = showSettings;
+  showSettings = function () {
+    orig();
+    const spd = document.getElementById('spd'); if (spd) { const pr = spd.previousElementSibling; spd.remove(); if (pr && pr.tagName === 'P') pr.remove(); }
+    const rep = document.getElementById('sReport'); if (rep) rep.parentElement.remove();
+    document.querySelectorAll('#modalRoot .inner > p').forEach(pp => { if (/böngésződben|browser/.test(pp.textContent)) pp.textContent = T('A játékod a szerverre mentődik, és bármelyik gépen vagy telefonon ott folytatod, ahol abbahagytad.'); });
+    ['sEra', 'sEra2', 'sEra3'].forEach(id => { const e = document.getElementById(id); if (e) { const row = e.parentElement; e.remove(); if (row && !row.children.length) row.remove(); } });
+    const inner = document.querySelector('#modalRoot .inner'); if (inner && !document.getElementById('sFb')) { const row = document.createElement('div'); row.className = 'row'; row.innerHTML = `<button class="btn coral" type="button" id="sFb">${T('Visszajelzés Lorkának')}</button>`; inner.insertBefore(row, inner.children[2] || null); document.getElementById('sFb').onclick = showFeedback; }
+  };
+}
 function boot() {
   try { Object.assign(EN, SOC_EN, NET_EN); } catch (e) {}
-  loadSoc(); mountBtn(); checkKits(); tick(); setInterval(tick, 30e3); netBoot();
+  loadSoc(); mountBtn(); checkKits(); tick(); setInterval(tick, 30e3); testServerTweaks(); if (ONLINE) showWelcome(netBoot); else netBoot();
   window.__SOC = { get: () => SOC, skip: ms => { window.__socSkew = (window.__socSkew || 0) + ms; tick(); }, show: showSoc, kitAward, botRaidsMe: () => botRaidsMe(SOC.bots[0], true), offer: offerSnitch, coup: botCoup };
 }
 if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListener('load', () => setTimeout(boot, 300));
