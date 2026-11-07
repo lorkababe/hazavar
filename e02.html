@@ -518,7 +518,7 @@ function load() {
     if (raw) {
       const d = JSON.parse(raw);
       if (d && d.v === 1) {
-        const away = Math.min(7200, Math.max(0, (Date.now() - (d.savedAt || Date.now())) / 1000));
+        const away = Math.min(14 * 86400, Math.max(0, (Date.now() - (d.savedAt || Date.now())) / 1000));
         d.gt += away; d.newTypes = d.newTypes || {}; d.newTechs = d.newTechs || {}; return repairSave(d);
       }
     }
@@ -2206,7 +2206,9 @@ function noteErr(e) {
 }
 window.addEventListener('error', e => noteErr(e.error || e.message));
 function frame(now) {
-  const dt = Math.min(0.25, (now - last) / 1000); last = now;
+  const raw = (now - last) / 1000; last = now;
+  // ha a lap a háttérben volt (másik fül, lekicsinyítve), az ott töltött idő is lejár
+  const dt = raw > 1 ? Math.min(raw, 14 * 86400) : Math.min(0.25, raw);
   try { tick(dt); } catch (e) { noteErr(e); }
   try { draw(now); } catch (e) { noteErr(e); }
   requestAnimationFrame(frame);
