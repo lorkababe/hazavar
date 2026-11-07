@@ -1437,7 +1437,8 @@ function drawBuilding(b, now, pass = 0) {
   if (pass === 1) { if (!b.ghost) drawOverlay(b, r, now); return; }
   if (!b.ghost) { ctx.save(); ctx.filter = 'blur(6px)'; rectRaw(b.i - 0.06, b.j - 0.06, bw + 0.16, bh + 0.16, 'rgba(40,30,10,0.28)', null); ctx.restore(); }
   ctx.save(); if (b.ghost) ctx.globalAlpha = 0.65;
-  ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1]); ctx.lineTo(r.R[0], r.R[1]); ctx.lineTo(r.B[0], r.B[1]); ctx.lineTo(r.L[0], r.L[1]); ctx.lineTo(r.x - 2, r.L[1]); ctx.closePath(); ctx.clip();
+  // téglalap alakú épületnél nem vágunk, mert a kép nem mindig illik pontosan a rácsra
+  if (bw === bh) { ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1]); ctx.lineTo(r.R[0], r.R[1]); ctx.lineTo(r.B[0], r.B[1]); ctx.lineTo(r.L[0], r.L[1]); ctx.lineTo(r.x - 2, r.L[1]); ctx.closePath(); ctx.clip(); };
   if (r.flip) { ctx.translate(r.x + r.w, r.y); ctx.scale(-1, 1); ctx.drawImage(r.im, 0, 0, r.w, r.h); } else ctx.drawImage(r.im, r.x, r.y, r.w, r.h); ctx.restore();
 }
 // buborékok és csíkok külön körben, hogy egyik épület se takarja a másikét
