@@ -1437,6 +1437,7 @@ $('btnPrep').onclick = () => showWinter();
 $('btnSettings').onclick = () => showSettings();
 $('btnDaily').onclick = () => showDaily();
 $('btnProfile').onclick = () => showProfile();
+{ const pn = $('pName'); if (pn && pn.parentElement) { pn.parentElement.style.cursor = 'pointer'; pn.parentElement.onclick = () => showProfile(); } }
 $('migChip').onclick = () => migrate();
 $('rMood').onclick = e => { e.stopPropagation(); $('rMood').classList.toggle('open'); };
 document.addEventListener('pointerdown', e => { if (!e.target.closest('#rMood')) $('rMood').classList.remove('open'); });
@@ -2614,6 +2615,7 @@ async function netPull() {
   data.forEach(row => {
     const val = row.data && typeof row.data.v === 'string' ? row.data.v : null; if (val == null) return;
     const loc = localStorage.getItem(row.slot); if (loc === val) { hashes[row.slot] = hashStr(val); return; }
+    if (row.slot === 'panelvar-profile' && loc) { try { if (JSON.parse(loc).name && !JSON.parse(val).name) return; } catch (e) {} }
     const localUnchanged = loc == null || hashes[row.slot] === hashStr(loc);
     if (firstHere || localUnchanged) { localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); took++; }
   });
