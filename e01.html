@@ -2074,7 +2074,7 @@ window.addEventListener('resize', resize);
 window.addEventListener('keydown', e => { if (e.key === 'Escape') { if (openModal && openModal !== 'outcome' && openModal !== 'intro') closeModal(); else if (tool) endTool(); else if (!$('drawer').hidden) closeDrawer(); else hideInfo(); } });
 
 localizeData(); localizeDOM();
-S = load(); if (S.name && !PROF.name) { PROF.name = S.name; saveProf(); } setTimeout(() => { try { renderChiefPops(); renderProfileBits(); } catch (e) {} }, 0);
+S = load(); try { const left = LOTS.filter(l => !(S.lots || []).includes(l.id)).length; if ((S.lotCredits || 0) > left) S.lotCredits = left; } catch (e) {} if (S.name && !PROF.name) { PROF.name = S.name; saveProf(); } setTimeout(() => { try { renderChiefPops(); renderProfileBits(); } catch (e) {} }, 0);
 loadImgs().then(() => {
   resize(); centerStart(); renderGuide(); hud();
   if (!S.intro) showIntro();
