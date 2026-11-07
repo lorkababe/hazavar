@@ -2767,6 +2767,7 @@ function testServerTweaks() {
   if (!ONLINE) return;
   try { if (S.speed !== 1) { S.speed = 1; save(); } } catch (e) {}
   const st = document.getElementById('speedTag'); if (st) st.style.display = 'none';
+  { const st = document.createElement('style'); st.textContent = '#top{z-index:12!important}'; document.head.appendChild(st); }
   if (!document.getElementById('fbBtn')) {
     const b = document.createElement('button'); b.id = 'fbBtn'; b.type = 'button'; b.className = 'ibtn wood'; b.textContent = T('Hiba?');
     b.style.cssText = 'position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(var(--toph,72px) + 16px);z-index:7;width:auto;height:40px;padding:0 14px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer';
