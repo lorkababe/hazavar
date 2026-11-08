@@ -1999,7 +1999,7 @@ const AS = { music: true, vol: 0.5, sfx: true, sfxVol: 0.5 };
 try { Object.assign(AS, JSON.parse(localStorage.getItem(AUD_KEY)) || {}); } catch (e) {}
 function saveAud() { try { localStorage.setItem(AUD_KEY, JSON.stringify(AS)); } catch (e) {} }
 let AC = null, master, musicBus, sfxBus, song = null, nextT = 0, step = 0;
-const E8 = 60 / 64 / 2;                // nyolcad hang 66-os tempón
+const E8 = 60 / 92 / 2;                // nyolcad hang, 92-es tempó
 const PENTA = [0, 3, 5, 7, 10];        // la-pentaton, a magyar népzene ötfokú hangsora
 const deg2f = (d, base) => base * Math.pow(2, (Math.floor(d / 5) * 12 + PENTA[((d % 5) + 5) % 5]) / 12);
 function initAudio() {
@@ -2020,37 +2020,54 @@ function applyAud() {
   if (sfxBus) sfxBus.gain.setTargetAtTime(AS.sfxVol * 1.2, AC.currentTime, 0.02);
   const b = $('btnMusic'); b.classList.toggle('off', !AS.music); b.setAttribute('aria-label', tr(AS.music ? 'Zene kikapcsolása' : 'Zene bekapcsolása'));
 }
-function drone() {
-  const g = AC.createGain(), lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240; g.gain.value = 0.03;
-  [110, 110.4, 55].forEach(f => { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(); });
+// 2. korszak: régi stílusú magyar népzene. Pentaton dallam kvintváltással, tárogató-szerű hang, duda-bordó és lovas ritmus
+function drone() { // duda: alaphang és kvint
+  const g = AC.createGain(), lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520; g.gain.value = 0.022;
+  [110, 110.3, 164.8].forEach(f => { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(); });
   lp.connect(g); g.connect(musicBus);
-  const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = 0.06; lg.gain.value = 0.012; l.connect(lg); lg.connect(g.gain); l.start();
+  const l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = 0.05; lg.gain.value = 0.008; l.connect(lg); lg.connect(g.gain); l.start();
 }
-function flute(t, f, d) { // halk, pengetett koboz-szerű hang
-  const o = AC.createOscillator(), o2 = AC.createOscillator(), g2 = AC.createGain(), lp = AC.createBiquadFilter(), g = AC.createGain();
-  o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2; g2.gain.value = 0.25;
-  lp.type = 'lowpass'; lp.frequency.setValueAtTime(1600, t); lp.frequency.exponentialRampToValueAtTime(600, t + 0.6);
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.09, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0008, t + Math.max(0.9, d + 0.4));
-  o.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(musicBus);
-  [o, o2].forEach(x => { x.start(t); x.stop(t + Math.max(0.95, d + 0.45)); });
+function flute(t, f, d, soft) { // tárogató / furulya: nádas, kissé fátyolos hang, késleltetett vibrátóval
+  const o = AC.createOscillator(), o2 = AC.createOscillator(), mix = AC.createGain(), m2 = AC.createGain(), bp = AC.createBiquadFilter(), lp = AC.createBiquadFilter(), g = AC.createGain();
+  o.type = 'sawtooth'; o2.type = 'square'; o.frequency.value = f; o2.frequency.value = f * 1.003; m2.gain.value = 0.35;
+  const vib = AC.createOscillator(), vg = AC.createGain(); vib.frequency.value = 5.4; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.011, t + Math.min(0.5, d * 0.6));
+  vib.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency);
+  bp.type = 'bandpass'; bp.frequency.value = Math.min(2400, f * 2.2); bp.Q.value = 0.9; lp.type = 'lowpass'; lp.frequency.value = 2600;
+  const v = soft ? 0.035 : 0.06;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.035); g.gain.setValueAtTime(v * 0.85, t + Math.max(0.05, d - 0.06)); g.gain.exponentialRampToValueAtTime(0.0008, t + d + 0.12);
+  o.connect(mix); o2.connect(m2); m2.connect(mix); mix.connect(bp); bp.connect(lp); lp.connect(g); g.connect(musicBus);
+  [o, o2, vib].forEach(x => { x.start(t); x.stop(t + d + 0.15); });
 }
 function drum(t, v) { // bőrdob
   const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine';
-  o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.25);
-  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0008, t + 0.6); o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.65);
+  o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(50, t + 0.2);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0008, t + 0.45); o.connect(g); g.connect(musicBus); o.start(t); o.stop(t + 0.5);
 }
-function makePhrase() { // ereszkedő, népdalszerű dallamsor, 2 ütem
-  const rh = [[2, 1, 1, 2, 2, 4, 4], [1, 1, 2, 2, 2, 2, 6], [3, 1, 2, 2, 4, 4], [2, 2, 1, 1, 2, 4, 4]][Math.floor(Math.random() * 4)];
-  let d = 7 + Math.floor(Math.random() * 3); const out = [];
-  rh.forEach((l, i) => { if (i) d += [-1, -1, -1, 0, 1, -2, 1][Math.floor(Math.random() * 7)]; d = Math.max(4, Math.min(10, d)); out.push({ l, d }); });
-  out[out.length - 1].d = 5; return out;
-}
-function buildSong(t0) { // kvintváltás: a dallamsor egy kvinttel lejjebb megismétlődik
-  const A = makePhrase(), B = makePhrase(); const ev = []; let at = 0;
-  [[A, 0], [A, -7], [B, 0], [A, -7], [null, 0]].forEach(([p, sh]) => {
-    if (!p) { at += 16; return; }
-    p.forEach(n => { ev.push({ at, f: deg2f(n.d, 220) * Math.pow(2, sh / 12), l: n.l }); at += n.l; });
+// la-pentaton hangsor A-ról: A3 C4 D4 E4 G4 A4 C5 D5 E5
+const PHZ = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25];
+// saját dallamok, régi stílusban: 1. sor fent, 2. sor egy kvinttel lejjebb, 3. sor középen, 4. sor zárás a la-ra
+const TUNES = [
+  [ [[8,2],[8,1],[7,1],[6,2],[7,2],[8,1],[7,1],[6,1],[5,1],[5,4]],
+    'Q',
+    [[4,1],[5,1],[6,2],[6,2],[5,1],[4,1],[3,2],[4,2],[5,4]],
+    [[3,2],[3,1],[2,1],[1,2],[2,2],[3,1],[2,1],[1,1],[0,1],[0,4]] ],
+  [ [[5,1],[6,1],[8,3],[7,1],[6,2],[7,2],[6,1],[5,1],[4,2],[5,2]],
+    'Q',
+    [[6,3],[5,1],[4,2],[3,2],[4,1],[5,1],[4,1],[3,1],[2,4]],
+    [[3,1],[4,1],[3,2],[2,2],[1,2],[2,1],[1,1],[0,2],[0,4]] ]
+];
+let tuneNo = 0;
+function buildSong(t0) {
+  const tune = TUNES[tuneNo++ % TUNES.length]; const ev = []; let at = 0; const first = tune[0];
+  tune.forEach(line => {
+    const notes = line === 'Q' ? first.map(([d, l]) => [Math.max(0, d - 3), l]) : line; // kvintváltás: ugyanaz a sor egy kvinttel lejjebb
+    notes.forEach(([d, l]) => {
+      if (l >= 3 && Math.random() < 0.6) { ev.push({ at, f: PHZ[Math.min(8, d + 1)], l: 0.35, soft: true }); ev.push({ at: at + 0.35, f: PHZ[d], l: l - 0.35 }); } // díszítő előke
+      else ev.push({ at, f: PHZ[d], l });
+      at += l;
+    });
   });
+  at += 8; // kis szünet a versszakok között
   return { t0, ev, len: at, i: 0 };
 }
 function schedule() {
@@ -2059,10 +2076,11 @@ function schedule() {
   for (;;) {
     if (song.i >= song.ev.length) { const end = song.t0 + song.len * E8; if (end < horizon) { song = buildSong(end); continue; } break; }
     const e = song.ev[song.i], t = song.t0 + e.at * E8; if (t > horizon) break;
-    if (t > AC.currentTime - 0.05) flute(t, e.f, e.l * E8 * 0.95); song.i++;
+    if (t > AC.currentTime - 0.05) flute(t, e.f, e.l * E8 * 0.97, e.soft); song.i++;
   }
   if (nextT < AC.currentTime) nextT = AC.currentTime + 0.05;
-  while (nextT < horizon) { const b = step % 16; if (b === 0) drum(nextT, 0.22); else if (b === 8) drum(nextT, 0.12); nextT += E8; step++; } // csak halk, ritka dob
+  const GALLOP = [0.2, 0, 0, 0.09, 0.13, 0, 0.07, 0]; // lovas lüktetés
+  while (nextT < horizon) { const v = GALLOP[step % 8]; if (v) drum(nextT, v); nextT += E8; step++; }
 }
 function noiseTick(t, freq, vol, dur) {
   const nb = AC.createBuffer(1, Math.floor(AC.sampleRate * dur), AC.sampleRate), d = nb.getChannelData(0);
@@ -3037,5 +3055,4 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 /*SOCIAL-END*/
 })();
 </script>
-
 </body></html>
