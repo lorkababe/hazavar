@@ -641,7 +641,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + (tries ? '?r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611082' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -1206,23 +1206,54 @@ function wobble(a, b, seed) {
   for (let q = 0; q <= 4; q++) { const t = q / 4; const w = (q === 0 || q === 4) ? 0 : (hash(seed + q, seed * 3) - 0.5) * TW * 0.07; pts.push([a[0] + dx * t + nx * w, a[1] + dy * t + ny * w]); }
   return pts;
 }
+const ROADSTYLE = 'foot';
 function buildRoadLayer() {
   const { segs, dots } = roadSegs();
   const c = document.createElement('canvas'); c.width = BGW; c.height = BGH * 2; const g = c.getContext('2d');
   if (!segs.length && !dots.length) return c;
   const lines = segs.map(([a, b], n) => wobble([a[0], a[1] * 2], [b[0], b[1] * 2], Math.round(a[0] * 7 + b[1] * 3 + n)));
-  const path = (wid) => { g.beginPath(); lines.forEach(ps => { g.moveTo(ps[0][0], ps[0][1]); ps.slice(1).forEach(p => g.lineTo(p[0], p[1])); }); dots.forEach(d => { g.moveTo(d[0] + 0.1, d[1] * 2); g.lineTo(d[0], d[1] * 2); }); g.lineWidth = wid; g.stroke(); };
+  const dd = dots.map(d => [d[0], d[1] * 2]);
+  const cnt = {}; segs.forEach(([a]) => { const k = a[0] + ',' + a[1]; cnt[k] = (cnt[k] || 0) + 1; });
+  const straight = segs.map(([a, b]) => { const k = a[0] + ',' + a[1]; if (cnt[k] !== 2) return false; const o = segs.find(([p, q]) => p !== a && p[0] === a[0] && p[1] === a[1] && q !== b && (p[0] + p[0] - q[0]) === b[0] && Math.abs((p[1] + p[1] - q[1]) - b[1]) < 0.01) || segs.find(([p, q]) => p[0] === a[0] && p[1] === a[1] && Math.abs(q[0] - (2 * a[0] - b[0])) < 0.01 && Math.abs(q[1] - (2 * a[1] - b[1])) < 0.01); return !!o; });
+  const path = (wid, off) => { g.beginPath(); lines.forEach((ps, n) => { if (off && !straight[n]) return; let ox = 0, oy = 0; if (off) { const a = ps[0], b = ps[ps.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; ox = -(b[1] - a[1]) / L * off; oy = (b[0] - a[0]) / L * off; if (b[0] < a[0] || (b[0] === a[0] && b[1] < a[1])) { ox = -ox; oy = -oy; } } g.moveTo(ps[0][0] + ox, ps[0][1] + oy); ps.slice(1).forEach(p => g.lineTo(p[0] + ox, p[1] + oy)); }); if (!off) dd.forEach(d => { g.moveTo(d[0] + 0.1, d[1]); g.lineTo(d[0], d[1]); }); g.lineWidth = wid; g.stroke(); };
   g.lineCap = 'round'; g.lineJoin = 'round';
-  // puha, sötétebb taposott szegély a fűben
-  g.filter = 'blur(8px)'; g.strokeStyle = 'rgba(84,58,18,0.42)'; path(TW * 0.62);
-  // a föld textúrája, elmosott széllel
+  // taposott, sötétebb sáv a fűben
+  g.filter = 'blur(7px)'; g.strokeStyle = 'rgba(70,50,14,0.38)'; path(TW * 0.58);
+  // kopott földszegély: sötétebb perem, hogy legyen éle az útnak
+  g.filter = 'blur(1.5px)'; g.strokeStyle = 'rgba(122,86,40,0.75)'; path(TW * 0.43);
   if (!dirtPat && IMG.fold) dirtPat = g.createPattern(IMG.fold, 'repeat');
-  g.filter = 'blur(2px)'; g.strokeStyle = dirtPat || '#C99153'; g.globalAlpha = 1; path(TW * 0.44);
-  g.filter = 'none'; path(TW * 0.38);
-  g.globalCompositeOperation = 'multiply'; g.strokeStyle = 'rgba(150,96,50,0.55)'; g.filter = 'blur(2px)'; path(TW * 0.42); g.filter = 'none';
+  g.filter = 'none'; g.strokeStyle = dirtPat || '#C99153'; path(TW * 0.39);
+  g.globalCompositeOperation = 'multiply'; g.strokeStyle = 'rgba(200,150,90,0.3)'; path(TW * 0.39);
+  // a perem belső árnyéka
+  g.strokeStyle = 'rgba(140,96,50,0.22)'; g.filter = 'blur(3px)'; path(TW * 0.40); g.filter = 'none';
   g.globalCompositeOperation = 'source-over';
-  // középen világosabb, kopottabb sáv
-  g.globalAlpha = 0.22; g.strokeStyle = '#F0CE96'; g.filter = 'blur(5px)'; path(TW * 0.14); g.filter = 'none'; g.globalAlpha = 1;
+  // világosabb, kitaposott közép
+  g.globalAlpha = 0.35; g.strokeStyle = '#F2D29C'; g.filter = 'blur(4px)'; path(TW * 0.2); g.filter = 'none'; g.globalAlpha = 1;
+  if (ROADSTYLE !== 'foot') {
+    // keréknyomok
+    g.globalCompositeOperation = 'multiply'; g.strokeStyle = 'rgba(110,70,34,0.55)'; g.filter = 'blur(1px)';
+    path(TW * 0.035, TW * 0.085); path(TW * 0.035, -TW * 0.085); g.filter = 'none'; g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 0.3; g.strokeStyle = '#FBE6BC'; path(TW * 0.012, TW * 0.105); path(TW * 0.012, -TW * 0.065); g.globalAlpha = 1;
+  }
+  // kavicsok és fűcsomók a széleken, mindig ugyanott
+  lines.forEach((ps, n) => {
+    const a = ps[0], b = ps[ps.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L;
+    for (let q = 0; q < 5; q++) {
+      const h1 = hash(a[0] + q * 13, b[1] + n), h2 = hash(b[0] + q * 7, a[1] - q), h3 = hash(q + n * 3.1, a[0]);
+      const t = 0.1 + h1 * 0.8, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+      if (h3 < 0.6) { // kavics
+        const side = (h2 - 0.5) * TW * 0.34, r = TW * (ROADSTYLE === 'cobble' ? 0.03 : 0.018) * (0.7 + h1 * 0.7), px = x + nx * side, py = y + ny * side;
+        g.fillStyle = 'rgba(60,40,20,0.35)'; g.beginPath(); g.ellipse(px + 1.5, py + 2.5, r * 1.1, r * 0.9, 0, 0, 7); g.fill();
+        g.fillStyle = h2 > 0.5 ? '#B9AC98' : '#A08C72'; g.beginPath(); g.ellipse(px, py, r * 1.1, r * 0.9, 0, 0, 7); g.fill();
+        g.fillStyle = 'rgba(255,248,230,0.55)'; g.beginPath(); g.ellipse(px - r * 0.3, py - r * 0.35, r * 0.45, r * 0.3, 0, 0, 7); g.fill();
+      } else if (h3 > 0.78) { // fűcsomó a perem mellett, sosem az úton
+        const sgn = h2 > 0.5 ? 1 : -1, px = x + nx * sgn * TW * 0.235, py = y + ny * sgn * TW * 0.235;
+        if (lines.some(qs => { const A = qs[0], B = qs[qs.length - 1], vx = B[0] - A[0], vy = B[1] - A[1], u = Math.max(0, Math.min(1, ((px - A[0]) * vx + (py - A[1]) * vy) / (vx * vx + vy * vy || 1))); return Math.hypot(px - A[0] - vx * u, py - A[1] - vy * u) < TW * 0.21; })) continue;
+        for (let k = 0; k < 4; k++) { const ang = -Math.PI / 2 + (k - 1.5) * 0.36 + (hash(k, px) - 0.5) * 0.3, len = TW * (0.05 + hash(px, k) * 0.04);
+          g.strokeStyle = ['#5E8A26', '#7FA834', '#98C048'][(k + n) % 3]; g.lineWidth = 1.8; g.beginPath(); g.moveTo(px + (k - 2) * 2, py); g.quadraticCurveTo(px + (k - 2) * 2 + Math.cos(ang) * len * 0.5, py + Math.sin(ang) * len * 0.6, px + (k - 2) * 2 + Math.cos(ang) * len, py + Math.sin(ang) * len * 1.6); g.stroke(); }
+      }
+    }
+  });
   return c;
 }
 function drawRoads() {
@@ -2738,7 +2769,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611082'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
@@ -2882,5 +2913,4 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 /*SOCIAL-END*/
 })();
 </script>
-
 </body></html>
