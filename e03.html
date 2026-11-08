@@ -719,7 +719,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611083' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611084' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -741,6 +741,8 @@ function maskFor(name) {
     const est = (from, to, dir) => { const v = []; for (let x = from; x <= to; x++) { const b = botAt(x); if (b >= 0) v.push(b - 0.5 * (dir > 0 ? x - minX : maxX - x)); } v.sort((p, q) => p - q); return v.length > 6 ? v[v.length >> 1] : null; };
     const span = maxX - minX, gl = est(minX + Math.round(span * 0.04), minX + Math.round(span * 0.22), 1), gr = est(maxX - Math.round(span * 0.22), maxX - Math.round(span * 0.04), -1);
     const lY = gl != null ? gl : lY0, rY = gr != null ? gr : rY0;
+    // a kép legalsó pontja középtájon: ez a talapzat elülső sarka, ehhez igazítjuk a mező alsó csúcsát
+    { let bY = -1; for (let x = Math.round(minX + span * 0.35); x <= Math.round(maxX - span * 0.35); x++) { const b = botAt(x); if (b > bY) bY = b; } m.bY = bY > 0 ? bY : null; }
     m.minX = minX; m.maxX = maxX; m.vY = (lY + rY) / 2; m.lY = lY; m.rY = rY;
   }
   MASK[name] = m; return m;
@@ -1729,7 +1731,7 @@ function spriteRect(b) {
   const flip = !!b.rot && !temp; const mk = maskFor(name); const dw = Math.max(1, mk.maxX - mk.minX); const s = (w + h) * TW / 2 / dw;
   const L = tileTop(b.i, b.j + h), R = tileTop(b.i + w, b.j), B = tileTop(b.i + w, b.j + h);
   const leftX = flip ? mk.w - mk.maxX : mk.minX, leftY = temp ? mk.vY : flip ? (mk.rY != null ? mk.rY : mk.vY) : (mk.lY != null ? mk.lY : mk.vY);
-  const x = L[0] - leftX * s, y = L[1] - leftY * s, iw = im.naturalWidth * s, ih = im.naturalHeight * s;
+  const x = L[0] - leftX * s, y = mk.bY != null ? B[1] - mk.bY * s : L[1] - leftY * s, iw = im.naturalWidth * s, ih = im.naturalHeight * s;
   return { name, im, x, y, w: iw, h: ih, cx: (L[0] + R[0]) / 2, L, R, B, flip };
 }
 // A akkor van B mögött, ha valamelyik tengelyen teljesen előtte ér véget (kisebb i vagy j = hátrébb)
@@ -3236,7 +3238,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611083'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611084'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
