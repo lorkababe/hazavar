@@ -429,7 +429,7 @@ const EN_DATA = {"res": {"penz": "Money", "termeny": "Food", "tudas": "Knowledge
 const tr = x => LANG === 'en' && EN[x] != null ? EN[x] : x;
 const trf = (x, ...a) => tr(x).replace(/\{(\d)\}/g, (_, i) => a[i]);
 // ---------- alapadatok ----------
-const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 12, OX = 836, OY = 120;
+const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 12, OX = 836, OY = 95;
 const SAVE_KEY = 'panelvar-e03-v1';
 const GRASS = 8; // ennyiszer lehet egy legelőt lelegeltetni, aztán kimerül
 const TERM_CAP = 1000, TUDAS_CAP = 30, TUDAS_EVERY = 30, WINTER_LEN = 24 * 3600;
@@ -680,7 +680,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611082' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611083' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -696,7 +696,12 @@ function maskFor(name) {
     let minX = c.width, maxX = 0;
     for (let px = 0; px < c.width; px++) for (let py = 0; py < c.height; py += 2) if (A(px, py)) { if (px < minX) minX = px; if (px > maxX) maxX = px; }
     const topIn = (x0, x1) => { let best = c.height; for (let px = x0; px <= x1; px++) for (let py = 0; py < c.height; py++) if (A(px, py)) { if (py < best) best = py; break; } return best; };
-    const lY = topIn(minX, Math.min(c.width - 1, minX + 3)), rY = topIn(Math.max(0, maxX - 3), maxX);
+    const lY0 = topIn(minX, Math.min(c.width - 1, minX + 3)), rY0 = topIn(Math.max(0, maxX - 3), maxX);
+    // a talaj sarkait az alsó kontúrból becsüljük, mert a sarkon álló kerítés vagy zászló felfelé húzná
+    const botAt = x => { for (let y = c.height - 1; y >= 0; y--) if (A(x, y)) return y; return -1; };
+    const est = (from, to, dir) => { const v = []; for (let x = from; x <= to; x++) { const b = botAt(x); if (b >= 0) v.push(b - 0.5 * (dir > 0 ? x - minX : maxX - x)); } v.sort((p, q) => p - q); return v.length > 6 ? v[v.length >> 1] : null; };
+    const span = maxX - minX, gl = est(minX + Math.round(span * 0.04), minX + Math.round(span * 0.22), 1), gr = est(maxX - Math.round(span * 0.22), maxX - Math.round(span * 0.04), -1);
+    const lY = gl != null ? gl : lY0, rY = gr != null ? gr : rY0;
     m.minX = minX; m.maxX = maxX; m.vY = (lY + rY) / 2; m.lY = lY; m.rY = rY;
   }
   MASK[name] = m; return m;
@@ -2881,7 +2886,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 120, n: 12 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 95, n: 12 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
@@ -3022,14 +3027,17 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611082'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611083'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
   const m = { w: c.width, minX: 0, maxX: c.width, lY: c.height * .75, rY: c.height * .75 };
   if (d) { const A = (x, y) => d[(y * c.width + x) * 4 + 3] > 60; let mn = c.width, mx = 0; for (let x = 0; x < c.width; x++) for (let y = 0; y < c.height; y += 2) if (A(x, y)) { if (x < mn) mn = x; if (x > mx) mx = x; }
     const top = (x0, x1) => { let b = c.height; for (let x = x0; x <= x1; x++) for (let y = 0; y < c.height; y++) if (A(x, y)) { if (y < b) b = y; break; } return b; };
-    m.minX = mn; m.maxX = mx; m.lY = top(mn, Math.min(c.width - 1, mn + 3)); m.rY = top(Math.max(0, mx - 3), mx); }
+    m.minX = mn; m.maxX = mx; m.lY = top(mn, Math.min(c.width - 1, mn + 3)); m.rY = top(Math.max(0, mx - 3), mx);
+    const botAt = x => { for (let y = c.height - 1; y >= 0; y--) if (A(x, y)) return y; return -1; };
+    const est = (from, to, dir) => { const v = []; for (let x = from; x <= to; x++) { const b = botAt(x); if (b >= 0) v.push(b - 0.5 * (dir > 0 ? x - mn : mx - x)); } v.sort((p, q) => p - q); return v.length > 6 ? v[v.length >> 1] : null; };
+    const sp = mx - mn, gl = est(mn + Math.round(sp * 0.04), mn + Math.round(sp * 0.22), 1), gr = est(mx - Math.round(sp * 0.22), mx - Math.round(sp * 0.04), -1); if (gl != null) m.lY = gl; if (gr != null) m.rY = gr; }
   return (im._m = m);
 }
 function renderRemoteTown(cv, town) {
