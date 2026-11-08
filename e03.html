@@ -1191,7 +1191,7 @@ function showQuarter() {
   };
   const result = (good, used) => {
     const win = good === 4, hir = win ? (used === 1 ? 12 : used === 2 ? 9 : 6) : 2 * good;
-    S.res.hirnev = (S.res.hirnev || 0) + hir; S.fearUntil = S.gt + 8 * 3600; if (win && used === 1) S.korona = (S.korona == null ? 25 : S.korona) + 5; save();
+    S.res.hirnev = (S.res.hirnev || 0) + hir; S.fearUntil = S.gt + 8 * 3600; S.quartered = true; if (win && used === 1) S.korona = (S.korona == null ? 25 : S.korona) + 5; save();
     modal(`<div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${win ? (used === 1 ? tr('Elsőre eltaláltad!') : trf('Eltaláltad, {0}. próbára!', used)) : tr('Elfogytak a próbálkozások')}</h2>
       <p>${win ? trf('A négy negyed célba ért, a pogányok egy ideig nagyon csendesek lesznek. Kaptál {0} Hírnevet{1}.', hir, used === 1 ? tr(' és 5 Koronát') : '') : trf('Az utolsó próbánál {0} darab volt jó helyen, ezért kaptál {1} Hírnevet. A többi negyed rossz várba ment, ott a kapuőr nagyon meglepődött a csomagon.', good, hir)}</p>
       <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('A krónikák szerint Koppány testét négy részre vágták, és Esztergom, Veszprém, Győr és Gyulafehérvár kapujára tűzték ki. A somogyi földjeit a pannonhalmi apátság kapta. Buda, Eger, Pécs és Szeged akkor még nem volt az ország fő vára. Pécs és Eger püspökséget is csak pár évvel később kaptak.')}</p></div>
@@ -1211,9 +1211,17 @@ function showTempo() {
 }
 // Koppány-felkelés vagy bajor segítség, a tempótól függően
 function tempoEventTick() {
-  if (!S.tempo || S.tempoEv || openModal) return;
-  if (S.tempo === 'gyors' && (S.conv || 0) >= 40 && S.gt - (S.tempoAt || 0) > 2 * 3600) { S.tempoEv = 'koppany'; save(); showKoppany(); }
-  if (S.tempo === 'lassu' && S.techs.varmegye) { S.tempoEv = 'bajor'; save(); showBajor(); }
+  if (openModal) return;
+  if (S.tempoDone === 'win' && !S.quartered) { showQuarter(); return; }
+  if (!S.tempo) return;
+  // Koppány minden úton fellázad: gyors térítésnél hamar, lassúnál később, és ha lefizették, visszajön
+  if (!S.quartered && S.tempoDone !== 'win' && S.tempoEv !== 'koppany') {
+    const due = S.tempoDone === 'deal' ? S.gt > (S.koppanyBack || 0)
+      : S.tempo === 'gyors' ? (S.conv || 0) >= 40 && S.gt - (S.tempoAt || 0) > 2 * 3600
+      : (S.techs.varmegye || (S.conv || 0) >= 35 || S.gt - (S.tempoAt || 0) > 4 * 3600);
+    if (due) { S.tempoEv = 'koppany'; S.tempoDone = null; save(); showKoppany(); return; }
+  }
+  if (S.tempo === 'lassu' && S.techs.varmegye && !S.bajorDone && S.tempoEv !== 'koppany') { S.bajorDone = true; save(); showBajor(); }
 }
 function showKoppany() {
   const need = 6, ok = defPts() >= need;
@@ -1222,8 +1230,8 @@ function showKoppany() {
     <div class="store-row"><div class="grow"><b>${tr('Leverem a lázadást')}</b><br><span>${trf('Kell hozzá legalább {0} Védelem, most {1} van. A térítés nagyot lép, és Hírnevet kapsz.', need, defPts())}</span></div><button class="btn coral" type="button" id="kFight" ${ok ? '' : 'disabled'}>${tr('Csatába!')}</button></div>
     <div class="store-row"><div class="grow"><b>${tr('Megegyezem vele')}</b><br><span>${tr('200 Pénzért Koppány hazamegy. A pogányok hálásak, a térítés visszaesik.')}</span></div><button class="btn teal" type="button" id="kDeal" ${S.res.penz >= 200 ? '' : 'disabled'}>${tr('Alkudjunk')}</button></div>
     <div class="row"><button class="btn ghost" type="button" id="kLater">${tr('Még gondolkodom')}</button></div></div>`, '', 'outcome');
-  $('kLater').onclick = () => { S.tempoEv = null; S.tempoAt = S.gt; save(); closeModal(); toast('Koppány vár. Két óra múlva újra jelentkezik.'); };
-  $('kDeal').onclick = () => { if (S.res.penz < 200) return; S.res.penz -= 200; S.koppanyDeal = true; S.conv = Math.max(5, S.conv - 10); S.tempoDone = 'deal'; save(); closeModal(); toast('Koppány elvitte a pénzt, és megígérte, hogy nem jön vissza. Majdnem el is hittük.'); };
+  $('kLater').onclick = () => { S.tempoEv = null; S.tempoAt = S.gt; S.tempoDone = 'deal'; S.koppanyBack = S.gt + 2 * 3600; save(); closeModal(); toast('Koppány vár. Két óra múlva újra jelentkezik.'); };
+  $('kDeal').onclick = () => { if (S.res.penz < 200) return; S.res.penz -= 200; S.koppanyDeal = true; S.conv = Math.max(5, S.conv - 10); S.tempoDone = 'deal'; S.koppanyBack = S.gt + 3 * 3600; S.tempoEv = null; save(); closeModal(); toast('Koppány elvitte a pénzt, és megígérte, hogy nem jön vissza. Majdnem el is hittük.'); };
   $('kFight').onclick = () => { if (defPts() < need) return; S.conv = Math.min(95, S.conv + 12); S.res.hirnev = (S.res.hirnev || 0) + 10; S.tempoDone = 'win'; save();
     modal(`<div class="inner"><span class="eyebrow">${tr('KOPPÁNY-FELKELÉS')}</span><h2>${tr('A lázadás elbukott')}</h2><p>${tr('Koppány seregét Veszprém alatt verték szét. A térítés nagyot lépett előre, kaptál 10 Hírnevet.')}</p>
       <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('Koppány somogyi vezér 997-ben fellázadt István ellen. A régi szokás szerint ő lett volna Géza örököse, mint a család legidősebb férfitagja. Veszprém mellett vereséget szenvedett.')}</p></div>
@@ -2215,9 +2223,9 @@ function showProfile() {
 function showResearch() {
   hideInfo(); closeDrawer();
   const card = t => {
-    const done = !!S.techs[t.id]; const techOk = t.req.every(r => S.techs[r]); const chiefOk = true; const reqOk = techOk && chiefOk; const can = !done && reqOk && canPay(t.cost);
+    const done = !!S.techs[t.id]; const techOk = t.req.every(r => S.techs[r]); const chiefOk = t.id !== 'imre' || !!S.quartered; const reqOk = techOk && chiefOk; const can = !done && reqOk && canPay(t.cost);
     const unl = t.key ? tr('Ez a kulcskutatás. Utána jön a nagy próba!') : t.unl ? tr('Új épület · ') + DEF[t.unl].name : tr(t.bonus);
-    const state = done ? `<span class="state" style="color:var(--good)">${tr('Kikutatva')}</span>` : techOk && !chiefOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb tégy meg {0} portyát ({1} / {0}), a Kalandozás menüben', 3, S.raidsDone || 0)}</span>` : !reqOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb kell hozzá {0}', t.req.filter(r => !S.techs[r]).map(r => TECH.find(x => x.id === r).name).join(', '))}</span>` : `<span class="cost">${costHTML(t.cost)}</span>`;
+    const state = done ? `<span class="state" style="color:var(--good)">${tr('Kikutatva')}</span>` : techOk && !chiefOk ? `<span class="state" style="color:var(--ink-soft)">${tr('Előbb Koppány sorsát kell rendezni. Ő hamarosan jelentkezik.')}</span>` : !reqOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb kell hozzá {0}', t.req.filter(r => !S.techs[r]).map(r => TECH.find(x => x.id === r).name).join(', '))}</span>` : `<span class="cost">${costHTML(t.cost)}</span>`;
     const isNew = !done && !!S.newTechs[t.id];
     return `<div class="tech${done ? ' done' : ''}${t.key ? ' key' : ''}${isNew ? ' isnew' : ''}">${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}<b>${t.name}</b><span class="unl">${unl}</span>${state}
       ${!done && reqOk ? `<button class="btn ${t.key ? 'coral' : 'teal'}" type="button" data-tech="${t.id}" ${can ? '' : 'disabled'}>${tr(can ? 'Kutatás' : 'Nincs elég nyersanyag')}</button>` : ''}</div>`;
