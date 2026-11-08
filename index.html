@@ -1181,9 +1181,14 @@ function hideInfo() { infoId = null; $('info').hidden = true; }
 
 // ---------- modálok ----------
 let openModal = null;
+let modalKey = '';
 function modal(html, cls = '', id = '') {
+  // ugyanannak az ablaknak az újrarajzolásakor maradjon a görgetés ott, ahol volt
+  const key = id + '|' + html.replace(/\s+/g, ' ').slice(0, 200), same = openModal === id && modalKey === key;
+  const keep = same ? [...$('modalRoot').querySelectorAll('.scrim,.mscroll,.modal')].map(e => e.scrollTop) : null; modalKey = key;
   openModal = id; $('modalRoot').innerHTML = `<div class="scrim"><div class="modal ${cls}" role="dialog" aria-modal="true"><div class="mscroll">${html}</div></div></div>`;
   const c = $('modalRoot').querySelector('.close'); if (c) c.onclick = closeModal;
+  if (keep) [...$('modalRoot').querySelectorAll('.scrim,.mscroll,.modal')].forEach((e, n) => { e.scrollTop = keep[n] || 0; });
   $('modalRoot').querySelector('.scrim').onclick = e => { if (e.target.classList.contains('scrim') && id !== 'outcome' && id !== 'intro') closeModal(); };
 }
 function closeModal() {

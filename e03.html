@@ -335,7 +335,7 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 .qmap2{position:relative;width:100%;aspect-ratio:1200/751;margin:10px 0 6px;border-radius:16px;overflow:hidden;touch-action:none;user-select:none}.qmap2>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .qc2{position:absolute;transform:translate(-50%,-50%);border:none;background:rgba(255,244,223,.92);border-radius:14px;padding:3px 8px 3px 4px;font-weight:800;font-size:13px;color:#5A3A1E;box-shadow:0 3px 0 rgba(0,0,0,.25);cursor:pointer;display:flex;gap:4px;align-items:center;min-height:34px}
 .qc2 i{font-style:normal;font-size:16px}.qc2 img{width:34px;height:34px;object-fit:contain}.qc2.on{background:#C9472F;color:#FFF4DF}
-.qtray{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0}.qp{width:84px;height:84px;border:2px dashed #B98A55;border-radius:16px;background:#F3E2BE;cursor:grab;touch-action:none;padding:4px}
+.qtray{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0}.qp{width:84px;height:84px;border:2px dashed #B98A55;border-radius:16px;background:#F3E2BE;cursor:grab;touch-action:none;padding:4px}.qc2.on{cursor:grab;touch-action:none}
 .qp img{width:100%;height:100%;object-fit:contain;pointer-events:none}.qp.used{opacity:.25}.qp.sel{border:3px solid #C9472F;background:#FBE9D0;transform:scale(1.06)}
 .qghost{position:fixed;width:80px;height:80px;object-fit:contain;transform:translate(-50%,-60%);pointer-events:none;z-index:9999;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 </style>
@@ -1168,26 +1168,27 @@ const QCAST = [
 function showQuarter() {
   const PIECES = [1, 2, 3, 4], at = {}; let tries = 3, msg = '', sel = null;
   const draw = () => {
-    modal(`<img class="hero" src="img/e03_ill_felnegyeles.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${tr('Négy vár, négy negyed')}</h2>
-      <p>${tr('István példát akar statuálni. Koppány négy darabját négy vár kapujára kell kiszögezni, hogy mindenki lássa, mi jár a lázadónak. Húzd a darabokat a várakra, vagy koppints egy darabra, aztán egy várra. Három próbálkozásod van.')}</p>
+    modal(`<img class="hero" src="img/e03_ill_koppany_felkeles.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${tr('Négy vár, négy negyed')}</h2>
+      <p>${tr('István példát akar statuálni. Koppány négy darabját négy vár kapujára kell kiszögezni, hogy mindenki lássa, mi jár a lázadónak. Húzd a darabokat a várakra. Egy már kiszögezett darabot átvihetsz egy másik várba, vagy visszahúzhatod a tálcára. Három próbálkozásod van.')}</p>
       <div class="qmap2" id="qMap"><img src="img/e03_terkep_felnegyeles.jpg" alt="" draggable="false">
-        ${QCAST.map(c => { const p = Object.keys(at).find(k => at[k] === c.id); return `<button type="button" class="qc2 ${p ? 'on' : ''}" data-q="${c.id}" style="left:${c.x}%;top:${c.y}%">${p ? `<img src="img/e03_kq_${p}.png" alt="">` : '<i>🏰</i>'}<span>${c.name}</span></button>`; }).join('')}</div>
-      <div class="qtray">${PIECES.map(p => `<button type="button" class="qp ${at[p] ? 'used' : ''} ${sel === p ? 'sel' : ''}" data-p="${p}"><img src="img/e03_kq_${p}.png" alt="" draggable="false"></button>`).join('')}</div>
+        ${QCAST.map(c => { const p = Object.keys(at).find(k => at[k] === c.id); return `<button type="button" class="qc2 ${p ? 'on' : ''}" data-q="${c.id}" ${p ? `data-p="${p}"` : ''} style="left:${c.x}%;top:${c.y}%">${p ? `<img src="img/e03_kq_${p}.png" alt="" draggable="false">` : '<i>🏰</i>'}<span>${c.name}</span></button>`; }).join('')}</div>
+      <div class="qtray" id="qTray">${PIECES.map(p => `<button type="button" class="qp ${at[p] ? 'used' : ''} ${sel === p ? 'sel' : ''}" ${at[p] ? '' : `data-p="${p}"`}><img src="img/e03_kq_${p}.png" alt="" draggable="false"></button>`).join('')}</div>
       ${msg ? `<p style="text-align:center;font-size:18px;margin:6px 0"><b>${msg}</b></p>` : ''}
       <div class="row" style="justify-content:center;align-items:center;gap:14px;flex-wrap:wrap"><b>${trf('Kiszögezve {0} / 4', Object.keys(at).length)} · ${trf('Még {0} próbálkozás', tries)}</b>
         <button class="btn coral" type="button" id="qGo" ${Object.keys(at).length === 4 ? '' : 'disabled'}>${tr('Kiküldöm a negyedeket')}</button></div></div>`, '', 'outcome');
     const put = (p, cid) => { Object.keys(at).forEach(k => { if (at[k] === cid) delete at[k]; }); at[p] = cid; sel = null; sfxClick(); draw(); };
-    $('modalRoot').querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const cid = b.dataset.q, p = Object.keys(at).find(k => at[k] === cid);
-      if (sel) put(sel, cid); else if (p) { delete at[p]; sel = +p; sfxClick(); draw(); } });
-    // húzás és koppintás a darabokra
+    $('modalRoot').querySelectorAll('[data-q]').forEach(b => { if (!b.dataset.p) b.onclick = () => { if (sel) put(sel, b.dataset.q); }; });
+    // húzás: a tálcáról és várról várra is; koppintásra kijelöl
     $('modalRoot').querySelectorAll('[data-p]').forEach(b => b.onpointerdown = ev => {
-      const p = +b.dataset.p; if (at[p]) { delete at[p]; }
+      const p = +b.dataset.p, from = b.dataset.q || null;
       const sx = ev.clientX, sy = ev.clientY; let ghost = null, moved = false;
-      const mv = e => { if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { moved = true; ghost = document.createElement('img'); ghost.src = 'img/e03_kq_' + p + '.png'; ghost.className = 'qghost'; document.body.appendChild(ghost); }
+      const mv = e => { if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { moved = true; ghost = document.createElement('img'); ghost.src = 'img/e03_kq_' + p + '.png'; ghost.className = 'qghost'; document.body.appendChild(ghost); b.style.opacity = '.35'; }
         if (ghost) { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; } };
-      const up = e => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (ghost) ghost.remove();
-        if (!moved) { sel = sel === p ? null : p; sfxClick(); draw(); return; }
-        const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('[data-q]'); if (c) put(p, c.dataset.q); else draw(); };
+      const up = e => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (ghost) ghost.remove(); b.style.opacity = '';
+        if (!moved) { if (from) { delete at[p]; sel = p; } else sel = sel === p ? null : p; sfxClick(); draw(); return; }
+        const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('[data-q]');
+        if (c) { if (from && at[p]) delete at[p]; const other = Object.keys(at).find(k => at[k] === c.dataset.q); if (other && from) at[other] = from; put(p, c.dataset.q); }
+        else if (from && el && el.closest('#qTray')) { delete at[p]; sfxClick(); draw(); } else draw(); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); ev.preventDefault(); });
     $('qGo').onclick = () => { if (Object.keys(at).length !== 4) return; tries--; const good = Object.values(at).filter(id => QCAST.find(c => c.id === id).ok).length;
       if (good === 4) return result(4, 3 - tries); if (!tries) return result(good, 3);
@@ -1196,7 +1197,7 @@ function showQuarter() {
   const result = (good, used) => {
     const win = good === 4, hir = win ? (used === 1 ? 12 : used === 2 ? 9 : 6) : 2 * good;
     S.res.hirnev = (S.res.hirnev || 0) + hir; S.fearUntil = S.gt + 8 * 3600; S.quartered = true; if (win && used === 1) S.korona = (S.korona == null ? 25 : S.korona) + 5; save();
-    modal(`<div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${win ? (used === 1 ? tr('Elsőre eltaláltad!') : trf('Eltaláltad, {0}. próbára!', used)) : tr('Elfogytak a próbálkozások')}</h2>
+    modal(`<img class="hero" src="img/e03_ill_felnegyeles.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${win ? (used === 1 ? tr('Elsőre eltaláltad!') : trf('Eltaláltad, {0}. próbára!', used)) : tr('Elfogytak a próbálkozások')}</h2>
       <p>${win ? trf('A négy negyed célba ért, a pogányok egy ideig nagyon csendesek lesznek. Kaptál {0} Hírnevet{1}.', hir, used === 1 ? tr(' és 5 Koronát') : '') : trf('Az utolsó próbánál {0} darab volt jó helyen, ezért kaptál {1} Hírnevet. A többi negyed rossz várba ment, ott a kapuőr nagyon meglepődött a csomagon.', good, hir)}</p>
       <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('A krónikák szerint Koppány testét négy részre vágták, és Esztergom, Veszprém, Győr és Gyulafehérvár kapujára tűzték ki. A somogyi földjeit a pannonhalmi apátság kapta. Buda, Eger, Pécs és Szeged akkor még nem volt az ország fő vára. Pécs és Eger püspökséget is csak pár évvel később kaptak.')}</p></div>
       <div class="row"><button class="btn coral" type="button" id="qOk">${tr('Tovább')}</button></div></div>`, '', 'outcome');
@@ -2012,9 +2013,14 @@ function hideInfo() { infoId = null; $('info').hidden = true; }
 
 // ---------- modálok ----------
 let openModal = null;
+let modalKey = '';
 function modal(html, cls = '', id = '') {
+  // ugyanannak az ablaknak az újrarajzolásakor maradjon a görgetés ott, ahol volt
+  const key = id + '|' + html.replace(/\s+/g, ' ').slice(0, 200), same = openModal === id && modalKey === key;
+  const keep = same ? [...$('modalRoot').querySelectorAll('.scrim,.mscroll,.modal')].map(e => e.scrollTop) : null; modalKey = key;
   openModal = id; $('modalRoot').innerHTML = `<div class="scrim"><div class="modal ${cls}" role="dialog" aria-modal="true"><div class="mscroll">${html}</div></div></div>`;
   const c = $('modalRoot').querySelector('.close'); if (c) c.onclick = closeModal;
+  if (keep) [...$('modalRoot').querySelectorAll('.scrim,.mscroll,.modal')].forEach((e, n) => { e.scrollTop = keep[n] || 0; });
   $('modalRoot').querySelector('.scrim').onclick = e => { if (e.target.classList.contains('scrim') && id !== 'outcome' && id !== 'intro') closeModal(); };
 }
 function closeModal() {
