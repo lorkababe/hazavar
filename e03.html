@@ -1726,13 +1726,14 @@ function diamondRaw(i, j, k, fill, stroke) {
 }
 function spriteRect(b) {
   const d = DEF[b.type]; const [w, h] = dimsB(b); const k = Math.min(3, Math.max(w, h));
-  const temp = b.ruined || (b.until && S.gt < b.until);
-  const name = b.ruined ? 'kozos_rom_' + k + 'x' + k : (b.until && S.gt < b.until) ? 'kozos_epitesi_terulet_' + k + 'x' + k : d.img; const im = IMG[name]; if (!im) return null;
+  const gbB = !b.ruined && b.until && S.gt < b.until && d.gb; // a nagy emlékhely épülés közben a saját képét mutatja, alulról színesedve
+  const temp = b.ruined || (b.until && S.gt < b.until && !d.gb);
+  const name = b.ruined ? 'kozos_rom_' + k + 'x' + k : (b.until && S.gt < b.until && !d.gb) ? 'kozos_epitesi_terulet_' + k + 'x' + k : d.img; const im = IMG[name]; if (!im) return null;
   const flip = !!b.rot && !temp; const mk = maskFor(name); const dw = Math.max(1, mk.maxX - mk.minX); const s = (w + h) * TW / 2 / dw;
   const L = tileTop(b.i, b.j + h), R = tileTop(b.i + w, b.j), B = tileTop(b.i + w, b.j + h);
   const leftX = flip ? mk.w - mk.maxX : mk.minX, leftY = temp ? mk.vY : flip ? (mk.rY != null ? mk.rY : mk.vY) : (mk.lY != null ? mk.lY : mk.vY);
   const x = L[0] - leftX * s, y = mk.bY != null ? B[1] - mk.bY * s : L[1] - leftY * s, iw = im.naturalWidth * s, ih = im.naturalHeight * s;
-  return { name, im, x, y, w: iw, h: ih, cx: (L[0] + R[0]) / 2, L, R, B, flip };
+  return { name, im, x, y, w: iw, h: ih, cx: (L[0] + R[0]) / 2, L, R, B, flip, gbB: !!gbB, prog: gbB ? Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (d.buildTime || 1))) : 1 };
 }
 // A akkor van B mögött, ha valamelyik tengelyen teljesen előtte ér véget (kisebb i vagy j = hátrébb)
 function behind(a, b) {
@@ -1776,7 +1777,11 @@ function drawBuilding(b, now, pass = 0) {
   ctx.save(); if (b.ghost) ctx.globalAlpha = 0.65;
   // téglalap alakú épületnél nem vágunk, mert a kép nem mindig illik pontosan a rácsra
   if (bw === bh) { ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1] + CLIPM); ctx.lineTo(r.R[0] + CLIPM, r.R[1] + CLIPM); ctx.lineTo(r.B[0], r.B[1] + CLIPM * 1.6); ctx.lineTo(r.L[0] - CLIPM, r.L[1] + CLIPM); ctx.lineTo(r.x - 2, r.L[1] + CLIPM); ctx.closePath(); ctx.clip(); };
-  if (r.flip) { ctx.translate(r.x + r.w, r.y); ctx.scale(-1, 1); ctx.drawImage(r.im, 0, 0, r.w, r.h); } else ctx.drawImage(r.im, r.x, r.y, r.w, r.h); ctx.restore();
+  const _drw = () => { if (r.flip) { ctx.save(); ctx.translate(r.x + r.w, r.y); ctx.scale(-1, 1); ctx.drawImage(r.im, 0, 0, r.w, r.h); ctx.restore(); } else ctx.drawImage(r.im, r.x, r.y, r.w, r.h); };
+  if (r.gbB) { // halvány tervrajz, és alulról felfelé színesedik, ahogy épül
+    ctx.save(); ctx.globalAlpha *= 0.55; ctx.filter = 'grayscale(1) sepia(0.35) brightness(1.08)'; _drw(); ctx.restore();
+    const cut = r.y + r.h * (1 - (0.08 + 0.92 * r.prog)); ctx.save(); ctx.beginPath(); ctx.rect(r.x - 4, cut, r.w + 8, r.h + 40); ctx.clip(); _drw(); ctx.restore();
+  } else _drw(); ctx.restore();
 }
 // buborékok és csíkok külön körben, hogy egyik épület se takarja a másikét
 function drawOverlay(b, r, now) {
