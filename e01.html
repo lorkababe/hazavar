@@ -611,12 +611,12 @@ function wetTile(i, j) {
   if (!wetCache) { const c = document.createElement('canvas'); c.width = BGW; c.height = BGH; const g = c.getContext('2d'); g.drawImage(im, 0, 0, BGW, BGH); try { wetCache = g.getImageData(0, 0, BGW, BGH).data; } catch (e) { wetCache = 'x'; } }
   if (wetCache === 'x') return (wetMemo[k] = false);
   const [cx, cy] = tileTop(i + 0.5, j + 0.5); let wet = 0, n = 0;
-  for (let dx = -40; dx <= 40; dx += 10) for (let dy = -20; dy <= 20; dy += 5) { if (Math.abs(dx) / 60 + Math.abs(dy) / 30 > 0.85) continue; const x = Math.round(cx + dx), y = Math.round(cy + dy); if (x < 0 || y < 0 || x >= BGW || y >= BGH) { wet++; n++; continue; }
+  for (let dx = -60; dx <= 60; dx += 6) for (let dy = -30; dy <= 30; dy += 3) { if (Math.abs(dx) / 60 + Math.abs(dy) / 30 > 1.05) continue; const x = Math.round(cx + dx), y = Math.round(cy + dy); if (x < 0 || y < 0 || x >= BGW || y >= BGH) { wet++; n++; continue; }
     const p = (y * BGW + x) * 4, r = wetCache[p], g2 = wetCache[p + 1], b = wetCache[p + 2]; n++; if (b > r + 25 && b > g2 - 5) wet++; }
-  return (wetMemo[k] = wet / n > 0.06);
+  return (wetMemo[k] = wet / n > 0.03);
 }
-const inArea = (i, j) => inGrid(i, j) || (typeof S !== 'undefined' && S && (S.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; }) && !wetTile(i, j));
-function areaTiles() { const out = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) out.push([i, j]); (S.lots || []).forEach(id => { const l = LOTS.find(x => x.id === id); if (l) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) if (!wetTile(l.i + a, l.j + c)) out.push([l.i + a, l.j + c]); }); return out; }
+const inArea = (i, j) => (inGrid(i, j) || (typeof S !== 'undefined' && S && (S.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; }))) && !wetTile(i, j);
+function areaTiles() { const out = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (!wetTile(i, j)) out.push([i, j]); (S.lots || []).forEach(id => { const l = LOTS.find(x => x.id === id); if (l) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) if (!wetTile(l.i + a, l.j + c)) out.push([l.i + a, l.j + c]); }); return out; }
 function occ() {
   const m = {};
   S.buildings.forEach(b => { const k = DEF[b.type].size; for (let a = 0; a < k; a++) for (let c = 0; c < k; c++) m[key(b.i + a, b.j + c)] = b; });
@@ -787,7 +787,7 @@ function place(i, j) {
   pay(costOf(tool.type)); if (d.free1) { S.freeUsed = S.freeUsed || {}; S.freeUsed[tool.type] = 1; }
   const nb = { id: S.nextId++, type: tool.type, i, j, t0: S.gt, built: S.gt }; if (d.buildTime) { nb.until = S.gt + d.buildTime; nb.t0 = nb.until; toast(trf('Elkezdődött az építkezés! {0} múlva készül el.', dur(d.buildTime))); }
   S.buildings.push(nb);
-  S.stats.built++; connCache = null; dailyHit('epit');
+  S.stats.built++; if (S.newTypes) delete S.newTypes[tool.type]; connCache = null; dailyHit('epit');
   floatText(...tileTop(i + d.size / 2, j + d.size / 2), tr('Felépült!'), '#FFF4DF');
   endTool(); save();
 }
@@ -1337,12 +1337,13 @@ function drawShadows(items) {
   }
   ctx.drawImage(shadowCache, 0, 0, BGW, BGH);
 }
+const CLIPM = 9; // a vágás kicsit a mező széle alá ér, hogy a sarokoszlopok és a kerítés ne csonkuljon
 function drawBuilding(b, now, pass = 0) {
   const r = spriteRect(b); if (!r) return;
   const k = DEF[b.type].size;
   if (pass === 1) { if (!b.ghost) drawOverlay(b, r, now); return; }
   ctx.save(); if (b.ghost) ctx.globalAlpha = 0.65;
-  ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1]); ctx.lineTo(r.R[0], r.R[1]); ctx.lineTo(r.B[0], r.B[1]); ctx.lineTo(r.L[0], r.L[1]); ctx.lineTo(r.x - 2, r.L[1]); ctx.closePath(); ctx.clip();
+  ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1] + CLIPM); ctx.lineTo(r.R[0] + CLIPM, r.R[1] + CLIPM); ctx.lineTo(r.B[0], r.B[1] + CLIPM * 1.6); ctx.lineTo(r.L[0] - CLIPM, r.L[1] + CLIPM); ctx.lineTo(r.x - 2, r.L[1] + CLIPM); ctx.closePath(); ctx.clip();
   ctx.drawImage(r.im, r.x, r.y, r.w, r.h); ctx.restore();
 }
 // buborékok és csíkok külön körben, hogy egyik épület se takarja a másikét
@@ -1476,7 +1477,7 @@ $('samuBtn').onclick = () => setGuide($('guide').classList.contains('mini'));
 let curCat = 'all'; const drawerSeen = new Set();
 function openDrawer() { hideInfo(); drawerSeen.clear(); renderDrawer(); $('drawer').hidden = false; $('nav').hidden = true; }
 function closeDrawer() {
-  if (!$('drawer').hidden) { drawerSeen.forEach(ty => delete S.newTypes[ty]); drawerSeen.clear(); save(); badges(); }
+  if (!$('drawer').hidden) { drawerSeen.clear(); save(); badges(); }
   $('drawer').hidden = true; if (!tool) $('nav').hidden = false;
 }
 function badges() {
