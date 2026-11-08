@@ -332,6 +332,12 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 .qc{position:absolute;transform:translate(-50%,-50%);border:none;background:#FFF4DF;border-radius:14px;padding:4px 8px;font-weight:800;font-size:13px;color:#5A3A1E;box-shadow:0 3px 0 rgba(0,0,0,.25);cursor:pointer;display:flex;gap:4px;align-items:center}
 .qc.on{background:#C9472F;color:#FFF4DF}
 .card .gain{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:12.5px;font-weight:800;color:#3E6A1E;background:#E6F0D2;border-radius:10px;padding:4px 8px;margin:2px 0 4px}.card .gain em{font-style:normal;color:#5A3A1E;font-size:11px;text-transform:uppercase;letter-spacing:.04em}.card .gain img{width:18px;height:18px;object-fit:contain;vertical-align:-4px;margin-right:2px}.card .gain .gsub{font-weight:700;color:#5F7F3E}
+.qmap2{position:relative;width:100%;aspect-ratio:1200/751;margin:10px 0 6px;border-radius:16px;overflow:hidden;touch-action:none;user-select:none}.qmap2>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.qc2{position:absolute;transform:translate(-50%,-50%);border:none;background:rgba(255,244,223,.92);border-radius:14px;padding:3px 8px 3px 4px;font-weight:800;font-size:13px;color:#5A3A1E;box-shadow:0 3px 0 rgba(0,0,0,.25);cursor:pointer;display:flex;gap:4px;align-items:center;min-height:34px}
+.qc2 i{font-style:normal;font-size:16px}.qc2 img{width:34px;height:34px;object-fit:contain}.qc2.on{background:#C9472F;color:#FFF4DF}
+.qtray{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0}.qp{width:84px;height:84px;border:2px dashed #B98A55;border-radius:16px;background:#F3E2BE;cursor:grab;touch-action:none;padding:4px}
+.qp img{width:100%;height:100%;object-fit:contain;pointer-events:none}.qp.used{opacity:.25}.qp.sel{border:3px solid #C9472F;background:#FBE9D0;transform:scale(1.06)}
+.qghost{position:fixed;width:80px;height:80px;object-fit:contain;transform:translate(-50%,-60%);pointer-events:none;z-index:9999;filter:drop-shadow(0 6px 6px rgba(0,0,0,.35))}
 </style>
 
 <div id="app"><button class="ibtn wood" type="button" id="btnDaily" aria-label="Napi feladatok"><span class="newdot" id="bDaily" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h10a2 2 0 0 1 2 2v14a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2z"/><path d="M6 3a2 2 0 0 0-2 2v2h2M10 9h5M10 13h5"/></svg>Napi</button><button class="ibtn wood" type="button" id="btnSide" aria-label="Monda" hidden><span class="newdot" id="bSide" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l9-9M13 11l3-3a2.5 2.5 0 1 1 3.5 3.5l-3 3M11 13l3 3"/><circle cx="17.5" cy="6.5" r="1"/></svg><span>Monda</span></button><div id="chiefPops"></div><button class="btn coral" type="button" id="migChip" hidden></button><div class="movefx" id="moveFx"><span id="moveTxt"></span></div>
@@ -1150,24 +1156,38 @@ function showPlot() {
 }
 // ---------- Koppány felnégyelése ----------
 const QCAST = [
-  { id: 'esztergom', name: 'Esztergom', x: 47, y: 30, ok: true }, { id: 'veszprem', name: 'Veszprém', x: 38, y: 47, ok: true },
-  { id: 'gyor', name: 'Győr', x: 33, y: 31, ok: true }, { id: 'gyulafehervar', name: 'Gyulafehérvár', x: 84, y: 64, ok: true },
-  { id: 'buda', name: 'Buda', x: 51, y: 38, ok: false }, { id: 'pecs', name: 'Pécs', x: 42, y: 74, ok: false },
-  { id: 'eger', name: 'Eger', x: 62, y: 28, ok: false }, { id: 'szeged', name: 'Szeged', x: 62, y: 66, ok: false }
+  { id: 'esztergom', name: 'Esztergom', x: 41, y: 29, ok: true }, { id: 'veszprem', name: 'Veszprém', x: 28, y: 49, ok: true },
+  { id: 'gyor', name: 'Győr', x: 22, y: 24, ok: true }, { id: 'gyulafehervar', name: 'Gyulafehérvár', x: 85, y: 60, ok: true },
+  { id: 'buda', name: 'Buda', x: 47, y: 40, ok: false }, { id: 'pecs', name: 'Pécs', x: 33, y: 80, ok: false },
+  { id: 'eger', name: 'Eger', x: 58, y: 24, ok: false }, { id: 'szeged', name: 'Szeged', x: 54, y: 73, ok: false }
 ];
 function showQuarter() {
-  const picked = []; let tries = 3, msg = '';
+  const PIECES = [1, 2, 3, 4], at = {}; let tries = 3, msg = '', sel = null;
   const draw = () => {
-    modal(`<img class="hero" src="img/e03_ill_felnegyeles.jpg" alt="" onerror="this.onerror=null;this.src='img/e03_ill_koppany_felkeles.jpg'"><div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${tr('Négy vár, négy negyed')}</h2>
-      <p>${tr('István példát akar statuálni. Koppány testét négyfelé vágják, és négy vár kapujára szögezik, hogy mindenki lássa, mi jár a lázadónak. Melyik négy várba küldöd a negyedeket? Három próbálkozásod van.')}</p>
-      <div class="qmap"><svg viewBox="0 0 100 62.5" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="M8 17 Q20 20 33 19.5 T47 18.7 Q52 20 51 25 Q50 34 52 47 T55 62" fill="none" stroke="#6FA8C8" stroke-width="1.4" stroke-linecap="round"/><path d="M70 6 Q66 18 64 28 T61 43 Q60 50 62 62" fill="none" stroke="#6FA8C8" stroke-width="1.1" stroke-linecap="round"/><path d="M30 32 Q34 31 38 33" fill="none" stroke="#6FA8C8" stroke-width="2.2" stroke-linecap="round" opacity=".7"/><text x="54" y="58" font-size="2.6" fill="#4F7FA0" font-weight="700">Duna</text><text x="64.5" y="38" font-size="2.6" fill="#4F7FA0" font-weight="700">Tisza</text></svg>${QCAST.map(c => `<button type="button" class="qc ${picked.includes(c.id) ? 'on' : ''}" data-q="${c.id}" style="left:${c.x}%;top:${c.y}%">${picked.includes(c.id) ? '🪓' : '🏰'}<span>${c.name}</span></button>`).join('')}</div>
-      ${msg ? `<p style="text-align:center;font-size:18px"><b>${msg}</b></p>` : ''}
-      <div class="row" style="justify-content:center;align-items:center;gap:14px"><b>${trf('Kiválasztva {0} / 4', picked.length)} · ${trf('Még {0} próbálkozás', tries)}</b>
-        <button class="btn coral" type="button" id="qGo" ${picked.length === 4 ? '' : 'disabled'}>${tr('Kiküldöm a negyedeket')}</button></div></div>`, '', 'outcome');
-    $('modalRoot').querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const id = b.dataset.q; if (picked.includes(id)) picked.splice(picked.indexOf(id), 1); else if (picked.length < 4) picked.push(id); sfxClick(); draw(); });
-    $('qGo').onclick = () => { if (picked.length !== 4) return; tries--; const good = picked.filter(id => QCAST.find(c => c.id === id).ok).length;
+    modal(`<img class="hero" src="img/e03_ill_felnegyeles.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${tr('Négy vár, négy negyed')}</h2>
+      <p>${tr('István példát akar statuálni. Koppány négy darabját négy vár kapujára kell kiszögezni, hogy mindenki lássa, mi jár a lázadónak. Húzd a darabokat a várakra, vagy koppints egy darabra, aztán egy várra. Három próbálkozásod van.')}</p>
+      <div class="qmap2" id="qMap"><img src="img/e03_terkep_felnegyeles.jpg" alt="" draggable="false">
+        ${QCAST.map(c => { const p = Object.keys(at).find(k => at[k] === c.id); return `<button type="button" class="qc2 ${p ? 'on' : ''}" data-q="${c.id}" style="left:${c.x}%;top:${c.y}%">${p ? `<img src="img/e03_kq_${p}.png" alt="">` : '<i>🏰</i>'}<span>${c.name}</span></button>`; }).join('')}</div>
+      <div class="qtray">${PIECES.map(p => `<button type="button" class="qp ${at[p] ? 'used' : ''} ${sel === p ? 'sel' : ''}" data-p="${p}"><img src="img/e03_kq_${p}.png" alt="" draggable="false"></button>`).join('')}</div>
+      ${msg ? `<p style="text-align:center;font-size:18px;margin:6px 0"><b>${msg}</b></p>` : ''}
+      <div class="row" style="justify-content:center;align-items:center;gap:14px;flex-wrap:wrap"><b>${trf('Kiszögezve {0} / 4', Object.keys(at).length)} · ${trf('Még {0} próbálkozás', tries)}</b>
+        <button class="btn coral" type="button" id="qGo" ${Object.keys(at).length === 4 ? '' : 'disabled'}>${tr('Kiküldöm a negyedeket')}</button></div></div>`, '', 'outcome');
+    const put = (p, cid) => { Object.keys(at).forEach(k => { if (at[k] === cid) delete at[k]; }); at[p] = cid; sel = null; sfxClick(); draw(); };
+    $('modalRoot').querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const cid = b.dataset.q, p = Object.keys(at).find(k => at[k] === cid);
+      if (sel) put(sel, cid); else if (p) { delete at[p]; sel = +p; sfxClick(); draw(); } });
+    // húzás és koppintás a darabokra
+    $('modalRoot').querySelectorAll('[data-p]').forEach(b => b.onpointerdown = ev => {
+      const p = +b.dataset.p; if (at[p]) { delete at[p]; }
+      const sx = ev.clientX, sy = ev.clientY; let ghost = null, moved = false;
+      const mv = e => { if (!moved && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { moved = true; ghost = document.createElement('img'); ghost.src = 'img/e03_kq_' + p + '.png'; ghost.className = 'qghost'; document.body.appendChild(ghost); }
+        if (ghost) { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; } };
+      const up = e => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); if (ghost) ghost.remove();
+        if (!moved) { sel = sel === p ? null : p; sfxClick(); draw(); return; }
+        const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('[data-q]'); if (c) put(p, c.dataset.q); else draw(); };
+      addEventListener('pointermove', mv); addEventListener('pointerup', up); ev.preventDefault(); });
+    $('qGo').onclick = () => { if (Object.keys(at).length !== 4) return; tries--; const good = Object.values(at).filter(id => QCAST.find(c => c.id === id).ok).length;
       if (good === 4) return result(4, 3 - tries); if (!tries) return result(good, 3);
-      msg = trf('Most {0} darab van jó helyen.', good); sfxClick(); draw(); };
+      msg = trf('Most {0} darab van jó helyen.', good); draw(); };
   };
   const result = (good, used) => {
     const win = good === 4, hir = win ? (used === 1 ? 12 : used === 2 ? 9 : 6) : 2 * good;
@@ -2425,7 +2445,7 @@ let EGG = {}; try { EGG = JSON.parse(localStorage.getItem('panelvar-badges') || 
 function showUrispan() {
   if (EGG.urispan) return; if (openModal) { setTimeout(showUrispan, 4000); return; }
   modal(`<div class="inner"><span class="eyebrow">${tr('IDŐUTAZÓ')}</span><h2>${tr('Megjelent az Űrispán')}</h2>
-    <div class="samu-say"><img src="img/e03_urispan.png" alt="" onerror="this.style.display='none'"><div class="bubble"><b>${tr('Űrispán')}</b>${tr('Üdv, felség! Ezer év múlvából jöttem, egy űrhajóval, amit egy pályázatból vettünk. Egy kérésem van. Ezt a vármegye nevet soha, de soha ne írjátok át megyére! Nálunk ugyanis kicseréltük az összes táblát megyéről vármegyére, és az kurva drága volt. Még egyszer nem csinálom végig.')}</div></div>
+    <div class="samu-say" style="align-items:center"><img src="img/e03_urispan.png" alt="" style="width:190px;height:auto;max-width:38%" onerror="this.style.display='none'"><div class="bubble"><b>${tr('Űrispán')}</b>${tr('Üdv, felség! Ezer év múlvából jöttem, egy űrhajóval, amit egy pályázatból vettünk. Egy kérésem van. Ezt a vármegye nevet soha, de soha ne írjátok át megyére! Nálunk ugyanis kicseréltük az összes táblát megyéről vármegyére, és az kurva drága volt. Még egyszer nem csinálom végig.')}</div></div>
     <div class="samu-say"><img src="img/e03_istvan_aggodik.png" alt=""><div class="bubble"><b>István</b>${tr('Mi az a tábla? És mi az a pályázat?')}</div></div>
     <div class="row"><button class="btn coral" type="button" id="uOk">${tr('Megígérem, marad vármegye')}</button></div></div>`, '', 'outcome');
   $('uOk').onclick = () => { closeModal(); eggGive({ penz: 100, hirnev: 5 }); eggFound('urispan', tr('Az Űrispán elégedetten visszaröppent a jövőbe. Itt hagyott 100 Pénzt.')); };
