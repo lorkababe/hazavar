@@ -489,7 +489,7 @@ function gainHTML(t) {
   if (d.hang) out.push(`<span>${d.faith === 'ker' ? trf('+{0} Hangulat a keresztényeknek', d.hang) : d.faith === 'pog' ? trf('+{0} Hangulat a pogányoknak', d.hang) : trf('+{0} Hangulat', d.hang)}</span>`);
   if (d.def) out.push(`<span>${trf('+{0} Védelem', d.def)}</span>`);
   if (d.store) out.push(`<span>${ic('termeny')}${trf('+{0} raktárhely', fmt(d.store))}</span>`);
-  return out.length ? `<span class="gain"><em>${tr('Ad')}</em>${out.join('')}</span>` : '';
+  return out.length ? `<span class="gain">${out.join('')}</span>` : '';
 }
 function costHTML(cost, mul = 1) {
   return Object.entries(cost || {}).map(([k, v]) => {
@@ -1500,7 +1500,8 @@ const EGGS = [
   ['turul', 'Turul', 'Begépelted a madár nevét.'], ['szarvas', 'Csodaszarvas', 'Elkaptad a csodaszarvast. Majdnem.'],
   ['hetvezer', 'Hét kattintás', 'Hétszer bökted meg a kalauzt.'], ['puha', 'Puhítás', 'Ötször megbökted a Pénzt.'],
   ['korona', 'Nem eladó', 'Tízszer kattintottál a Koronára.'], ['attila', 'Rokon?', 'Attilának hívnak.'],
-  ['bagoly', 'Bagoly', 'Hajnalban is építkeztél.'], ['rovas', 'Rovásíró', 'Rovással írtad, hogy hazavár.']
+  ['bagoly', 'Bagoly', 'Hajnalban is építkeztél.'], ['rovas', 'Rovásíró', 'Rovással írtad, hogy hazavár.'],
+  ['urispan', 'Űrispán', 'Felépítetted az első ispánsági várat, és jött valaki a jövőből.']
 ];
 let EGG = {}; try { EGG = JSON.parse(localStorage.getItem('panelvar-badges') || '{}') || {}; } catch (e) {}
 function eggFound(id, msg) {

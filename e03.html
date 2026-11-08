@@ -618,7 +618,7 @@ function gainHTML(t) {
   if (d.hang) out.push(`<span>${d.faith === 'ker' ? trf('+{0} Hangulat a keresztényeknek', d.hang) : d.faith === 'pog' ? trf('+{0} Hangulat a pogányoknak', d.hang) : trf('+{0} Hangulat', d.hang)}</span>`);
   if (d.def) out.push(`<span>${trf('+{0} Védelem', d.def)}</span>`);
   if (d.store) out.push(`<span>${ic('termeny')}${trf('+{0} raktárhely', fmt(d.store))}</span>`);
-  return out.length ? `<span class="gain"><em>${tr('Ad')}</em>${out.join('')}</span>` : '';
+  return out.length ? `<span class="gain">${out.join('')}</span>` : '';
 }
 function costHTML(cost, mul = 1) {
   return Object.entries(cost || {}).map(([k, v]) => {
@@ -839,7 +839,7 @@ function place(i, j) {
   pay(costOf(tool.type)); if (d.free1) { S.freeUsed = S.freeUsed || {}; S.freeUsed[tool.type] = 1; }
   const nb = { id: S.nextId++, type: tool.type, i, j, t0: S.gt, built: S.gt, rot: tool.rot || 0 }; if (d.buildTime) { nb.until = S.gt + d.buildTime; nb.t0 = nb.until; toast(trf('Elkezdődött az építkezés! {0} múlva készül el.', dur(d.buildTime))); }
   S.buildings.push(nb);
-  S.stats.built++; connCache = null; dailyHit('epit');
+  S.stats.built++; connCache = null; dailyHit('epit'); if (tool.type === 'ispan' && !EGG.urispan) setTimeout(showUrispan, 1500);
   { const [w, h] = dimsT(tool.type, tool.rot); floatText(...tileTop(i + w / 2, j + h / 2), tr('Felépült!'), '#FFF4DF'); }
   endTool(); save();
 }
@@ -1751,7 +1751,7 @@ function drawBuilding(b, now, pass = 0) {
 function drawOverlay(b, r, now) {
   const d = DEF[b.type]; const bob = Math.sin(now / 300 + b.id) * 3; const by = Math.max(r.y + 10, r.y + r.h * 0.12) + bob;
   if (b.ruined) { badge(r.cx, by, '#C9472F', '!'); return; }
-  if (b.until && S.gt < b.until) { const p = Math.min(1, 1 - (b.until - S.gt) / (DEF[b.type].buildTime || 1)); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); return; }
+  if (b.until && S.gt < b.until) { const p = Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (DEF[b.type].buildTime || 1))); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); return; }
   if (d.road && !connected(b)) { badge(r.cx, by, '#C9472F', 'ut'); return; }
   if (ready(b) && storeFull(b)) { badge(r.cx, by, '#8A5A2B', '!'); return; }
   if (ready(b)) {
@@ -2416,9 +2416,19 @@ const EGGS = [
   ['turul', 'Turul', 'Begépelted a madár nevét.'], ['szarvas', 'Csodaszarvas', 'Elkaptad a csodaszarvast. Majdnem.'],
   ['hetvezer', 'Hét kattintás', 'Hétszer bökted meg a kalauzt.'], ['puha', 'Puhítás', 'Ötször megbökted a Pénzt.'],
   ['korona', 'Nem eladó', 'Tízszer kattintottál a Koronára.'], ['attila', 'Rokon?', 'Attilának hívnak.'],
-  ['bagoly', 'Bagoly', 'Hajnalban is építkeztél.'], ['rovas', 'Rovásíró', 'Rovással írtad, hogy hazavár.']
+  ['bagoly', 'Bagoly', 'Hajnalban is építkeztél.'], ['rovas', 'Rovásíró', 'Rovással írtad, hogy hazavár.'],
+  ['urispan', 'Űrispán', 'Felépítetted az első ispánsági várat, és jött valaki a jövőből.']
 ];
 let EGG = {}; try { EGG = JSON.parse(localStorage.getItem('panelvar-badges') || '{}') || {}; } catch (e) {}
+// easter egg: az Űrispán a jövőből
+function showUrispan() {
+  if (EGG.urispan) return; if (openModal) { setTimeout(showUrispan, 4000); return; }
+  modal(`<div class="inner"><span class="eyebrow">${tr('IDŐUTAZÓ')}</span><h2>${tr('Megjelent az Űrispán')}</h2>
+    <div class="samu-say"><img src="img/e03_urispan.png" alt="" onerror="this.style.display='none'"><div class="bubble"><b>${tr('Űrispán')}</b>${tr('Üdv, felség! Ezer év múlvából jöttem, egy űrhajóval, amit egy pályázatból vettünk. Egy kérésem van. Ezt a vármegye nevet soha, de soha ne írjátok át megyére! Nálunk ugyanis kicseréltük az összes táblát megyéről vármegyére, és az kurva drága volt. Még egyszer nem csinálom végig.')}</div></div>
+    <div class="samu-say"><img src="img/e03_istvan_aggodik.png" alt=""><div class="bubble"><b>István</b>${tr('Mi az a tábla? És mi az a pályázat?')}</div></div>
+    <div class="row"><button class="btn coral" type="button" id="uOk">${tr('Megígérem, marad vármegye')}</button></div></div>`, '', 'outcome');
+  $('uOk').onclick = () => { closeModal(); eggGive({ penz: 100, hirnev: 5 }); eggFound('urispan', tr('Az Űrispán elégedetten visszaröppent a jövőbe. Itt hagyott 100 Pénzt.')); };
+}
 function eggFound(id, msg) {
   if (EGG[id]) return false; EGG[id] = Date.now(); try { localStorage.setItem('panelvar-badges', JSON.stringify(EGG)); } catch (e) {}
   const e = EGGS.find(x => x[0] === id); const n = EGGS.filter(x => EGG[x[0]]).length;

@@ -582,7 +582,7 @@ function gainHTML(t) {
   if (d.hang) out.push(`<span>${d.faith === 'ker' ? trf('+{0} Hangulat a keresztényeknek', d.hang) : d.faith === 'pog' ? trf('+{0} Hangulat a pogányoknak', d.hang) : trf('+{0} Hangulat', d.hang)}</span>`);
   if (d.def) out.push(`<span>${trf('+{0} Védelem', d.def)}</span>`);
   if (d.store) out.push(`<span>${ic('termeny')}${trf('+{0} raktárhely', fmt(d.store))}</span>`);
-  return out.length ? `<span class="gain"><em>${tr('Ad')}</em>${out.join('')}</span>` : '';
+  return out.length ? `<span class="gain">${out.join('')}</span>` : '';
 }
 function costHTML(cost, mul = 1) {
   return Object.entries(cost || {}).map(([k, v]) => {
@@ -1521,7 +1521,7 @@ function drawBuilding(b, now, pass = 0) {
 function drawOverlay(b, r, now) {
   const d = DEF[b.type]; const bob = Math.sin(now / 300 + b.id) * 3; const by = Math.max(r.y + 10, r.y + r.h * 0.12) + bob;
   if (b.ruined) { badge(r.cx, by, '#C9472F', '!'); return; }
-  if (b.until && S.gt < b.until) { const p = Math.min(1, 1 - (b.until - S.gt) / (DEF[b.type].buildTime || 1)); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); return; }
+  if (b.until && S.gt < b.until) { const p = Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (DEF[b.type].buildTime || 1))); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); return; }
   if (d.road && !connected(b)) { badge(r.cx, by, '#C9472F', 'ut'); return; }
   if (ready(b) && storeFull(b)) { badge(r.cx, by, '#8A5A2B', '!'); return; }
   if (ready(b)) {
@@ -2208,7 +2208,8 @@ const EGGS = [
   ['turul', 'Turul', 'Begépelted a madár nevét.'], ['szarvas', 'Csodaszarvas', 'Elkaptad a csodaszarvast. Majdnem.'],
   ['hetvezer', 'Hét kattintás', 'Hétszer bökted meg a kalauzt.'], ['puha', 'Puhítás', 'Ötször megbökted a Pénzt.'],
   ['korona', 'Nem eladó', 'Tízszer kattintottál a Koronára.'], ['attila', 'Rokon?', 'Attilának hívnak.'],
-  ['bagoly', 'Bagoly', 'Hajnalban is építkeztél.'], ['rovas', 'Rovásíró', 'Rovással írtad, hogy hazavár.']
+  ['bagoly', 'Bagoly', 'Hajnalban is építkeztél.'], ['rovas', 'Rovásíró', 'Rovással írtad, hogy hazavár.'],
+  ['urispan', 'Űrispán', 'Felépítetted az első ispánsági várat, és jött valaki a jövőből.']
 ];
 let EGG = {}; try { EGG = JSON.parse(localStorage.getItem('panelvar-badges') || '{}') || {}; } catch (e) {}
 function eggFound(id, msg) {
