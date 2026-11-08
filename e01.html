@@ -590,8 +590,20 @@ function toast(msg) { const t = $('toast'); t.textContent = tr(msg); t.hidden = 
 // ---------- rács ----------
 const key = (i, j) => i + ',' + j;
 const inGrid = (i, j) => i >= 0 && j >= 0 && i < N && j < N;
-const inArea = (i, j) => inGrid(i, j) || (typeof S !== 'undefined' && S && (S.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; }));
-function areaTiles() { const out = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) out.push([i, j]); (S.lots || []).forEach(id => { const l = LOTS.find(x => x.id === id); if (l) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) out.push([l.i + a, l.j + c]); }); return out; }
+// vizes mező a telkeken (patak, folyó): oda nem lehet építeni
+let wetCache = null; const wetMemo = {};
+function wetTile(i, j) {
+  const k = i + ',' + j; if (k in wetMemo) return wetMemo[k];
+  const bk = Object.keys(IMG).find(x => /alapterkep$/.test(x)), im = bk && IMG[bk]; if (!im || !im.naturalWidth) return false;
+  if (!wetCache) { const c = document.createElement('canvas'); c.width = BGW; c.height = BGH; const g = c.getContext('2d'); g.drawImage(im, 0, 0, BGW, BGH); try { wetCache = g.getImageData(0, 0, BGW, BGH).data; } catch (e) { wetCache = 'x'; } }
+  if (wetCache === 'x') return (wetMemo[k] = false);
+  const [cx, cy] = tileTop(i + 0.5, j + 0.5); let wet = 0, n = 0;
+  for (let dx = -40; dx <= 40; dx += 10) for (let dy = -20; dy <= 20; dy += 5) { if (Math.abs(dx) / 60 + Math.abs(dy) / 30 > 0.85) continue; const x = Math.round(cx + dx), y = Math.round(cy + dy); if (x < 0 || y < 0 || x >= BGW || y >= BGH) { wet++; n++; continue; }
+    const p = (y * BGW + x) * 4, r = wetCache[p], g2 = wetCache[p + 1], b = wetCache[p + 2]; n++; if (b > r + 25 && b > g2 - 5) wet++; }
+  return (wetMemo[k] = wet / n > 0.06);
+}
+const inArea = (i, j) => inGrid(i, j) || (typeof S !== 'undefined' && S && (S.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; }) && !wetTile(i, j));
+function areaTiles() { const out = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) out.push([i, j]); (S.lots || []).forEach(id => { const l = LOTS.find(x => x.id === id); if (l) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) if (!wetTile(l.i + a, l.j + c)) out.push([l.i + a, l.j + c]); }); return out; }
 function occ() {
   const m = {};
   S.buildings.forEach(b => { const k = DEF[b.type].size; for (let a = 0; a < k; a++) for (let c = 0; c < k; c++) m[key(b.i + a, b.j + c)] = b; });
@@ -1066,7 +1078,7 @@ function resolveWinter() {
     const cand = S.buildings.filter(b => b.type !== 'fo' && !b.ruined);
     for (let k = 0; k < n && cand.length; k++) { const b = cand.splice(Math.floor(Math.random() * cand.length), 1)[0]; b.ruined = true; fx.push(trf('A besenyők felgyújtottak egy épületet ({0}), de újjá lehet építeni', DEF[b.type].name)); }
   }
-  S.lotCredits = (S.lotCredits || 0) + 1; S.res.hirnev = (S.res.hirnev || 0) + ({ dics: 15, tul: 10, seb: 5, rom: 3 }[o.id]); fx.push(tr('Kaptatok egy ajándék telket és Hírnevet.'));
+  grantLot('g1'); S.res.hirnev = (S.res.hirnev || 0) + ({ dics: 15, tul: 10, seb: 5, rom: 3 }[o.id]); fx.push(tr('Kaptatok egy ajándék telket és Hírnevet.'));
   S.winter.done = true; S.winter.outcome = o.id; S.winter.score = p.total; S.winter.fx = fx; save();
   showOutcome();
 }
@@ -1578,7 +1590,7 @@ function showCouncil() {
     </div>
     <div class="samu-say"><img src="img/almos_magyaraz.png" alt=""><div class="bubble"><b>Álmos</b>${tr('Jól gondold meg, vitéz. A kard véd, az ezüst gazdagít. Lehet mindkettő is, de az sokba kerül. Vagy egyik sem, de akkor magunkra maradunk.')}</div></div></div>`, '', 'council');
   $('modalRoot').querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
-    const c = b.dataset.c; S.council = c; S.techs.tanacs = true; S.newTypes.vezeri = true; S.lotCredits = (S.lotCredits || 0) + 1;
+    const c = b.dataset.c; S.council = c; S.techs.tanacs = true; S.newTypes.vezeri = true; grantLot('g2');
     if (c === 'kabar' || c === 'mindketto') { S.techs.kabar = true; S.newTypes.kabar = true; }
     if (c === 'kereskedo' || c === 'mindketto') { S.techs.kereskedo = true; S.newTypes.karavan = true; }
     if (c === 'mindketto') pay({ penz: 200 });
@@ -1620,6 +1632,7 @@ function lotCardHTML() {
     <b>${tr('Új terület')}</b><span class="desc">${tr('Egy 3×3-as telek a város szélén. Ajándékba, Pénzért vagy Koronáért lehet a tiéd, és ugyanúgy építhetsz rá, mint bárhová máshová.')}</span>
     ${!left ? `<span class="lockmsg">${tr('Minden terület a tiéd')}</span>` : `<span class="cost"><span>${trf('{0} szabad terület · {1} ajándék', left, cr)}</span></span>${ok ? '' : `<span class="lockmsg">${tr('Most nem vehető')}</span>`}`}</button>`;
 }
+function grantLot(k) { S.lotG = S.lotG || {}; if (S.lotG[k]) return false; S.lotG[k] = 1; S.lotCredits = (S.lotCredits || 0) + 1; return true; }
 function lotBuyable() { if (!LOTS.some(l => !lotOwned(l.id))) return false; const mb = S.lotMoney || 0, kb = S.lotKor || 0, kor = S.korona == null ? 25 : S.korona; return (S.lotCredits || 0) > 0 || (LOT_MONEY[mb] && S.res.penz >= LOT_MONEY[mb]) || (kb < 2 && kor >= LOT_KORONA); }
 function startLotPick() {
   if (!LOTS.some(l => !lotOwned(l.id))) { toast('Minden terület a tiéd'); return; }
@@ -2647,7 +2660,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 95, n: 12 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 120, n: 12 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };

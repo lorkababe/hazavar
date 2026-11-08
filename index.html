@@ -2125,7 +2125,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 95, n: 12 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 120, n: 12 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };

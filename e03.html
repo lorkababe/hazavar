@@ -437,7 +437,7 @@ const EN_DATA = {"res": {"penz": "Money", "termeny": "Food", "tudas": "Knowledge
 const tr = x => LANG === 'en' && EN[x] != null ? EN[x] : x;
 const trf = (x, ...a) => tr(x).replace(/\{(\d)\}/g, (_, i) => a[i]);
 // ---------- alapadatok ----------
-const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 12, OX = 836, OY = 95;
+const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 12, OX = 836, OY = 120;
 const SAVE_KEY = 'panelvar-e03-v1';
 const GRASS = 8; // ennyiszer lehet egy legelőt lelegeltetni, aztán kimerül
 const TERM_CAP = 1000, TUDAS_CAP = 30, TUDAS_EVERY = 30, WINTER_LEN = 24 * 3600;
@@ -637,8 +637,20 @@ function toast(msg) { const t = $('toast'); t.textContent = tr(msg); t.hidden = 
 // ---------- rács ----------
 const key = (i, j) => i + ',' + j;
 const inGrid = (i, j) => i >= 0 && j >= 0 && i < N && j < N;
-const inArea = (i, j) => inGrid(i, j) || (typeof S !== 'undefined' && S && (S.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; }));
-function areaTiles() { const out = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) out.push([i, j]); (S.lots || []).forEach(id => { const l = LOTS.find(x => x.id === id); if (l) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) out.push([l.i + a, l.j + c]); }); return out; }
+// vizes mező a telkeken (patak, folyó): oda nem lehet építeni
+let wetCache = null; const wetMemo = {};
+function wetTile(i, j) {
+  const k = i + ',' + j; if (k in wetMemo) return wetMemo[k];
+  const bk = Object.keys(IMG).find(x => /alapterkep$/.test(x)), im = bk && IMG[bk]; if (!im || !im.naturalWidth) return false;
+  if (!wetCache) { const c = document.createElement('canvas'); c.width = BGW; c.height = BGH; const g = c.getContext('2d'); g.drawImage(im, 0, 0, BGW, BGH); try { wetCache = g.getImageData(0, 0, BGW, BGH).data; } catch (e) { wetCache = 'x'; } }
+  if (wetCache === 'x') return (wetMemo[k] = false);
+  const [cx, cy] = tileTop(i + 0.5, j + 0.5); let wet = 0, n = 0;
+  for (let dx = -40; dx <= 40; dx += 10) for (let dy = -20; dy <= 20; dy += 5) { if (Math.abs(dx) / 60 + Math.abs(dy) / 30 > 0.85) continue; const x = Math.round(cx + dx), y = Math.round(cy + dy); if (x < 0 || y < 0 || x >= BGW || y >= BGH) { wet++; n++; continue; }
+    const p = (y * BGW + x) * 4, r = wetCache[p], g2 = wetCache[p + 1], b = wetCache[p + 2]; n++; if (b > r + 25 && b > g2 - 5) wet++; }
+  return (wetMemo[k] = wet / n > 0.06);
+}
+const inArea = (i, j) => inGrid(i, j) || (typeof S !== 'undefined' && S && (S.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; }) && !wetTile(i, j));
+function areaTiles() { const out = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) out.push([i, j]); (S.lots || []).forEach(id => { const l = LOTS.find(x => x.id === id); if (l) for (let a = 0; a < 3; a++) for (let c = 0; c < 3; c++) if (!wetTile(l.i + a, l.j + c)) out.push([l.i + a, l.j + c]); }); return out; }
 function occ() {
   const m = {};
   S.buildings.forEach(b => { const [w, h] = dimsB(b); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) m[key(b.i + a, b.j + c)] = b; });
@@ -1131,21 +1143,24 @@ const QCAST = [
   { id: 'eger', name: 'Eger', x: 62, y: 28, ok: false }, { id: 'szeged', name: 'Szeged', x: 62, y: 66, ok: false }
 ];
 function showQuarter() {
-  const picked = [];
+  const picked = []; let tries = 3, msg = '';
   const draw = () => {
     modal(`<img class="hero" src="img/e03_ill_felnegyeles.jpg" alt="" onerror="this.onerror=null;this.src='img/e03_ill_koppany_felkeles.jpg'"><div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${tr('Négy vár, négy negyed')}</h2>
-      <p>${tr('István példát akar statuálni. Koppány testét négyfelé vágják, és négy vár kapujára szögezik, hogy mindenki lássa, mi jár a lázadónak. Melyik négy várba küldöd a negyedeket?')}</p>
+      <p>${tr('István példát akar statuálni. Koppány testét négyfelé vágják, és négy vár kapujára szögezik, hogy mindenki lássa, mi jár a lázadónak. Melyik négy várba küldöd a negyedeket? Három próbálkozásod van.')}</p>
       <div class="qmap"><svg viewBox="0 0 100 62.5" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="M8 17 Q20 20 33 19.5 T47 18.7 Q52 20 51 25 Q50 34 52 47 T55 62" fill="none" stroke="#6FA8C8" stroke-width="1.4" stroke-linecap="round"/><path d="M70 6 Q66 18 64 28 T61 43 Q60 50 62 62" fill="none" stroke="#6FA8C8" stroke-width="1.1" stroke-linecap="round"/><path d="M30 32 Q34 31 38 33" fill="none" stroke="#6FA8C8" stroke-width="2.2" stroke-linecap="round" opacity=".7"/><text x="54" y="58" font-size="2.6" fill="#4F7FA0" font-weight="700">Duna</text><text x="64.5" y="38" font-size="2.6" fill="#4F7FA0" font-weight="700">Tisza</text></svg>${QCAST.map(c => `<button type="button" class="qc ${picked.includes(c.id) ? 'on' : ''}" data-q="${c.id}" style="left:${c.x}%;top:${c.y}%">${picked.includes(c.id) ? '🪓' : '🏰'}<span>${c.name}</span></button>`).join('')}</div>
-      <p style="text-align:center"><b>${trf('Kiküldve {0} / 4', picked.length)}</b></p></div>`, '', 'outcome');
-    $('modalRoot').querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const id = b.dataset.q; if (picked.includes(id)) picked.splice(picked.indexOf(id), 1); else if (picked.length < 4) picked.push(id); sfxClick(); if (picked.length === 4) result(); else draw(); });
+      ${msg ? `<p style="text-align:center;font-size:18px"><b>${msg}</b></p>` : ''}
+      <div class="row" style="justify-content:center;align-items:center;gap:14px"><b>${trf('Kiválasztva {0} / 4', picked.length)} · ${trf('Még {0} próbálkozás', tries)}</b>
+        <button class="btn coral" type="button" id="qGo" ${picked.length === 4 ? '' : 'disabled'}>${tr('Kiküldöm a negyedeket')}</button></div></div>`, '', 'outcome');
+    $('modalRoot').querySelectorAll('[data-q]').forEach(b => b.onclick = () => { const id = b.dataset.q; if (picked.includes(id)) picked.splice(picked.indexOf(id), 1); else if (picked.length < 4) picked.push(id); sfxClick(); draw(); });
+    $('qGo').onclick = () => { if (picked.length !== 4) return; tries--; const good = picked.filter(id => QCAST.find(c => c.id === id).ok).length;
+      if (good === 4) return result(4, 3 - tries); if (!tries) return result(good, 3);
+      msg = trf('Most {0} darab van jó helyen.', good); sfxClick(); draw(); };
   };
-  const result = () => {
-    const good = picked.filter(id => QCAST.find(c => c.id === id).ok).length;
-    S.res.hirnev = (S.res.hirnev || 0) + 2 * good; S.fearUntil = S.gt + 8 * 3600; if (good === 4) S.korona = (S.korona == null ? 25 : S.korona) + 5;
-    const wrong = picked.filter(id => !QCAST.find(c => c.id === id).ok).map(id => QCAST.find(c => c.id === id).name);
-    save();
-    modal(`<div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${good === 4 ? tr('Pontosan így volt!') : trf('{0} vár stimmel a négyből', good)}</h2>
-      <p>${good === 4 ? tr('A négy negyed célba ért. A pogányok egy ideig nagyon csendesek lesznek. Kaptál 8 Hírnevet és 5 Koronát.') : trf('Kaptál {0} Hírnevet. ', 2 * good) + (wrong.length ? trf('{0} ekkor még nem volt királyi vár, ott a kapuőr nagyon meglepődött a csomagon.', wrong.join(', ')) : '')}</p>
+  const result = (good, used) => {
+    const win = good === 4, hir = win ? (used === 1 ? 12 : used === 2 ? 9 : 6) : 2 * good;
+    S.res.hirnev = (S.res.hirnev || 0) + hir; S.fearUntil = S.gt + 8 * 3600; if (win && used === 1) S.korona = (S.korona == null ? 25 : S.korona) + 5; save();
+    modal(`<div class="inner"><span class="eyebrow">${tr('KOPPÁNY SORSA')}</span><h2>${win ? (used === 1 ? tr('Elsőre eltaláltad!') : trf('Eltaláltad, {0}. próbára!', used)) : tr('Elfogytak a próbálkozások')}</h2>
+      <p>${win ? trf('A négy negyed célba ért, a pogányok egy ideig nagyon csendesek lesznek. Kaptál {0} Hírnevet{1}.', hir, used === 1 ? tr(' és 5 Koronát') : '') : trf('Az utolsó próbánál {0} darab volt jó helyen, ezért kaptál {1} Hírnevet. A többi negyed rossz várba ment, ott a kapuőr nagyon meglepődött a csomagon.', good, hir)}</p>
       <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('A krónikák szerint Koppány testét négy részre vágták, és Esztergom, Veszprém, Győr és Gyulafehérvár kapujára tűzték ki. A somogyi földjeit a pannonhalmi apátság kapta. Buda, Eger, Pécs és Szeged akkor még nem volt az ország fő vára. Pécs és Eger püspökséget is csak pár évvel később kaptak.')}</p></div>
       <div class="row"><button class="btn coral" type="button" id="qOk">${tr('Tovább')}</button></div></div>`, '', 'outcome');
     $('qOk').onclick = closeModal;
@@ -1225,7 +1240,7 @@ function showSide() {
   if ($('sideOk')) $('sideOk').onclick = () => { if (!q.check()) return; giveAny(q.rew); sfxCollect(); if (q.id === 'var') { S.side.step = SIDE.length; showCsanad(); return; } sideDone(); };
 }
 function showCsanad() {
-  S.res.hirnev = (S.res.hirnev || 0) + 8; S.korona = (S.korona == null ? 25 : S.korona) + 10; S.lotCredits = (S.lotCredits || 0) + 1; give({ penz: 500, kovako: 3 }); S.side.done = true; save();
+  S.res.hirnev = (S.res.hirnev || 0) + 8; S.korona = (S.korona == null ? 25 : S.korona) + 10; grantLot('g1'); give({ penz: 500, kovako: 3 }); S.side.done = true; save();
   modal(`<img class="hero" src="img/e03_ill_ajtony.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('MONDA · VÉGE')}</span><h2>${tr('Csanád és Ajtony')}</h2>
     <div class="samu-say"><img src="img/e03_istvan_nevet.png" alt=""><div class="bubble"><b>István</b>${tr('Csanád legyőzte Ajtonyt, és Marosvárat azóta róla hívják Csanádnak. A só újra szabadon jön. Ajtony vámszedőit pedig átképeztük, most a királynak szedik a vámot.')}</div></div>
     <div class="store-row"><span>${tr('Jutalom')}: +500 ${RES.penz.name}, +3 ${RES.kovako.name}, +8 ${tr('Hírnév')}, +10 Korona, ${tr('és egy ajándék telek')}</span></div>
@@ -1262,7 +1277,7 @@ function showCouncil() {
       <div class="opt"><img src="img/e03_tanacs_asztrik.png" alt=""><b>${tr('Asztrik apát')}</b><p>${tr('„Latinul írnak a királyok, a törvények és a számlák. Főleg a számlák.”')}</p><p><em>${tr('A kolostorok másfélszer annyi Tudást adnak, és a térítés is gyorsul.')}</em></p><button class="btn teal" type="button" data-c="latin">${tr('Jöjjön a latin')}</button></div>
     </div>
     <div class="samu-say"><img src="img/e03_istvan_magyaraz.png" alt=""><div class="bubble"><b>István</b>${tr('Én latinul tanultam. De az anyámtól rovást kaptam karácsonyra. Nehéz ez.')}</div></div></div>`, '', 'council');
-  $('modalRoot').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { S.council = b.dataset.c; S.lotCredits = (S.lotCredits || 0) + 1; save(); closeModal(); checkQuest(); renderGuide(); toast(b.dataset.c === 'rovas' ? 'Marad a rovás. A táltos elégedetten bólint, az apát sóhajt.' : 'Jön a latin. Asztrik apát boldog, a táltos morogva elteszi a rovásbotját.');
+  $('modalRoot').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { S.council = b.dataset.c; grantLot('g2'); save(); closeModal(); checkQuest(); renderGuide(); toast(b.dataset.c === 'rovas' ? 'Marad a rovás. A táltos elégedetten bólint, az apát sóhajt.' : 'Jön a latin. Asztrik apát boldog, a táltos morogva elteszi a rovásbotját.');
     if (b.dataset.c === 'rovas') setTimeout(() => toast('Tudtad? A rovásírás a Székelyföldön évszázadokig tovább élt, a 17. században is használták.'), 3000); });
 }
 // ---------- végleges haza ----------
@@ -1458,7 +1473,7 @@ function resolveWinter() {
     const cand = S.buildings.filter(b => b.type !== 'fo' && !b.ruined);
     for (let k = 0; k < n && cand.length; k++) { const b = cand.splice(Math.floor(Math.random() * cand.length), 1)[0]; b.ruined = true; fx.push(trf('A zavargásokban egy épület romba dőlt ({0}), de újjá lehet építeni', DEF[b.type].name)); }
   }
-  S.lotCredits = (S.lotCredits || 0) + 1; S.res.hirnev = (S.res.hirnev || 0) + ({ dics: 15, tul: 10, seb: 5, rom: 3 }[o.id]); fx.push(tr('Kaptatok egy ajándék telket és Hírnevet.'));
+  grantLot('g3'); S.res.hirnev = (S.res.hirnev || 0) + ({ dics: 15, tul: 10, seb: 5, rom: 3 }[o.id]); fx.push(tr('Kaptatok egy ajándék telket és Hírnevet.'));
   S.winter.done = true; S.winter.outcome = o.id; S.winter.score = p.total; S.winter.fx = fx; save();
   showOutcome();
 }
@@ -2001,6 +2016,7 @@ function lotCardHTML() {
     <b>${tr('Új terület')}</b><span class="desc">${tr('Egy 3×3-as telek a város szélén. Ajándékba, Pénzért vagy Koronáért lehet a tiéd, és ugyanúgy építhetsz rá, mint bárhová máshová.')}</span>
     ${!left ? `<span class="lockmsg">${tr('Minden terület a tiéd')}</span>` : `<span class="cost"><span>${trf('{0} szabad terület · {1} ajándék', left, cr)}</span></span>${ok ? '' : `<span class="lockmsg">${tr('Most nem vehető')}</span>`}`}</button>`;
 }
+function grantLot(k) { S.lotG = S.lotG || {}; if (S.lotG[k]) return false; S.lotG[k] = 1; S.lotCredits = (S.lotCredits || 0) + 1; return true; }
 function lotBuyable() { if (!LOTS.some(l => !lotOwned(l.id))) return false; const mb = S.lotMoney || 0, kb = S.lotKor || 0, kor = S.korona == null ? 25 : S.korona; return (S.lotCredits || 0) > 0 || (LOT_MONEY[mb] && S.res.penz >= LOT_MONEY[mb]) || (kb < 2 && kor >= LOT_KORONA); }
 function startLotPick() {
   if (!LOTS.some(l => !lotOwned(l.id))) { toast('Minden terület a tiéd'); return; }
@@ -3026,7 +3042,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 95, n: 12 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 120, n: 12 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
