@@ -1170,6 +1170,7 @@ function draw(now) {
   const items = S.buildings.filter(b => !(tool && tool.mode === 'move' && b.id === tool.id));
   if (ghostB) items.push(ghostB);
   const order = depthOrder(items);
+  try { drawShadows(order); } catch (e) { noteErr(e); }
   order.forEach(b => { try { drawBuilding(b, now, 0); } catch (e) { noteErr(e); } });
   drawLots();
   drawSurprises(now);
@@ -1296,11 +1297,25 @@ function depthOrder(items) {
   seed.forEach(visit);
   return out;
 }
+// az épületek árnyékát egyszer rajzoljuk meg egy külön rétegre, mert a képkockánkénti elmosás nagyon lassú
+let shadowCache = null, shadowSig = '';
+function drawShadows(items) {
+  const list = items.filter(b => !b.ghost);
+  const sig = list.map(b => b.type + b.i + ',' + b.j + (b.rot ? 'r' : '')).join('|');
+  if (!shadowCache || sig !== shadowSig) {
+    shadowSig = sig; const c = shadowCache || document.createElement('canvas'); c.width = BGW; c.height = BGH; const g = c.getContext('2d');
+    g.clearRect(0, 0, BGW, BGH); g.filter = 'blur(6px)'; g.fillStyle = 'rgba(40,30,10,0.28)';
+    list.forEach(b => { const d = DEF[b.type]; if (!d) return; let w = d.w || d.size || 1, h = d.h || d.size || 1; if (b.rot) [w, h] = [h, w];
+      const i0 = b.i - 0.06, j0 = b.j - 0.06, P = [tileTop(i0, j0), tileTop(i0 + w + 0.16, j0), tileTop(i0 + w + 0.16, j0 + h + 0.16), tileTop(i0, j0 + h + 0.16)];
+      g.beginPath(); g.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(p => g.lineTo(p[0], p[1])); g.closePath(); g.fill(); });
+    g.filter = 'none'; shadowCache = c;
+  }
+  ctx.drawImage(shadowCache, 0, 0, BGW, BGH);
+}
 function drawBuilding(b, now, pass = 0) {
   const r = spriteRect(b); if (!r) return;
   const k = DEF[b.type].size;
   if (pass === 1) { if (!b.ghost) drawOverlay(b, r, now); return; }
-  if (!b.ghost) { ctx.save(); ctx.filter = 'blur(6px)'; diamondRaw(b.i - 0.06, b.j - 0.06, k + 0.16, 'rgba(40,30,10,0.28)', null); ctx.restore(); }
   ctx.save(); if (b.ghost) ctx.globalAlpha = 0.65;
   ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1]); ctx.lineTo(r.R[0], r.R[1]); ctx.lineTo(r.B[0], r.B[1]); ctx.lineTo(r.L[0], r.L[1]); ctx.lineTo(r.x - 2, r.L[1]); ctx.closePath(); ctx.clip();
   ctx.drawImage(r.im, r.x, r.y, r.w, r.h); ctx.restore();
