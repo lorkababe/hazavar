@@ -329,6 +329,10 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 @keyframes cshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
 #btnDaily .newdot,#btnSide .newdot{right:-14px!important;top:-12px!important;min-width:20px;height:20px;font-size:12px;padding:0 4px}
 #placeText.warn{color:#FFD0C2;font-weight:900}
+.card .desc{display:none!important}.card{gap:4px!important;padding:8px!important}
+.card .pic{height:74px!important}.card .pic img{max-height:70px!important}.card .gain{margin:0!important}
+#drawer{padding-top:10px!important;gap:8px!important}
+@media (max-height:760px){.card .desc{display:none}.card .pic{height:70px!important}.card .pic img{max-height:66px!important}}
 </style>
 
 <div id="app"><button class="ibtn wood" type="button" id="btnDaily" aria-label="Napi feladatok"><span class="newdot" id="bDaily" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h10a2 2 0 0 1 2 2v14a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2z"/><path d="M6 3a2 2 0 0 0-2 2v2h2M10 9h5M10 13h5"/></svg>Napi</button><div id="chiefPops"></div><button class="btn coral" type="button" id="migChip" hidden></button><div class="movefx" id="moveFx"><span id="moveTxt"></span></div>
@@ -738,13 +742,13 @@ function resize() {
 }
 function clampCam() {
   const vw = W / scale, vh = H / scale;
-  camX = Math.min(Math.max(0, camX), Math.max(0, BGW - vw));
+  if (vw >= BGW) camX = (BGW - vw) / 2; else camX = Math.min(Math.max(0, camX), BGW - vw);
   // a fejléc és az alsó menü alá is be lehet húzni a térképet, hogy semmit ne takarjanak
-  const pt = (($('top') && $('top').offsetHeight) || 0) / scale, pb = ((($('nav') && $('nav').offsetHeight) || 0) + 24) / scale;
+  const pt = (($('top') && $('top').offsetHeight) || 0) / scale, pb = (Math.max(($('nav') && !$('nav').hidden && $('nav').offsetHeight) || 0, ($('drawer') && !$('drawer').hidden && $('drawer').offsetHeight) || 0) + 24) / scale;
   camY = Math.min(Math.max(-pt, camY), Math.max(-pt, BGH - vh + pb));
 }
 function centerOn(bx, by) { camX = bx - W / scale / 2; camY = by - H / scale / 2; clampCam(); }
-let zBand = null;
+let zBand = null, drawerChk = 0, drawerSig = '';
 // a határon túl egy kicsit enged, aztán visszarugózik
 function zoomSpring(now) {
   if (!zBand || now < zBand[2]) return; const hi = minS * 2.4, tgt = scale > hi ? hi : scale < minS ? minS : null; if (tgt == null) { zBand = null; return; }
@@ -1509,7 +1513,7 @@ $('samuBtn').onclick = () => setGuide($('guide').classList.contains('mini'));
 
 // építés panel
 let curCat = 'all'; const drawerSeen = new Set();
-function openDrawer() { hideInfo(); drawerSeen.clear(); renderDrawer(); $('drawer').hidden = false; $('nav').hidden = true; }
+function openDrawer() { setTimeout(() => { const dh = $('drawer').offsetHeight || 0; if (dh) { camY += Math.max(0, dh - (($('nav') && $('nav').offsetHeight) || 0)) / scale / 2; clampCam(); } }, 0); hideInfo(); drawerSeen.clear(); renderDrawer(); $('drawer').hidden = false; $('nav').hidden = true; }
 function closeDrawer() {
   if (!$('drawer').hidden) { drawerSeen.clear(); save(); badges(); }
   $('drawer').hidden = true; if (!tool) $('nav').hidden = false;
@@ -1535,7 +1539,7 @@ function renderDrawer() {
     const d = DEF[t], lock = !unlocked(t); const tech = d.tech && TECH.find(x => x.id === d.tech);
     const pic = t === 'ut' ? 'ut_egyenes' : d.img;
     const isNew = !!S.newTypes[t];
-    return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
+    return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" title="${(d.desc || '').replace(/"/g, '&quot;')}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
       <span class="pic">${t === 'ut' ? '<img src="img/fold.png" alt="" style="width:150px;height:76px;max-height:none;margin-bottom:18px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:6px">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${d.size}×${d.size}</span>${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
       <b>${d.name}</b><span class="desc">${d.desc}</span>
       ${t === 'ut' ? '' : gainHTML(t)}
@@ -2203,6 +2207,7 @@ function frame(now) {
   const dt = raw > 1 ? Math.min(raw, 14 * 86400) : Math.min(0.25, raw);
   try { tick(dt); } catch (e) { noteErr(e); }
   try { zoomSpring(now); } catch (e) {}
+  try { if (!$('drawer').hidden && now - (drawerChk || 0) > 400) { drawerChk = now; const sig = Object.keys(DEF).filter(t => canPay(costOf(t))).join(); if (sig !== drawerSig) { drawerSig = sig; const sl = $('cards').scrollLeft; renderDrawer(); $('cards').scrollLeft = sl; } } } catch (e) {}
   try { draw(now); } catch (e) { noteErr(e); }
   requestAnimationFrame(frame);
 }
@@ -2355,31 +2360,47 @@ function inAlly(id) { return !!(SOC.ally && SOC.ally.members.includes(id)); }
 function doRaid(id) {
   const b = bot(id); if (!canDo('raid', id) || inAlly(id)) return; mark('raid', id);
   if (b.real) { SOC.stats.raids++; const t = NET.towns[id] || {}; const ok = Math.random() < raidChance(b) && (t.ready || 0) > 0; const n = amt(rnd(40, 110));
-    if (ok) { giveR({ penz: n }); log(TF('Kifosztottad {0} városát. {1}', b.name, resTxt({ penz: n })), 'portya'); toast(TF('Sikeres portya! {0}', resTxt({ penz: n }))); sfxCollect(); }
-    else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); toast(TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name)); }
-    netEvent(id, 'portya', { ok, n }); if (SOC.stats.raids >= 10) kitAward('fosztogato'); commit(); refresh(); return; }
+    if (ok) { giveR({ penz: n }); log(TF('Kifosztottad {0} városát. {1}', b.name, resTxt({ penz: n })), 'portya'); RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} városát.', b.name), loot: resTxt({ penz: n }) }; sfxCollect(); }
+    else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); RAIDRES = { ok: false, name: b.name, text: TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name) }; }
+    netEvent(id, 'portya', { ok, n }); if (SOC.stats.raids >= 10) kitAward('fosztogato'); commit(); refresh(); raidShow(); return; }
   const town = townOf(b); const ready = town.list.filter(x => NOW() - x.ready > 3 * HOUR);
   SOC.stats.raids++; b.friend -= 3;
   if (Math.random() < raidChance(b) && ready.length) {
     const x = pick(ready); x.ready = NOW(); const r = { penz: amt(rnd(40, 110)) }; giveR(r);
     log(TF('Kifosztottad {0} épületét ({1}). {2}', b.name, DEF[x.type] ? DEF[x.type].name : x.type, resTxt(r)), 'portya');
-    toast(TF('Sikeres portya! {0}', resTxt(r))); sfxCollect();
+    RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} épületét ({1}).', b.name, DEF[x.type] ? DEF[x.type].name : x.type), loot: resTxt(r) }; sfxCollect();
     if (Math.random() < 0.7) later({ type: 'angry', from: id }, rnd(2, 20) * 60e3);
     if (Math.random() < 0.25) later({ type: 'revenge', from: id }, rnd(1, 6) * HOUR);
-  } else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); toast(TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name)); }
+  } else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); RAIDRES = { ok: false, name: b.name, text: TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name) }; }
   if (SOC.stats.raids >= 10) kitAward('fosztogato');
-  commit(); refresh();
+  commit(); refresh(); raidShow();
+}
+let RAIDRES = null;
+function raidAsk(id) {
+  const b = bot(id); if (!b || !canDo('raid', id) || inAlly(id)) return; const ch = Math.round(raidChance(b) * 100);
+  modal(`<div class="inner" style="text-align:center"><img src="img/ikon_portya.png" alt="" style="width:84px;height:84px"><span class="eyebrow">${T('PORTYA')}</span><h2>${TF('Biztosan megtámadod {0} népét?', esc(b.leader || b.name))}</h2>
+    <p>${TF('A siker esélye {0}%. Ha sikerül, Pénzt zsákmányolsz, de a szomszéd megharagszik, és lehet, hogy visszavág.', ch)}</p>
+    <div class="row" style="justify-content:center">${btn(T('Nyeregbe!'), 'id="raGo"', true, 'coral', 'portya')}${btn(T('Mégse'), 'id="raNo"', true, 'ghost')}</div></div>`, '', 'soc');
+  document.getElementById('raGo').onclick = () => { doRaid(id); }; document.getElementById('raNo').onclick = () => refresh2();
+}
+function refresh2() { if (visitId) showVisit(visitId); else showSoc(tab); }
+function raidShow() {
+  const r = RAIDRES; RAIDRES = null; if (!r) return;
+  modal(`<div class="inner" style="text-align:center"><div style="font-size:64px;line-height:1">${r.ok ? '🏆' : '🛡️'}</div><span class="eyebrow">${T('A PORTYA EREDMÉNYE')}</span>
+    <h2 style="color:${r.ok ? '#3E6A1E' : '#9A3020'}">${r.ok ? T('Sikeres portya!') : T('Visszavertek!')}</h2>
+    <p style="font-size:17px">${esc(r.text)}</p>${r.loot ? `<p style="font-size:22px;font-weight:900">${T('Zsákmány')} · ${esc(r.loot)}</p>` : ''}
+    <div class="row" style="justify-content:center">${btn(T('Vissza a megyébe'), 'id="rrOk"', true, 'teal')}</div></div>`, '', 'soc');
+  document.getElementById('rrOk').onclick = () => refresh2();
 }
 // csúnya szavak kicsillagozása (magyar és angol). Aki próbálkozik, kap egy kitűzőt
 const BAD = ['kurv', 'kurw', 'bazd', 'bazm', 'basz', 'fasz', 'pics', 'pina', 'geci', 'szar', 'buzi', 'köcsög', 'kocsog', 'csicska', 'segg', 'anyád', 'anyad', 'rohadj', 'dögölj', 'dogolj', 'nyomorék', 'idióta', 'idiota', 'ribanc', 'ringyó', 'nigg', 'fuck', 'shit', 'bitch', 'cunt', 'asshole', 'bastard', 'whore', 'faggot', 'retard', 'motherf'];
-const OK_WORDS = ['szarvas', 'szarka', 'szaru', 'szarmata', 'baszk', 'pinat'];
-// rövid tövek csak szó elején számítanak (szarvas, Tiszaroff rendben), a hosszabbak bárhol
+// ártatlan szavak, amikben véletlenül benne van egy csúnya tő
+const OK_WORDS = ['szarvas', 'szarv', 'szarka', 'szaru', 'szarmata', 'tiszaroff', 'baszk', 'pinat', 'kaszarnya', 'buzog', 'shitake', 'shiitake', 'scunt', 'pinan', 'szarkoz'];
 function cleanText(t) {
   let hit = false;
   const out = String(t || '').replace(/[\p{L}\d]+/gu, w => { const l = w.toLowerCase();
-    if (OK_WORDS.some(o => o && l.startsWith(o))) return w;
-    const bad = BAD.some(b => b.length <= 4 ? l.startsWith(b) || /^(le|meg|el|ki|be|fel|szét|össze|agyon|bele|ra|rá)/.test(l) && l.includes(b) : l.includes(b));
-    if (bad) { hit = true; return w[0] + '*'.repeat(Math.max(2, w.length - 1)); } return w; });
+    if (OK_WORDS.some(o => l.includes(o))) return w;
+    if (BAD.some(b => l.includes(b))) { hit = true; return w.length <= 2 ? w[0] + '*' : w[0] + '*'.repeat(w.length - 2) + w[w.length - 1]; } return w; });
   return { text: out, hit };
 }
 const cleanT = t => cleanText(t).text;
@@ -2679,7 +2700,7 @@ function wire(vid) {
   on('[data-k]', e => doKalaka(e.dataset.k));
   on('[data-g]', e => showVisit(e.dataset.g));
   on('[data-gi]', e => doGift(vid, +e.dataset.gi));
-  on('[data-r]', e => doRaid(e.dataset.r));
+  on('[data-r]', e => raidAsk(e.dataset.r));
   on('[data-v]', e => showVisit(e.dataset.v));
   on('[data-rv]', e => visitFar(e.dataset.rv));
   const rq = document.getElementById('rangQ'); if (rq) { rq.onkeydown = e => { if (e.key === 'Enter') rangSearch(rq.value); }; const rb = document.getElementById('rangGo'); if (rb) rb.onclick = () => rangSearch(rq.value); }
@@ -2693,7 +2714,7 @@ function wire(vid) {
   c('aFound', () => foundAlly(($('aName') || {}).value, em)); c('aCamp', () => launchCampaign(false)); c('kJoin', joinKard); c('aPact', makePact);
   c('aCoup', startCoup); c('aBetray', () => confirmBetray()); c('aLeave', () => leaveAlly(false));
   c('snYes', () => takeSnitch(true)); c('snNo', () => takeSnitch(false));
-  c('vBack', () => showSoc('megye')); c('vBlock', () => toggleBlock(vid)); c('wSend', () => { postWall(vid, ($('wTxt') || {}).value); });
+  c('vBack', () => showSoc('megye')); c('vBlock', () => toggleBlock(vid)); c('wSend', () => { postWall(vid, ($('wTxt') || {}).value); }); { const wt = document.getElementById('wTxt'); if (wt) wt.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); postWall(vid, wt.value); } }; }
 }
 function confirmBetray() {
   const A = SOC.ally; if (!A) return; const half = Math.floor(A.treasury / 2);
