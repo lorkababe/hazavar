@@ -2467,25 +2467,50 @@ function botLayout(b) {
   for (let k = 0; k < 400 && list.length < target; k++) { const t = pick(pool), d = DEF[t]; put(t, rnd(0, 8), rnd(0, 8), d.w && d.h && d.w !== d.h ? rnd(0, 1) : 0); }
   b.layout = { era, list }; saveSoc(); return list;
 }
-function renderTown(cv, list) {
-  if (!cv) return; const g = cv.getContext('2d'); const bgKey = Object.keys(IMG).find(k => /alapterkep$/.test(k)); const bg = bgKey && IMG[bgKey];
-  const c = [tileTop(0, 0), tileTop(N, 0), tileTop(0, N), tileTop(N, N)];
-  const x0 = Math.max(0, Math.min(...c.map(p => p[0])) - 80), x1 = Math.min(BGW, Math.max(...c.map(p => p[0])) + 80);
-  const y0 = Math.max(0, Math.min(...c.map(p => p[1])) - 220), y1 = Math.min(BGH, Math.max(...c.map(p => p[1])) + 50);
-  const sc = cv.width / (x1 - x0); cv.height = Math.round((y1 - y0) * sc);
+// közös rajzoló: szorosan a városra vág, halvány rács, lágy keret
+function paintTown(cv, bg, ox, oy, sprites, n) {
+  if (!cv) return; const g = cv.getContext('2d');
+  const TT = (i, j) => [ox + (i - j) * TW / 2, oy + (i + j) * TH / 2];
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  const grow = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+  if (!sprites.length) [TT(0, 0), TT(n, 0), TT(0, n), TT(n, n)].forEach(p => grow(p[0], p[1]));
+  sprites.forEach(r => { grow(r.x + r.w * 0.08, r.y + r.h * 0.05); grow(r.x + r.w * 0.92, r.y + r.h); });
+  const minW = 5.5 * TW; if (x1 - x0 < minW) { const c = (x0 + x1) / 2; x0 = c - minW / 2; x1 = c + minW / 2; }
+  const pad = 60; x0 -= pad; x1 += pad; y0 -= pad; y1 += pad * 0.6;
+  const want = cv.width / 1.6, h = y1 - y0, w = x1 - x0;
+  if (w / h < 1.6) { const ex = (h * 1.6 - w) / 2; x0 -= ex; x1 += ex; } else { const ey = (w / 1.6 - h) / 2; y0 -= ey; y1 += ey; }
+  const sc = cv.width / (x1 - x0); cv.height = Math.round(want);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#7d9a44'; g.fillRect(0, 0, cv.width, cv.height);
   g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
   if (bg && bg.naturalWidth) g.drawImage(bg, 0, 0, BGW, BGH);
+  // rács
+  g.save(); g.strokeStyle = 'rgba(255,248,220,.38)'; g.lineWidth = 1.4;
+  for (let k = 0; k <= n; k++) { let a = TT(k, 0), b = TT(k, n); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); a = TT(0, k); b = TT(n, k); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+  g.restore();
+  sprites.forEach(r => { g.save(); g.globalAlpha = 1; if (r.flip) { g.translate(r.x + r.w, r.y); g.scale(-1, 1); g.drawImage(r.im, 0, 0, r.w, r.h); } else g.drawImage(r.im, r.x, r.y, r.w, r.h); g.restore(); });
+  // lágy sötét keret
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  const vg = g.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.35, cv.width / 2, cv.height / 2, cv.width * 0.62);
+  vg.addColorStop(0, 'rgba(40,25,5,0)'); vg.addColorStop(1, 'rgba(40,25,5,.38)'); g.fillStyle = vg; g.fillRect(0, 0, cv.width, cv.height);
+}
+function renderTown(cv, list) {
+  const bgKey = Object.keys(IMG).find(k => /alapterkep$/.test(k)); const bg = bgKey && IMG[bgKey];
   const items = typeof depthOrder === 'function' ? depthOrder(list) : list.slice().sort((a, b) => (a.i + a.j) - (b.i + b.j));
-  items.forEach(b => { const r = spriteRect(b); if (!r) return; g.save(); if (r.flip) { g.translate(r.x + r.w, r.y); g.scale(-1, 1); g.drawImage(r.im, 0, 0, r.w, r.h); } else g.drawImage(r.im, r.x, r.y, r.w, r.h); g.restore(); });
+  const sprites = items.map(b => spriteRect(b)).filter(Boolean);
+  const o = tileTop(0, 0); paintTown(cv, bg, o[0], o[1], sprites, N);
 }
 function showVisit(id) {
   visitId = id; const b = bot(id); const town = b.real ? { list: [] } : townOf(b); const rt = b.real ? NET.towns[id] : null; if (b.real && !NET.walls[id]) netLoadWall(id); const wall = b.real ? (NET.walls[id] || []) : (SOC.walls[id] || []);
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('LÁTOGATÁS')}</span>
     <div style="display:flex;gap:14px;align-items:center">${avatar(b, 84)}<div><h2 style="margin:0">${esc(b.name)}</h2><span>${TF('{0}. korszak · {1} lakos · védelem {2}', b.era, b.pop, b.def)}</span><div>${b.kits.map(k => kitImg(k, 30)).join(' ')}</div></div></div>
     <p>${b.bio ? `<i>„${esc(T(b.bio))}”</i><br>` : ''}<span style="font-size:20px">${typeof rovasHTML === 'function' ? rovasHTML(b.leader) : ''}</span></p>
-    <canvas id="vTown" width="960" style="width:100%;display:block;border-radius:16px;box-shadow:0 4px 14px rgba(40,20,0,.25);background:#6b8a3a"></canvas>
-    <p style="font-size:13px;margin:6px 0 0">${TF('{0} épület vár begyűjtésre ebben a városban.', b.real ? ((rt && rt.ready) || 0) : town.list.filter(x => NOW() - x.ready > 3 * HOUR).length)}</p>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">${btn(T('Kaláka'), `data-k="${id}"`, canDo('kalaka', id), 'teal', 'kalaka')}${GIFTS().map((g, i) => btn(`${g.n} ${RES[g.k] ? RES[g.k].name : g.k}`, `data-gi="${i}"`, canDo('gift', id) && canPay({ [g.k]: g.n }), 'teal', 'ajandek')).join('')}${inAlly(id) || b.far ? '' : btn(TF('Portya {0}%', Math.round(raidChance(b) * 100)), `data-r="${id}"`, canDo('raid', id), 'coral', 'portya')}</div>${b.far ? `<p style="font-size:12px;color:var(--ink-soft);margin:0">${T('Más megyében él. Kalákázni, ajándékozni és üzenni lehet neki, portyázni csak a szomszédokra.')}</p>` : ''}
+    <div style="position:relative;margin-top:4px"><canvas id="vTown" width="960" style="width:100%;display:block;border-radius:18px;box-shadow:0 0 0 3px #FFF4DF,0 0 0 5px #8A5A2B,0 8px 18px rgba(40,20,0,.3);background:#7d9a44"></canvas>
+      <span style="position:absolute;left:12px;bottom:12px;background:rgba(40,25,10,.78);color:#FFF4DF;font-weight:800;font-size:13px;padding:5px 12px;border-radius:999px">${TF('{0} épület vár begyűjtésre', b.real ? ((rt && rt.ready) || 0) : town.list.filter(x => NOW() - x.ready > 3 * HOUR).length)}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0">
+      <div class="store-row" style="flex-direction:column;align-items:stretch;margin:0"><b style="font-size:13px;letter-spacing:.06em;color:var(--ink-soft)">${T('SEGÍTS NEKI')}</b><div style="margin-top:6px">${btn(T('Kaláka'), `data-k="${id}"`, canDo('kalaka', id), 'teal', 'kalaka')}</div></div>
+      <div class="store-row" style="flex-direction:column;align-items:stretch;margin:0"><b style="font-size:13px;letter-spacing:.06em;color:var(--ink-soft)">${T('AJÁNDÉK')}</b><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${GIFTS().map((g, i) => `<button class="btn teal" type="button" data-gi="${i}" ${canDo('gift', id) && canPay({ [g.k]: g.n }) ? '' : 'disabled'} title="${esc(RES[g.k] ? RES[g.k].name : g.k)}" style="min-height:38px;padding:0 10px;font-size:13px;display:inline-flex;align-items:center;gap:5px"><img src="img/${RES[g.k].file || RES[g.k].icon + '.png'}" alt="" style="width:22px;height:22px">${g.n}</button>`).join('')}</div></div>
+      ${inAlly(id) || b.far ? '' : `<div class="store-row" style="flex-direction:column;align-items:stretch;margin:0"><b style="font-size:13px;letter-spacing:.06em;color:var(--ink-soft)">${T('PORTYA')}</b><div style="margin-top:6px">${btn(TF('Portyázok ({0}% esély)', Math.round(raidChance(b) * 100)), `data-r="${id}"`, canDo('raid', id), 'coral', 'portya')}</div></div>`}
+    </div>${b.far ? `<p style="font-size:12px;color:var(--ink-soft);margin:-4px 0 10px">${T('Más megyében él. Kalákázni, ajándékozni és üzenni lehet neki, portyázni csak a szomszédokra.')}</p>` : ''}
     <div class="store-row" style="flex-direction:column;align-items:stretch"><b>${T('Üzenőfal')}</b>
       <div style="display:flex;gap:6px;margin:6px 0"><input class="pin" id="wTxt" maxlength="200" placeholder="${T('Írj valamit a falára')}" style="flex:1">${btn(T('Küldés'), 'id="wSend"', true, 'teal', 'fal')}</div>
       ${wall.map(w => `<div style="padding:4px 0;border-bottom:1px dashed rgba(90,55,25,.25)"><b>${esc(nameOf(w.from))}</b> <small>${ago(w.t)}</small><br>${esc(w.text)}</div>`).join('')}</div>
@@ -2562,7 +2587,7 @@ const SOC_EN = {"Áldomásivó": "Toast Keeper", "Az áldomás után három napi
   'Árulni korszakonként egyszer lehet. Az Áruló kitűző örökre rajtad marad. Ha két napon belül lépsz ki a vérszerződés után, Kétszínű leszel.': 'You can betray once per era. The Traitor badge stays forever. Leave within two days of a blood oath and you become Two-Faced.',
   'ÁRULÁS': 'BETRAYAL', 'Biztos vagy benne?': 'Are you sure?', 'Viszem a felét': 'Take half', 'Mégsem': 'Cancel', 'Megérte': 'Worth it', 'Elvitted a kincstár felét: {0} Pénz': 'You took half the treasury: {0} Money',
   'A régi társaid már tudják. Holnapra az egész megye tudni fogja. A kitűződet örökre viseled.': 'Your old companions already know. By tomorrow the whole county will. You wear the badge forever.',
-  'most': 'now', 'Ranglista': 'Leaderboard', 'pont': 'pts', '{0}. korszak': 'Era {0}', '{0}. megye': 'County {0}', 'Töltöm a ranglistát…': 'Loading the leaderboard…', 'A pontok az épületeid értékéből, a lakosokból, a korszakból, a kutatásokból, az Erőpróbákból és a kitűzőkből jönnek.': 'Points come from the value of your buildings, your people, your era, research, Trials and badges.', 'Keress rá egy játékos nevére': 'Search for a player by name', 'Keresés': 'Search', 'Nincs ilyen nevű játékos.': 'No player with that name.', 'Más megyében él. Kalákázni, ajándékozni és üzenni lehet neki, portyázni csak a szomszédokra.': 'Lives in another county. You can help, gift and message them, raids are for neighbours only.', 'A játékod a szerverre mentődik, és bármelyik gépen vagy telefonon ott folytatod, ahol abbahagytad.': 'Your game is saved on the server, and you can continue on any computer or phone where you left off.', 'Szia Kedves!': 'Hi there!', 'Örülök, hogy itt vagy!': 'I am glad you are here!', 'A játék jelenleg teszt üzemben van, kérlek bármit találtok, vagy tapasztaltok, írjatok nekem!': 'The game is in test mode right now. Whatever you find or experience, please write to me!', 'Puszi': 'Hugs', 'Visszajelzést a Beállításokban vagy a jobb felső Hiba? gombbal tudsz küldeni.': 'You can send feedback from Settings or with the Bug? button at the top right.', 'Kezdjük!': 'Let us start!', 'VISSZAJELZÉS': 'FEEDBACK', 'Írj Lorkának!': 'Write to Lorka!', 'Hibát találtál, valami furcsa, vagy van egy ötleted? Írd le, és egyenesen Lorkához jut.': 'Found a bug, something odd, or have an idea? Write it down and it goes straight to Lorka.', 'Hiba': 'Bug', 'Ötlet': 'Idea', 'Egyéb': 'Other', 'Mi történt? Hol voltál a játékban, mire kattintottál?': 'What happened? Where were you in the game, what did you click?', 'Elküldöm': 'Send', 'Írj pár szót, kérlek.': 'Please write a few words.', 'Köszönöm! Megkaptam.': 'Thank you! Got it.', 'Nem sikerült elküldeni. Próbáld újra kicsit később.': 'Could not send it. Please try again a bit later.', 'Hiba?': 'Bug?', 'Visszajelzés Lorkának': 'Feedback for Lorka', 'Kifosztottad {0} városát. {1}': 'You plundered {0}\'s town. {1}', 'Valódi játékosokkal a közös törzsszövetség a következő frissítésben jön. Addig kalákázz és ajándékozz nekik!': 'Alliances with real players come in the next update. Until then, help them and send gifts!',  '{0} épület vár begyűjtésre ebben a városban.': '{0} buildings in this town are ready to collect.', '{0} perc': '{0} min', '{0} óra': '{0} h', 'Rovásíró': 'Rune Writer', '{0} perce': '{0} min ago', '{0} órája': '{0} h ago', '{0} napja': '{0} d ago'
+  'most': 'now', '{0} épület vár begyűjtésre': '{0} buildings ready to collect', 'SEGÍTS NEKI': 'HELP OUT', 'AJÁNDÉK': 'GIFT', 'PORTYA': 'RAID', 'Portyázok ({0}% esély)': 'Raid ({0}% chance)', 'Ranglista': 'Leaderboard', 'pont': 'pts', '{0}. korszak': 'Era {0}', '{0}. megye': 'County {0}', 'Töltöm a ranglistát…': 'Loading the leaderboard…', 'A pontok az épületeid értékéből, a lakosokból, a korszakból, a kutatásokból, az Erőpróbákból és a kitűzőkből jönnek.': 'Points come from the value of your buildings, your people, your era, research, Trials and badges.', 'Keress rá egy játékos nevére': 'Search for a player by name', 'Keresés': 'Search', 'Nincs ilyen nevű játékos.': 'No player with that name.', 'Más megyében él. Kalákázni, ajándékozni és üzenni lehet neki, portyázni csak a szomszédokra.': 'Lives in another county. You can help, gift and message them, raids are for neighbours only.', 'A játékod a szerverre mentődik, és bármelyik gépen vagy telefonon ott folytatod, ahol abbahagytad.': 'Your game is saved on the server, and you can continue on any computer or phone where you left off.', 'Szia Kedves!': 'Hi there!', 'Örülök, hogy itt vagy!': 'I am glad you are here!', 'A játék jelenleg teszt üzemben van, kérlek bármit találtok, vagy tapasztaltok, írjatok nekem!': 'The game is in test mode right now. Whatever you find or experience, please write to me!', 'Puszi': 'Hugs', 'Visszajelzést a Beállításokban vagy a jobb felső Hiba? gombbal tudsz küldeni.': 'You can send feedback from Settings or with the Bug? button at the top right.', 'Kezdjük!': 'Let us start!', 'VISSZAJELZÉS': 'FEEDBACK', 'Írj Lorkának!': 'Write to Lorka!', 'Hibát találtál, valami furcsa, vagy van egy ötleted? Írd le, és egyenesen Lorkához jut.': 'Found a bug, something odd, or have an idea? Write it down and it goes straight to Lorka.', 'Hiba': 'Bug', 'Ötlet': 'Idea', 'Egyéb': 'Other', 'Mi történt? Hol voltál a játékban, mire kattintottál?': 'What happened? Where were you in the game, what did you click?', 'Elküldöm': 'Send', 'Írj pár szót, kérlek.': 'Please write a few words.', 'Köszönöm! Megkaptam.': 'Thank you! Got it.', 'Nem sikerült elküldeni. Próbáld újra kicsit később.': 'Could not send it. Please try again a bit later.', 'Hiba?': 'Bug?', 'Visszajelzés Lorkának': 'Feedback for Lorka', 'Kifosztottad {0} városát. {1}': 'You plundered {0}\'s town. {1}', 'Valódi játékosokkal a közös törzsszövetség a következő frissítésben jön. Addig kalákázz és ajándékozz nekik!': 'Alliances with real players come in the next update. Until then, help them and send gifts!',  '{0} épület vár begyűjtésre ebben a városban.': '{0} buildings in this town are ready to collect.', '{0} perc': '{0} min', '{0} óra': '{0} h', 'Rovásíró': 'Rune Writer', '{0} perce': '{0} min ago', '{0} órája': '{0} h ago', '{0} napja': '{0} d ago'
 };
 // ---------- online: Supabase (csak a GitHub Pages változatban, vagy ?online paraméterrel) ----------
 const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publishable_DUIYY1o4LXgNkmzLmHjlCg_WlsFJX5_';
@@ -2721,20 +2746,16 @@ function rmask(im) {
   return (im._m = m);
 }
 function renderRemoteTown(cv, town) {
-  if (!cv || !town) return; const g = cv.getContext('2d'); const ox = town.ox || 836, oy = town.oy || 240;
+  if (!cv || !town) return; const ox = town.ox || 836, oy = town.oy || 240;
   const TT = (i, j) => [ox + (i - j) * TW / 2, oy + (i + j) * TH / 2];
-  const cs = [TT(0, 0), TT(N, 0), TT(0, N), TT(N, N)];
-  const x0 = Math.max(0, Math.min(...cs.map(p => p[0])) - 80), x1 = Math.min(BGW, Math.max(...cs.map(p => p[0])) + 80), y0 = Math.max(0, Math.min(...cs.map(p => p[1])) - 220), y1 = Math.min(BGH, Math.max(...cs.map(p => p[1])) + 50);
-  const sc = cv.width / (x1 - x0); cv.height = Math.round((y1 - y0) * sc);
   const list = (town.list || []).slice().sort((a, b) => (a.i + a.j + (a.rot ? a.h : a.w) + (a.rot ? a.w : a.h)) - (b.i + b.j + (b.rot ? b.h : b.w) + (b.rot ? b.w : b.h)));
   const names = [town.bg || 'e03_alapterkep.jpg'].concat(list.map(x => x.img + '.png')); let left = names.length;
   const draw = () => {
-    g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc); const bg = RIMG[names[0]]; if (bg && bg.naturalWidth) g.drawImage(bg, 0, 0, BGW, BGH);
-    list.forEach(b => { const im = RIMG[b.img + '.png']; if (!im || !im.naturalWidth) return; const m = rmask(im);
+    const sprites = list.map(b => { const im = RIMG[b.img + '.png']; if (!im || !im.naturalWidth) return null; const m = rmask(im);
       const w = b.rot ? b.h : b.w, h = b.rot ? b.w : b.h, flip = !!b.rot, s = (w + h) * TW / 2 / Math.max(1, m.maxX - m.minX);
       const L = TT(b.i, b.j + h); const lx = flip ? m.w - m.maxX : m.minX, ly = w === h ? (m.lY + m.rY) / 2 : flip ? m.rY : m.lY;
-      const x = L[0] - lx * s, y = L[1] - ly * s, iw = im.naturalWidth * s, ih = im.naturalHeight * s;
-      g.save(); if (flip) { g.translate(x + iw, y); g.scale(-1, 1); g.drawImage(im, 0, 0, iw, ih); } else g.drawImage(im, x, y, iw, ih); g.restore(); });
+      return { im, flip, x: L[0] - lx * s, y: L[1] - ly * s, w: im.naturalWidth * s, h: im.naturalHeight * s }; }).filter(Boolean);
+    paintTown(cv, RIMG[names[0]], ox, oy, sprites, N);
   };
   names.forEach(n => rimg(n, () => { if (--left <= 0) draw(); }));
 }
