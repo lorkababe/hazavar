@@ -2474,7 +2474,7 @@ function paintTown(cv, bg, ox, oy, sprites, n) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   const grow = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
   if (!sprites.length) [TT(0, 0), TT(n, 0), TT(0, n), TT(n, n)].forEach(p => grow(p[0], p[1]));
-  sprites.forEach(r => { grow(r.x + r.w * 0.08, r.y + r.h * 0.05); grow(r.x + r.w * 0.92, r.y + r.h); });
+  sprites.forEach(r => { grow(r.x + r.w * 0.08, r.y + r.h * 0.05); grow(r.x + r.w * 0.92, r.B ? r.B[1] : r.y + r.h); });
   const minW = 5.5 * TW; if (x1 - x0 < minW) { const c = (x0 + x1) / 2; x0 = c - minW / 2; x1 = c + minW / 2; }
   const pad = 60; x0 -= pad; x1 += pad; y0 -= pad; y1 += pad * 0.6;
   const want = cv.width / 1.6, h = y1 - y0, w = x1 - x0;
@@ -2487,7 +2487,10 @@ function paintTown(cv, bg, ox, oy, sprites, n) {
   g.save(); g.strokeStyle = 'rgba(255,248,220,.38)'; g.lineWidth = 1.4;
   for (let k = 0; k <= n; k++) { let a = TT(k, 0), b = TT(k, n); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); a = TT(0, k); b = TT(n, k); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
   g.restore();
-  sprites.forEach(r => { g.save(); g.globalAlpha = 1; if (r.flip) { g.translate(r.x + r.w, r.y); g.scale(-1, 1); g.drawImage(r.im, 0, 0, r.w, r.h); } else g.drawImage(r.im, r.x, r.y, r.w, r.h); g.restore(); });
+  sprites.forEach(r => { g.save();
+    if (r.L && r.R && r.B) { g.save(); g.filter = 'blur(5px)'; g.fillStyle = 'rgba(40,30,10,.28)'; const T0 = [r.L[0] + (r.R[0] - r.B[0]), r.L[1] + (r.R[1] - r.B[1])]; g.beginPath(); g.moveTo(T0[0] - 4, T0[1]); g.lineTo(r.R[0] + 6, r.R[1]); g.lineTo(r.B[0], r.B[1] + 5); g.lineTo(r.L[0] - 6, r.L[1]); g.closePath(); g.fill(); g.restore(); }
+    if (r.sq && r.L) { g.beginPath(); g.moveTo(r.x - 2, r.y - 2); g.lineTo(r.x + r.w + 2, r.y - 2); g.lineTo(r.x + r.w + 2, r.R[1]); g.lineTo(r.R[0], r.R[1]); g.lineTo(r.B[0], r.B[1]); g.lineTo(r.L[0], r.L[1]); g.lineTo(r.x - 2, r.L[1]); g.closePath(); g.clip(); }
+    if (r.flip) { g.translate(r.x + r.w, r.y); g.scale(-1, 1); g.drawImage(r.im, 0, 0, r.w, r.h); } else g.drawImage(r.im, r.x, r.y, r.w, r.h); g.restore(); });
   // lágy sötét keret
   g.setTransform(1, 0, 0, 1, 0, 0);
   const vg = g.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.35, cv.width / 2, cv.height / 2, cv.width * 0.62);
@@ -2496,7 +2499,7 @@ function paintTown(cv, bg, ox, oy, sprites, n) {
 function renderTown(cv, list) {
   const bgKey = Object.keys(IMG).find(k => /alapterkep$/.test(k)); const bg = bgKey && IMG[bgKey];
   const items = typeof depthOrder === 'function' ? depthOrder(list) : list.slice().sort((a, b) => (a.i + a.j) - (b.i + b.j));
-  const sprites = items.map(b => spriteRect(b)).filter(Boolean);
+  const sprites = items.map(b => { const r = spriteRect(b); if (!r) return null; const d = DEF[b.type]; r.sq = !(d.w && d.h && d.w !== d.h); return r; }).filter(Boolean);
   const o = tileTop(0, 0); paintTown(cv, bg, o[0], o[1], sprites, N);
 }
 function showVisit(id) {
@@ -2754,7 +2757,7 @@ function renderRemoteTown(cv, town) {
     const sprites = list.map(b => { const im = RIMG[b.img + '.png']; if (!im || !im.naturalWidth) return null; const m = rmask(im);
       const w = b.rot ? b.h : b.w, h = b.rot ? b.w : b.h, flip = !!b.rot, s = (w + h) * TW / 2 / Math.max(1, m.maxX - m.minX);
       const L = TT(b.i, b.j + h); const lx = flip ? m.w - m.maxX : m.minX, ly = w === h ? (m.lY + m.rY) / 2 : flip ? m.rY : m.lY;
-      return { im, flip, x: L[0] - lx * s, y: L[1] - ly * s, w: im.naturalWidth * s, h: im.naturalHeight * s }; }).filter(Boolean);
+      return { im, flip, sq: w === h, L, R: TT(b.i + w, b.j), B: TT(b.i + w, b.j + h), x: L[0] - lx * s, y: L[1] - ly * s, w: im.naturalWidth * s, h: im.naturalHeight * s }; }).filter(Boolean);
     paintTown(cv, RIMG[names[0]], ox, oy, sprites, N);
   };
   names.forEach(n => rimg(n, () => { if (--left <= 0) draw(); }));
