@@ -1098,6 +1098,7 @@ function showLaws() {
       ${satBar(tr('Keresztények'), kp, now.ker, 'linear-gradient(90deg,#E9D9A6,#F5C542)')}
       ${satBar(tr('Pogányok'), 100 - kp, now.pog, 'linear-gradient(90deg,#C9472F,#E07A3A)')}
       <span style="font-size:13px">${trf('Térítés · óránként {0}{1} százalékponttal több a keresztény.', convRate() >= 0 ? '+' : '', convRate().toFixed(1))}</span></div>
+    ${!S.quartered && S.tempoDone !== 'win' ? `<div class="store-row" style="background:#F7E3C8;border:2px solid #C9472F"><div class="grow"><b>${tr('Somogyi besúgó')}</b><br><span>${tr('Egy somogyi kocsmáros 100 Pénzért elhíreszteli, hogy István szerint Koppány lova sánta. Koppány ezt nem fogja annyiban hagyni, rögtön fellázad.')}</span></div><button class="btn coral" type="button" id="kSummon" ${S.res.penz >= 100 ? '' : 'disabled'}>${tr('Fizetek neki')}</button></div>` : ''}
     ${combosOn.length ? `<div class="store-row" style="flex-direction:column;align-items:stretch;background:#F7E3C8;border:2px dashed #C9472F"><b>${tr('Együtt érvényben')}</b>${combosOn.map(c => `<div style="margin-top:6px"><b>${tr(c.name)}</b> ${tr(c.txt)}<div>${effChips(c)}</div></div>`).join('')}</div>` : ''}
     ${LAWS.map(l => { const act = on.includes(l.id), full = on.length >= lawSlots();
       const clash = !act && on.some(o => COMBOS.some(c => c.block && ((c.a === o && c.b === l.id) || (c.b === o && c.a === l.id))));
@@ -1110,6 +1111,7 @@ function showLaws() {
         ${combo && combo.length ? combo.map(c => `<div class="lwarn ${c.risk ? '' : 'ok'}">${trf('Kombó · {0}', tr(c.name))} ${tr(c.txt)}</div>`).join('') : ''}</div>
         ${act ? `<button class="btn ghost" type="button" data-law-off="${l.id}">${tr('Visszavonom')}</button>` : `<button class="btn coral" type="button" data-law="${l.id}" ${full || clash || S.res.penz < 50 ? 'disabled' : ''}>${tr('Kihirdetem')}</button>`}</div>`; }).join('')}</div>`, '', 'laws');
   $('modalRoot').querySelectorAll('[data-law]').forEach(b => b.onclick = () => { if ((S.laws || []).length >= lawSlots() || S.res.penz < 50) return; S.res.penz -= 50; S.laws = (S.laws || []).concat(b.dataset.law); sfxCollect(); toast(trf('Kihirdetve · {0}', tr(LAWS.find(x => x.id === b.dataset.law).name))); save(); checkQuest(); showLaws(); });
+  if ($('kSummon')) $('kSummon').onclick = () => { if (S.res.penz < 100) return; S.res.penz -= 100; S.tempoEv = 'koppany'; S.tempoDone = null; save(); closeModal(); toast(tr('A pletyka elindult Somogy felé. Koppány már nyergel.')); setTimeout(showKoppany, 1800); };
   $('modalRoot').querySelectorAll('[data-law-off]').forEach(b => b.onclick = () => { S.laws = (S.laws || []).filter(x => x !== b.dataset.lawOff); sfxClick(); save(); showLaws(); });
 }
 // ---------- lázadások és összeesküvések ----------
@@ -1213,6 +1215,7 @@ function showTempo() {
 }
 // Koppány-felkelés vagy bajor segítség, a tempótól függően
 function tempoEventTick() {
+  if (S.tempoEv === 'koppany' && S.tempoDone === 'deal') S.tempoEv = null; // régi mentés: lefizetett Koppány ne ragadjon be
   if (openModal) return;
   if (S.tempoDone === 'win' && !S.quartered) { showQuarter(); return; }
   if (!S.tempo) return;
@@ -2232,7 +2235,7 @@ function showResearch() {
   const card = t => {
     const done = !!S.techs[t.id]; const techOk = t.req.every(r => S.techs[r]); const chiefOk = t.id !== 'imre' || !!S.quartered; const reqOk = techOk && chiefOk; const can = !done && reqOk && canPay(t.cost);
     const unl = t.key ? tr('Ez a kulcskutatás. Utána jön a nagy próba!') : t.unl ? tr('Új épület · ') + DEF[t.unl].name : tr(t.bonus);
-    const state = done ? `<span class="state" style="color:var(--good)">${tr('Kikutatva')}</span>` : techOk && !chiefOk ? `<span class="state" style="color:var(--ink-soft)">${tr('Előbb Koppány sorsát kell rendezni. Ő hamarosan jelentkezik.')}</span>` : !reqOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb kell hozzá {0}', t.req.filter(r => !S.techs[r]).map(r => TECH.find(x => x.id === r).name).join(', '))}</span>` : `<span class="cost">${costHTML(t.cost)}</span>`;
+    const state = done ? `<span class="state" style="color:var(--good)">${tr('Kikutatva')}</span>` : techOk && !chiefOk ? `<span class="state" style="color:var(--ink-soft)">${tr('Előbb Koppány sorsát kell rendezni. Ha nem jön magától, a Törvények menüben egy besúgóval előcsalogathatod.')}</span>` : !reqOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb kell hozzá {0}', t.req.filter(r => !S.techs[r]).map(r => TECH.find(x => x.id === r).name).join(', '))}</span>` : `<span class="cost">${costHTML(t.cost)}</span>`;
     const isNew = !done && !!S.newTechs[t.id];
     return `<div class="tech${done ? ' done' : ''}${t.key ? ' key' : ''}${isNew ? ' isnew' : ''}">${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}<b>${t.name}</b><span class="unl">${unl}</span>${state}
       ${!done && reqOk ? `<button class="btn ${t.key ? 'coral' : 'teal'}" type="button" data-tech="${t.id}" ${can ? '' : 'disabled'}>${tr(can ? 'Kutatás' : 'Nincs elég nyersanyag')}</button>` : ''}</div>`;
