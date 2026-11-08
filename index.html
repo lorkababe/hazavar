@@ -1658,7 +1658,7 @@ function loadSoc() {
   if (SOC.ally && SOC.ally.pact) { SOC.ally.aldomas = true; SOC.ally.aldomasAt = SOC.ally.pactAt; delete SOC.ally.pact; delete SOC.ally.pactAt; }
 }
 function saveSoc() { try { localStorage.setItem(SOC_KEY, JSON.stringify(SOC)); } catch (e) {} }
-const bot = id => SOC.bots.find(b => b.id === id);
+const bot = id => SOC.bots.find(b => b.id === id) || (typeof NET !== 'undefined' && NET.extra && NET.extra[id]) || null;
 const nameOf = id => id === 'me' ? (PROF.name || T('Törzsfő')) : (bot(id) || {}).name || (typeof NET !== 'undefined' && NET.names[id]) || T('Valaki');
 function log(t, ico) { SOC.log.unshift({ t: NOW(), text: t, ico: ico || '' }); SOC.log = SOC.log.slice(0, 40); }
 function dly(key) { const d = today(); if (SOC.daily.day !== d) SOC.daily = { day: d }; return SOC.daily; }
@@ -1882,7 +1882,7 @@ const avatar = (b, s = 54) => `<span style="display:inline-block;width:${s}px;he
 const remain = t => { const m = Math.max(1, Math.round((t - NOW()) / 60e3)); return m < 60 ? TF('{0} perc', m) : TF('{0} óra', Math.round(m / 60)); };
 const ago = t => { const m = Math.max(0, Math.round((NOW() - t) / 60e3)); return m < 1 ? T('most') : m < 60 ? TF('{0} perce', m) : m < 1440 ? TF('{0} órája', Math.round(m / 60)) : TF('{0} napja', Math.round(m / 1440)); };
 const btn = (txt, attr, on = true, cls = 'teal', ico = '') => `<button class="btn ${cls}" type="button" ${attr} ${on ? '' : 'disabled'} style="min-height:38px;padding:0 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px">${ico ? `<img src="img/ikon_${ico}.png" alt="" style="width:22px;height:22px">` : ''}${txt}</button>`;
-function tabs() { return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px">${[['megye', 'Szomszédok'], ['ally', 'Törzsszövetség'], ['hirek', 'Hírek és üzenőfal']].map(([k, l]) => `<button class="tab" type="button" data-tab="${k}" aria-pressed="${tab === k}">${T(l)}</button>`).join('')}</div>`; }
+function tabs() { return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px">${[['megye', 'Szomszédok'], ['rang', 'Ranglista'], ['ally', 'Törzsszövetség'], ['hirek', 'Hírek és üzenőfal']].map(([k, l]) => `<button class="tab" type="button" data-tab="${k}" aria-pressed="${tab === k}">${T(l)}</button>`).join('')}</div>`; }
 function showSoc(t) {
   tab = t || tab; visitId = null; let body = '';
   if (tab === 'megye') {
@@ -1890,6 +1890,8 @@ function showSoc(t) {
       SOC.bots.map(b => { const ch = Math.round(raidChance(b) * 100), ally = inAlly(b.id);
         return `<div class="store-row" style="align-items:flex-start;gap:12px">${avatar(b)}<div class="grow" style="min-width:0"><b>${esc(b.name)}</b> ${b.real ? ` <span style="font-size:11px;font-weight:900;color:#fff;background:#3E7C4A;border-radius:999px;padding:2px 8px">${T('valódi játékos')}</span>` : ''}${b.kits.map(k => kitImg(k, 22)).join('')}${ally ? ` <span style="font-size:12px;font-weight:800;color:var(--good)">${T('szövetséges')}</span>` : ''}<br><span style="font-size:13px">${TF('{0}. korszak · {1} lakos · védelem {2}', b.era, b.pop, b.def)}</span>
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${btn(T('Kaláka'), `data-k="${b.id}"`, canDo('kalaka', b.id), 'teal', 'kalaka')}${btn(T('Ajándék'), `data-g="${b.id}"`, canDo('gift', b.id), 'teal', 'ajandek')}${ally ? '' : btn(TF('Portya {0}%', ch), `data-r="${b.id}"`, canDo('raid', b.id), 'coral', 'portya')}${btn(T('Látogatás'), `data-v="${b.id}"`, true, 'ghost', 'fal')}</div></div></div>`; }).join('');
+  } else if (tab === 'rang') {
+    body = rangHTML();
   } else if (tab === 'hirek') {
     body = `<div class="store-row" style="flex-direction:column;align-items:stretch"><b>${T('A falad')}</b>${SOC.wall.concat(NET.myWall || []).sort((a, b) => b.t - a.t).slice(0, 12).map(w => `<div style="padding:6px 0;border-bottom:1px dashed rgba(90,55,25,.25)"><b>${esc(nameOf(w.from))}</b> <small style="color:var(--ink-soft)">${ago(w.t)}</small><br>${esc(T(w.text))}</div>`).join('') || T('Még senki nem írt.')}</div>
       <div class="store-row" style="flex-direction:column;align-items:stretch"><b>${T('Hírek')}</b>${SOC.log.slice(0, 20).map(l => `<div style="display:flex;gap:8px;align-items:center;padding:4px 0">${l.ico ? `<img src="img/ikon_${l.ico}.png" alt="" style="width:26px;height:26px">` : ''}<span>${esc(l.text)} <small style="color:var(--ink-soft)">${ago(l.t)}</small></span></div>`).join('') || T('Csend van a megyében.')}</div>`;
@@ -1958,10 +1960,10 @@ function showVisit(id) {
   visitId = id; const b = bot(id); const town = b.real ? { list: [] } : townOf(b); const rt = b.real ? NET.towns[id] : null; if (b.real && !NET.walls[id]) netLoadWall(id); const wall = b.real ? (NET.walls[id] || []) : (SOC.walls[id] || []);
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('LÁTOGATÁS')}</span>
     <div style="display:flex;gap:14px;align-items:center">${avatar(b, 84)}<div><h2 style="margin:0">${esc(b.name)}</h2><span>${TF('{0}. korszak · {1} lakos · védelem {2}', b.era, b.pop, b.def)}</span><div>${b.kits.map(k => kitImg(k, 30)).join(' ')}</div></div></div>
-    <p><i>„${esc(T(b.bio))}”</i><br><span style="font-size:20px">${typeof rovasHTML === 'function' ? rovasHTML(b.leader) : ''}</span></p>
+    <p>${b.bio ? `<i>„${esc(T(b.bio))}”</i><br>` : ''}<span style="font-size:20px">${typeof rovasHTML === 'function' ? rovasHTML(b.leader) : ''}</span></p>
     <canvas id="vTown" width="960" style="width:100%;display:block;border-radius:16px;box-shadow:0 4px 14px rgba(40,20,0,.25);background:#6b8a3a"></canvas>
     <p style="font-size:13px;margin:6px 0 0">${TF('{0} épület vár begyűjtésre ebben a városban.', b.real ? ((rt && rt.ready) || 0) : town.list.filter(x => NOW() - x.ready > 3 * HOUR).length)}</p>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">${btn(T('Kaláka'), `data-k="${id}"`, canDo('kalaka', id), 'teal', 'kalaka')}${GIFTS().map((g, i) => btn(`${g.n} ${RES[g.k] ? RES[g.k].name : g.k}`, `data-gi="${i}"`, canDo('gift', id) && canPay({ [g.k]: g.n }), 'teal', 'ajandek')).join('')}${inAlly(id) ? '' : btn(TF('Portya {0}%', Math.round(raidChance(b) * 100)), `data-r="${id}"`, canDo('raid', id), 'coral', 'portya')}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0">${btn(T('Kaláka'), `data-k="${id}"`, canDo('kalaka', id), 'teal', 'kalaka')}${GIFTS().map((g, i) => btn(`${g.n} ${RES[g.k] ? RES[g.k].name : g.k}`, `data-gi="${i}"`, canDo('gift', id) && canPay({ [g.k]: g.n }), 'teal', 'ajandek')).join('')}${inAlly(id) || b.far ? '' : btn(TF('Portya {0}%', Math.round(raidChance(b) * 100)), `data-r="${id}"`, canDo('raid', id), 'coral', 'portya')}</div>${b.far ? `<p style="font-size:12px;color:var(--ink-soft);margin:0">${T('Más megyében él. Kalákázni, ajándékozni és üzenni lehet neki, portyázni csak a szomszédokra.')}</p>` : ''}
     <div class="store-row" style="flex-direction:column;align-items:stretch"><b>${T('Üzenőfal')}</b>
       <div style="display:flex;gap:6px;margin:6px 0"><input class="pin" id="wTxt" maxlength="200" placeholder="${T('Írj valamit a falára')}" style="flex:1">${btn(T('Küldés'), 'id="wSend"', true, 'teal', 'fal')}</div>
       ${wall.map(w => `<div style="padding:4px 0;border-bottom:1px dashed rgba(90,55,25,.25)"><b>${esc(nameOf(w.from))}</b> <small>${ago(w.t)}</small><br>${esc(w.text)}</div>`).join('')}</div>
@@ -1977,6 +1979,8 @@ function wire(vid) {
   on('[data-gi]', e => doGift(vid, +e.dataset.gi));
   on('[data-r]', e => doRaid(e.dataset.r));
   on('[data-v]', e => showVisit(e.dataset.v));
+  on('[data-rv]', e => visitFar(e.dataset.rv));
+  const rq = document.getElementById('rangQ'); if (rq) { rq.onkeydown = e => { if (e.key === 'Enter') rangSearch(rq.value); }; const rb = document.getElementById('rangGo'); if (rb) rb.onclick = () => rangSearch(rq.value); }
   on('[data-join]', e => joinAlly(+e.dataset.join));
   on('[data-inv]', e => invite(e.dataset.inv));
   on('[data-dep]', e => deposit(+e.dataset.dep));
@@ -2036,7 +2040,7 @@ const SOC_EN = {"Áldomásivó": "Toast Keeper", "Az áldomás után három napi
   'Árulni korszakonként egyszer lehet. Az Áruló kitűző örökre rajtad marad. Ha két napon belül lépsz ki a vérszerződés után, Kétszínű leszel.': 'You can betray once per era. The Traitor badge stays forever. Leave within two days of a blood oath and you become Two-Faced.',
   'ÁRULÁS': 'BETRAYAL', 'Biztos vagy benne?': 'Are you sure?', 'Viszem a felét': 'Take half', 'Mégsem': 'Cancel', 'Megérte': 'Worth it', 'Elvitted a kincstár felét: {0} Pénz': 'You took half the treasury: {0} Money',
   'A régi társaid már tudják. Holnapra az egész megye tudni fogja. A kitűződet örökre viseled.': 'Your old companions already know. By tomorrow the whole county will. You wear the badge forever.',
-  'most': 'now', 'A játékod a szerverre mentődik, és bármelyik gépen vagy telefonon ott folytatod, ahol abbahagytad.': 'Your game is saved on the server, and you can continue on any computer or phone where you left off.', 'Szia Kedves!': 'Hi there!', 'Örülök, hogy itt vagy!': 'I am glad you are here!', 'A játék jelenleg teszt üzemben van, kérlek bármit találtok, vagy tapasztaltok, írjatok nekem!': 'The game is in test mode right now. Whatever you find or experience, please write to me!', 'Puszi': 'Hugs', 'Visszajelzést a Beállításokban vagy a jobb felső Hiba? gombbal tudsz küldeni.': 'You can send feedback from Settings or with the Bug? button at the top right.', 'Kezdjük!': 'Let us start!', 'VISSZAJELZÉS': 'FEEDBACK', 'Írj Lorkának!': 'Write to Lorka!', 'Hibát találtál, valami furcsa, vagy van egy ötleted? Írd le, és egyenesen Lorkához jut.': 'Found a bug, something odd, or have an idea? Write it down and it goes straight to Lorka.', 'Hiba': 'Bug', 'Ötlet': 'Idea', 'Egyéb': 'Other', 'Mi történt? Hol voltál a játékban, mire kattintottál?': 'What happened? Where were you in the game, what did you click?', 'Elküldöm': 'Send', 'Írj pár szót, kérlek.': 'Please write a few words.', 'Köszönöm! Megkaptam.': 'Thank you! Got it.', 'Nem sikerült elküldeni. Próbáld újra kicsit később.': 'Could not send it. Please try again a bit later.', 'Hiba?': 'Bug?', 'Visszajelzés Lorkának': 'Feedback for Lorka', 'Kifosztottad {0} városát. {1}': 'You plundered {0}\'s town. {1}', 'Valódi játékosokkal a közös törzsszövetség a következő frissítésben jön. Addig kalákázz és ajándékozz nekik!': 'Alliances with real players come in the next update. Until then, help them and send gifts!',  '{0} épület vár begyűjtésre ebben a városban.': '{0} buildings in this town are ready to collect.', '{0} perc': '{0} min', '{0} óra': '{0} h', 'Rovásíró': 'Rune Writer', '{0} perce': '{0} min ago', '{0} órája': '{0} h ago', '{0} napja': '{0} d ago'
+  'most': 'now', 'Ranglista': 'Leaderboard', 'pont': 'pts', '{0}. korszak': 'Era {0}', '{0}. megye': 'County {0}', 'Töltöm a ranglistát…': 'Loading the leaderboard…', 'A pontok az épületeid értékéből, a lakosokból, a korszakból, a kutatásokból, az Erőpróbákból és a kitűzőkből jönnek.': 'Points come from the value of your buildings, your people, your era, research, Trials and badges.', 'Keress rá egy játékos nevére': 'Search for a player by name', 'Keresés': 'Search', 'Nincs ilyen nevű játékos.': 'No player with that name.', 'Más megyében él. Kalákázni, ajándékozni és üzenni lehet neki, portyázni csak a szomszédokra.': 'Lives in another county. You can help, gift and message them, raids are for neighbours only.', 'A játékod a szerverre mentődik, és bármelyik gépen vagy telefonon ott folytatod, ahol abbahagytad.': 'Your game is saved on the server, and you can continue on any computer or phone where you left off.', 'Szia Kedves!': 'Hi there!', 'Örülök, hogy itt vagy!': 'I am glad you are here!', 'A játék jelenleg teszt üzemben van, kérlek bármit találtok, vagy tapasztaltok, írjatok nekem!': 'The game is in test mode right now. Whatever you find or experience, please write to me!', 'Puszi': 'Hugs', 'Visszajelzést a Beállításokban vagy a jobb felső Hiba? gombbal tudsz küldeni.': 'You can send feedback from Settings or with the Bug? button at the top right.', 'Kezdjük!': 'Let us start!', 'VISSZAJELZÉS': 'FEEDBACK', 'Írj Lorkának!': 'Write to Lorka!', 'Hibát találtál, valami furcsa, vagy van egy ötleted? Írd le, és egyenesen Lorkához jut.': 'Found a bug, something odd, or have an idea? Write it down and it goes straight to Lorka.', 'Hiba': 'Bug', 'Ötlet': 'Idea', 'Egyéb': 'Other', 'Mi történt? Hol voltál a játékban, mire kattintottál?': 'What happened? Where were you in the game, what did you click?', 'Elküldöm': 'Send', 'Írj pár szót, kérlek.': 'Please write a few words.', 'Köszönöm! Megkaptam.': 'Thank you! Got it.', 'Nem sikerült elküldeni. Próbáld újra kicsit később.': 'Could not send it. Please try again a bit later.', 'Hiba?': 'Bug?', 'Visszajelzés Lorkának': 'Feedback for Lorka', 'Kifosztottad {0} városát. {1}': 'You plundered {0}\'s town. {1}', 'Valódi játékosokkal a közös törzsszövetség a következő frissítésben jön. Addig kalákázz és ajándékozz nekik!': 'Alliances with real players come in the next update. Until then, help them and send gifts!',  '{0} épület vár begyűjtésre ebben a városban.': '{0} buildings in this town are ready to collect.', '{0} perc': '{0} min', '{0} óra': '{0} h', 'Rovásíró': 'Rune Writer', '{0} perce': '{0} min ago', '{0} órája': '{0} h ago', '{0} napja': '{0} d ago'
 };
 // ---------- online: Supabase (csak a GitHub Pages változatban, vagy ?online paraméterrel) ----------
 const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publishable_DUIYY1o4LXgNkmzLmHjlCg_WlsFJX5_';
@@ -2137,10 +2141,10 @@ async function netPushProfile(force) {
   const ready = S.buildings.filter(b => DEF[b.type] && DEF[b.type].prod && !b.ruined).length;
   let def = 0; try { def = typeof defPts === 'function' ? defPts() : Math.round(pop() / 12); } catch (e) {}
   const row = { id: NET.me, name: (PROF.name || '').slice(0, 24) || 'Törzsfő', avatar: PROF.av, bio: (PROF.bio || '').slice(0, 140), era, defense: def, pop: pop(),
-    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}) }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString() };
-  const sig = JSON.stringify([row.name, row.bio, row.avatar, row.defense, row.pop, list.length, ready, era]);
+    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}) }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
+  const sig = JSON.stringify([row.name, row.bio, row.avatar, row.defense, row.pop, list.length, ready, era, row.score]);
   if (!force && sig === lastProf) return; lastProf = sig;
-  const { error } = await NET.sb.from('players').upsert(row); if (error) console.warn('profile', error);
+  let { error } = await NET.sb.from('players').upsert(row); if (error && /score/.test(error.message || '')) { delete row.score; ({ error } = await NET.sb.from('players').upsert(row)); } if (error) console.warn('profile', error);
 }
 // valódi szomszédok, események, üzenőfal
 async function netRefresh() {
@@ -2277,6 +2281,51 @@ function testServerTweaks() {
     const inner = document.querySelector('#modalRoot .inner'); if (inner && !document.getElementById('sFb')) { const row = document.createElement('div'); row.className = 'row'; row.innerHTML = `<button class="btn coral" type="button" id="sFb">${T('Visszajelzés Lorkának')}</button>`; inner.insertBefore(row, inner.children[2] || null); document.getElementById('sFb').onclick = showFeedback; }
   };
 }
+
+// ---------- ranglista és keresés ----------
+function myScore() {
+  let v = 0; try {
+    const era = typeof CUR_ERA === 'number' ? CUR_ERA : 0;
+    S.buildings.forEach(b => { const d = DEF[b.type]; if (!d || b.ruined) return; const c = d.cost || {}; v += ((c.penz || 0) + (c.termeny || 0) + 40 * (c.kovako || 0)) / 4 + (d.gb ? 150 : 0) + (d.unique ? 100 : 0); });
+    v += pop() * 3 + era * 1000 + 60 * (S.gb && S.gb.vezeri ? S.gb.vezeri.lvl || 0 : 0) + 25 * Object.keys(KITS).length + 10 * Object.keys(S.techs || {}).length;
+    if (S.winter && S.winter.outcome) v += { dics: 400, tul: 250, seb: 120, rom: 50 }[S.winter.outcome] || 0;
+  } catch (e) {}
+  return Math.round(v);
+}
+const botScore = b => Math.round(b.era * 1000 + b.pop * 9 + b.def * 30 + (b.id.length * 37) % 300);
+let RANK = null, RANKQ = '';
+function rangRow(r, k) {
+  const me = r.id === 'me';
+  return `<div class="store-row" style="gap:10px;${me ? 'background:#F3E2BE;border:2px solid var(--ochre,#C98B2B)' : ''}"><b style="width:30px;text-align:right;font-size:18px">${k + 1}.</b>${avatar(r, 40)}
+    <div class="grow" style="min-width:0"><b>${esc(r.name)}</b>${r.real && !me ? ` <span style="font-size:11px;font-weight:900;color:#fff;background:#3E7C4A;border-radius:999px;padding:2px 8px">${T('valódi játékos')}</span>` : ''}<br><span style="font-size:13px">${TF('{0}. korszak', r.era)}${r.megye && NET.megye && r.megye !== NET.megye ? ' · ' + TF('{0}. megye', r.megye) : ''}</span></div>
+    <b style="font-size:17px;white-space:nowrap">${fmt(r.score)} ${T('pont')}</b>${me ? '' : btn(T('Látogatás'), `data-rv="${r.id}"`, true, 'ghost', 'fal')}</div>`;
+}
+function rangHTML() {
+  const mine = { id: 'me', name: PROF.name || T('Törzsfő'), av: PROF.av, era: typeof CUR_ERA === 'number' ? CUR_ERA : 0, score: myScore(), real: true, megye: NET.megye };
+  let list;
+  if (NET.on) { if (!RANK) { rangLoad(); return `<p>${T('Töltöm a ranglistát…')}</p>`; } list = RANK.filter(r => r.id !== 'u_' + NET.me); }
+  else list = SOC.bots.map(b => ({ id: b.id, name: b.name, av: b.av, era: b.era, score: botScore(b) }));
+  if (RANKQ) list = list.filter(r => r.name.toLowerCase().includes(RANKQ.toLowerCase()));
+  if (!RANKQ || mine.name.toLowerCase().includes(RANKQ.toLowerCase())) list.push(mine);
+  list.sort((a, b) => b.score - a.score);
+  return `<p>${T('A pontok az épületeid értékéből, a lakosokból, a korszakból, a kutatásokból, az Erőpróbákból és a kitűzőkből jönnek.')}</p>
+    <div style="display:flex;gap:6px;margin-bottom:8px"><input class="pin" id="rangQ" value="${esc(RANKQ)}" maxlength="24" placeholder="${T('Keress rá egy játékos nevére')}" style="flex:1">${btn(T('Keresés'), 'id="rangGo"', true, 'teal')}</div>
+    ${list.slice(0, 60).map(rangRow).join('') || `<p>${T('Nincs ilyen nevű játékos.')}</p>`}`;
+}
+async function rangLoad(q) {
+  if (!NET.on) return;
+  let qry = NET.sb.from('players').select('id,name,avatar,era,score,pop,defense,town,megye,bio');
+  if (q) qry = qry.ilike('name', '%' + q.replace(/[%_]/g, '') + '%');
+  let { data, error } = await qry.order('score', { ascending: false, nullsFirst: false }).limit(60);
+  if (error) { let q2 = NET.sb.from('players').select('id,name,avatar,era,pop,defense,town,megye,bio'); if (q) q2 = q2.ilike('name', '%' + q + '%'); ({ data } = await q2.order('pop', { ascending: false }).limit(60)); }
+  NET.extra = NET.extra || {};
+  RANK = (data || []).map(p => { const id = 'u_' + p.id; NET.names[id] = p.name; NET.towns[id] = p.town;
+    if (!SOC.bots.find(b => b.id === id)) NET.extra[id] = { id, real: true, far: true, name: p.name || 'Törzsfő', leader: p.name || '', av: p.avatar || newAv(), bio: p.bio || '', def: p.defense || 0, pop: p.pop || 0, era: p.era || 0, kits: [], friend: 0, last: {} };
+    return { id, real: true, name: p.name || 'Törzsfő', av: p.avatar || newAv(), era: p.era || 0, megye: p.megye, score: p.score != null ? p.score : (p.era || 0) * 1000 + (p.pop || 0) * 3 }; });
+  if (openModal === 'soc' && tab === 'rang') showSoc('rang');
+}
+function rangSearch(q) { RANKQ = String(q || '').trim(); if (NET.on) { RANK = null; rangLoad(RANKQ); } showSoc('rang'); }
+function visitFar(id) { if (id === 'me') return; showVisit(id); }
 function boot() {
   try { Object.assign(EN, SOC_EN, NET_EN); } catch (e) {}
   loadSoc(); mountBtn(); checkKits(); tick(); setInterval(tick, 30e3); testServerTweaks(); if (ONLINE) showWelcome(netBoot); else netBoot();
