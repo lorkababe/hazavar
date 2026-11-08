@@ -429,7 +429,7 @@ const EN_DATA = {"res": {"penz": "Money", "termeny": "Food", "tudas": "Knowledge
 const tr = x => LANG === 'en' && EN[x] != null ? EN[x] : x;
 const trf = (x, ...a) => tr(x).replace(/\{(\d)\}/g, (_, i) => a[i]);
 // ---------- alapadatok ----------
-const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 9, OX = 836, OY = 240;
+const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 12, OX = 836, OY = 120;
 const SAVE_KEY = 'panelvar-e03-v1';
 const GRASS = 8; // ennyiszer lehet egy legelőt lelegeltetni, aztán kimerül
 const TERM_CAP = 1000, TUDAS_CAP = 30, TUDAS_EVERY = 30, WINTER_LEN = 24 * 3600;
@@ -519,7 +519,7 @@ function e00Bonus() { try { const d = JSON.parse(localStorage.getItem('panelvar-
 function fresh() {
   return {
     v: 1, gt: 0, res: { penz: 220 + prevBonus(), termeny: 150, tudas: 3, kovako: 1 }, tudasT: 0, moves: 0, council: null, raids: [], runes: [], conv: 15, laws: [], tempo: null,
-    buildings: [{ id: 1, type: 'fo', i: 3, j: 3, t0: 0 }], roads: {}, nextId: 2,
+    buildings: [{ id: 1, type: 'fo', i: 5, j: 5, t0: 0 }], roads: {}, nextId: 2, gridV: 2,
     techs: {}, quest: 0, stats: { collected: 0, kovako: 0, built: 0 }, winter: null, speed: 1,
     intro: false, eraDone: false, snow: false, newTypes: {}, newTechs: {}, savedAt: Date.now()
   };
@@ -539,13 +539,21 @@ function load() {
 }
 // sérült mentés javítása: ismeretlen vagy rossz helyen álló épület ki, a tábor mindig legyen meg
 function lotsOk(d, b) { const [w, h] = dimsB(b); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const i = b.i + a, j = b.j + c; if (!(i >= 0 && j >= 0 && i < N && j < N) && !(d.lots || []).some(id => { const l = LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3; })) return false; } return true; }
+function migrateGrid(d) {
+  if (d.gridV === 2) return; d.gridV = 2;
+  (d.buildings || []).forEach(b => { b.i += 3; b.j += 3; });
+  const r = {}; Object.keys(d.roads || {}).forEach(k => { const [a, c] = k.split(',').map(Number); r[(a + 3) + ',' + (c + 3)] = d.roads[k]; }); d.roads = r;
+  const keep = (d.lots || []).filter(id => id === 'r1' || id === 'r2'); const back = (d.lots || []).length - keep.length; d.lots = keep; if (back) d.lotCredits = (d.lotCredits || 0) + back;
+  (d.surp || []).forEach(x => { x.i += 3; x.j += 3; });
+}
 function repairSave(d) {
+  migrateGrid(d);
   if (!Array.isArray(d.buildings)) d.buildings = [];
   d.buildings = d.buildings.filter(b => b && DEF[b.type] && Number.isFinite(b.i) && Number.isFinite(b.j) && lotsOk(d, b));
   const foes = d.buildings.filter(b => b.type === 'fo'); if (foes.length > 1) d.buildings = d.buildings.filter(b => b.type !== 'fo' || b === foes[0]);
   if (!foes.length) {
-    const fo = { id: 1, type: 'fo', i: 3, j: 3, t0: 0 };
-    const hit = b => { const [w, h] = dimsB(b); return b.i < 6 && b.i + w > 3 && b.j < 6 && b.j + h > 3; };
+    const fo = { id: 1, type: 'fo', i: 5, j: 5, t0: 0 };
+    const hit = b => { const [w, h] = dimsB(b); return b.i < 8 && b.i + w > 5 && b.j < 8 && b.j + h > 5; };
     d.buildings = d.buildings.filter(b => !hit(b)); d.buildings.unshift(fo);
     if (d.roads) for (let a = 3; a < 6; a++) for (let c = 3; c < 6; c++) delete d.roads[a + ',' + c];
   }
@@ -1806,7 +1814,7 @@ function showStore() {
   $('modalRoot').querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const n = +b.dataset.sell; if (S.res.termeny < n) return; S.res.termeny -= n; give({ penz: n / 100 * rate }); dailyHit('vasar'); save(); toast(trf('Eladtál {0} Terményt {1} Pénzért.', n, n / 100 * rate)); showStore(); });
 }
 // ---------- extra telkek ----------
-const LOTS = [{ id: 'l1', i: -3, j: 0 }, { id: 'l2', i: -3, j: 3 }, { id: 'l3', i: -3, j: 6 }, { id: 't1', i: 0, j: -3 }, { id: 't2', i: 3, j: -3 }, { id: 't3', i: 6, j: -3 }, { id: 'r1', i: 9, j: 0 }, { id: 'r2', i: 9, j: 3 }];
+const LOTS = [{ id: 'l1', i: -3, j: 3 }, { id: 'l2', i: -3, j: 6 }, { id: 'l3', i: -3, j: 9 }, { id: 't1', i: 3, j: -3 }, { id: 't2', i: 6, j: -3 }, { id: 't3', i: 9, j: -3 }, { id: 'r1', i: 12, j: 3 }, { id: 'r2', i: 12, j: 6 }];
 const LOT_MONEY = [250, 500, 900], LOT_KORONA = 40;
 const lotOwned = id => (S.lots || []).includes(id);
 const lotAt = (i, j) => LOTS.find(l => i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3);
@@ -1824,7 +1832,7 @@ function startLotPick() {
   if (!lotBuyable()) { toast('Most nem tudsz területet venni. Kell egy ajándék telek, elég Pénz vagy elég Korona.'); return; }
   closeDrawer(); hideInfo(); lotPick = true; $('placebar').hidden = false; $('nav').hidden = true; if ($('rotBtn')) $('rotBtn').hidden = true;
   $('placeText').textContent = tr('Válassz egy szabad területet a térképen, koppints a + jelre.');
-  try { scale = minS; const [x, y] = tileTop(4.5, 4.5); centerOn(x, y); } catch (e) {}
+  try { scale = minS; const [x, y] = tileTop(N / 2, N / 2); centerOn(x, y); } catch (e) {}
 }
 function endLotPick() { if (!lotPick) return; lotPick = false; $('placebar').hidden = true; $('nav').hidden = false; }
 function showLot(l) {
@@ -2305,7 +2313,7 @@ function badgesHTML() {
   box.innerHTML = `<div class="grow" style="min-width:200px"><b>${tr('A 4. korszak, az Árpád-házi királyok kora hamarosan jön. Addig építkezhetsz tovább.')}</b></div>`;
   inner.insertBefore(box, inner.children[2] || null); const b = document.getElementById('rsNext'); if (b) b.onclick = null; } catch (e) {} }; }
 // ---------- indítás ----------
-function centerStart() { scale = minS * 1.25; const [x, y] = tileTop(4.5, 4.5); centerOn(x, y + 60); }
+function centerStart() { scale = minS * 1.25; const [x, y] = tileTop(N / 2, N / 2); centerOn(x, y + 60); }
 // a ciklus akkor se álljon le, ha valami hibát dob, a hibát pedig megjegyezzük a hibajelentéshez
 let lastErr = null, errShown = false;
 function noteErr(e) {
@@ -2843,7 +2851,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 240 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 836, oy: 212 }, { bg: 'e01_alapterkep.jpg', ox: 776, oy: 332 }, { bg: 'e02_alapterkep.jpg', ox: 776, oy: 305 }, { bg: 'e03_alapterkep.jpg', ox: 836, oy: 120, n: 12 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
@@ -2937,7 +2945,7 @@ async function netPushProfile(force) {
   const ready = S.buildings.filter(b => DEF[b.type] && DEF[b.type].prod && !b.ruined).length;
   let def = 0; try { def = typeof defPts === 'function' ? defPts() : Math.round(pop() / 12); } catch (e) {}
   const row = { id: NET.me, name: (PROF.name || '').slice(0, 24) || 'Törzsfő', avatar: PROF.av, bio: (PROF.bio || '').slice(0, 140), era, defense: def, pop: pop(),
-    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}) }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
+    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}), n: N }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
   const sig = JSON.stringify([row.name, row.bio, row.avatar, row.defense, row.pop, list.length, ready, era, row.score]);
   if (!force && sig === lastProf) return; lastProf = sig;
   let { error } = await NET.sb.from('players').upsert(row); if (error && /score/.test(error.message || '')) { delete row.score; ({ error } = await NET.sb.from('players').upsert(row)); } if (error) console.warn('profile', error);
@@ -3004,7 +3012,7 @@ function renderRemoteTown(cv, town) {
       const w = b.rot ? b.h : b.w, h = b.rot ? b.w : b.h, flip = !!b.rot, s = (w + h) * TW / 2 / Math.max(1, m.maxX - m.minX);
       const L = TT(b.i, b.j + h); const lx = flip ? m.w - m.maxX : m.minX, ly = w === h ? (m.lY + m.rY) / 2 : flip ? m.rY : m.lY;
       return { im, flip, sq: w === h, L, R: TT(b.i + w, b.j), B: TT(b.i + w, b.j + h), x: L[0] - lx * s, y: L[1] - ly * s, w: im.naturalWidth * s, h: im.naturalHeight * s }; }).filter(Boolean);
-    paintTown(cv, RIMG[names[0]], ox, oy, sprites, N);
+    paintTown(cv, RIMG[names[0]], ox, oy, sprites, town.n || 9);
   };
   names.forEach(n => rimg(n, () => { if (--left <= 0) draw(); }));
 }
