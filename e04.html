@@ -484,9 +484,9 @@ const H1 = 3600, M = 60;
 
 // terep: erdőszél bal felül, szőlődomb és sziklák jobb felül, folyópart lent
 const TERRAIN = {
-  forest: { short: 'Csak erdőszélen', name: 'erdőszél', where: 'a térkép bal felső szélén, az erdő mellett', test: (i, j) => i <= 3 },
-  hill: { short: 'Csak domboldalon', name: 'domboldal', where: 'a térkép jobb felső szélén, a dombok és sziklák alatt', test: (i, j) => j <= 3 },
-  bank: { short: 'Csak folyóparton', name: 'folyópart', where: 'a térkép alsó szélén, a folyó mentén', test: (i, j) => j >= 16 || i + j >= 34 }
+  forest: { short: 'Csak az erdőben', name: 'erdő', where: 'a térkép bal felső részén, az erdőben', test: (i, j) => (i <= 4 && j <= 14) || (j < 0 && i <= 7) },
+  hill: { short: 'Csak a dombon', name: 'domboldal', where: 'a jobb oldali dombon, a szőlőteraszok és sziklák között', test: (i, j) => i >= 12 && j <= 6 },
+  bank: { short: 'Csak a folyóparton', name: 'folyópart', where: 'a térkép alján, a folyó mentén', test: (i, j) => j >= 16 || i + j >= 33 || (i < 0 && j >= 13) }
 };
 
 const DEF = {
@@ -845,7 +845,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611091' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611092' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -1756,7 +1756,7 @@ function bindSpeed(b) {
 
 // ---------- a megváltozott alapterületű épületek helyre igazítása ----------
 function fitFix() {
-  if (S.fitV === 2) return; S.fitV = 2; let moved = 0;
+  if (S.fitV === 3) return; S.fitV = 3; let moved = 0;
   S.buildings.forEach(b => {
     if (b.type === 'fo') return; const [w, h] = dimsB(b);
     const m = occ(); let clash = false, roadsUnder = [];
@@ -3633,7 +3633,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611091'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611092'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
