@@ -1555,7 +1555,7 @@ function tick(dt) {
   saveTimer += dt; if (saveTimer > 4) { saveTimer = 0; save(); }
   grumbleT -= dt; if (grumbleT <= 0) { grumbleT = 180 + Math.random() * 120; grumble(); }
   chiefT -= dt; if (chiefT <= 0) { chiefT = 1; chiefTick(); dailyCheck();
-    if (S.techs.imre && !S.winter && !openModal) startRaid(); tempoEventTick(); try { lawEventTick(); } catch (e) { noteErr(e); } }
+    if (S.techs.imre && !S.winter && !openModal) startRaid(); if (!EGG.urispan && !openModal && S.intro && S.buildings.some(b => b.type === 'ispan' && !(b.until && S.gt < b.until))) showUrispan(); tempoEventTick(); try { lawEventTick(); } catch (e) { noteErr(e); } }
   convTick(g);
   S.hirT = (S.hirT || 0) + g; while (S.hirT >= 300) { S.hirT -= 300; S.res.hirnev = (S.res.hirnev || 0) + 1; }
   S.buildings.forEach(b => { if (b.until && !b.doneNote && S.gt >= b.until) { b.doneNote = true; toast(trf('Elkészült: {0}!', DEF[b.type].name)); sfxCollect(); connCache = null; } });
