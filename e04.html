@@ -712,7 +712,7 @@ const withArt = w => LANG === 'en' ? w : /^Az? /.test(w) ? w.charAt(0).toLowerCa
 function dimsT(type, rot) { const d = DEF[type]; const w = d.w || d.size, h = d.h || d.size; return rot ? [h, w] : [w, h]; }
 const dimsB = b => dimsT(b.type, b.rot);
 const off = b => !!(b.ruined || (b.until && S.gt < b.until));
-function pop() { return S.buildings.reduce((a, b) => a + (off(b) ? 0 : (DEF[b.type].pop || 0)), 0); }
+function pop() { return S.buildings.reduce((a, b) => a + (b.ruined ? 0 : off(b) ? (b.upTo && b.oldPop) || 0 : (DEF[b.type].pop || 0)), 0); }
 function workers() { return S.buildings.reduce((a, b) => a + (off(b) ? 0 : (DEF[b.type].workers || 0)), 0); }
 function hangOf(f) { return S.buildings.reduce((a, b) => a + (off(b) || (DEF[b.type].faith || '') !== f ? 0 : (DEF[b.type].hang || 0)), 0); }
 function hangSum() { return hangOf('') + ((S.site && S.site.hang) || 0) + (S.council === 'rovas' ? 2 : 0) + relics().reduce((a, r) => a + (r.hang || 0), 0) + (S.gt < (S.feastUntil || 0) ? 15 : 0) + lawSum('hang') + gbHang(''); }
@@ -845,7 +845,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611092' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611093' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -918,13 +918,13 @@ function centerOn(bx, by) { camX = bx - W / scale / 2; camY = by - H / scale / 2
 let zBand = null, drawerChk = 0, drawerSig = '';
 // a határon túl egy kicsit enged, aztán visszarugózik
 function zoomSpring(now) {
-  if (!zBand || now < zBand[2]) return; const hi = minS * 4.2, tgt = scale > hi ? hi : scale < minS ? minS : null; if (tgt == null) { zBand = null; return; }
+  if (!zBand || now < zBand[2]) return; const hi = minS * 3.4, tgt = scale > hi ? hi : scale < minS ? minS : null; if (tgt == null) { zBand = null; return; }
   const [sx, sy] = zBand, bx = sx / scale + camX, by = sy / scale + camY; scale += (tgt - scale) * 0.22; if (Math.abs(scale - tgt) < tgt * 0.002) { scale = tgt; zBand = null; }
   camX = bx - sx / scale; camY = by - sy / scale; clampCam();
 }
 function zoomAt(f, sx, sy) {
   const bx = sx / scale + camX, by = sy / scale + camY;
-  const hi = minS * 4.2; let ns = scale * f; if (ns > hi) ns = Math.min(hi * 1.12, scale * Math.pow(f, 0.35)); if (ns < minS) ns = Math.max(minS * 0.9, scale * Math.pow(f, 0.35)); scale = ns; zBand = [sx, sy, performance.now() + 140];
+  const hi = minS * 3.4; let ns = scale * f; if (ns > hi) ns = Math.min(hi * 1.12, scale * Math.pow(f, 0.35)); if (ns < minS) ns = Math.max(minS * 0.9, scale * Math.pow(f, 0.35)); scale = ns; zBand = [sx, sy, performance.now() + 140];
   camX = bx - sx / scale; camY = by - sy / scale; clampCam();
 }
 const toBg = (sx, sy) => [sx / scale + camX, sy / scale + camY];
@@ -1672,7 +1672,7 @@ function showUpgrade(b) {
   $('upGo').onclick = () => {
     if (!canPay(cost) || !spot) return; pay(cost);
     if (S.gb && d.gb && S.gb[b.type]) { S.gb[t] = S.gb[b.type]; }
-    b.type = t; b.i = spot.i; b.j = spot.j; b.rot = spot.rot; b.mode = undefined; b.upTo = t; b.until = S.gt + d.upT; b.dur = d.upT; b.t0 = b.until; b.doneNote = false;
+    b.oldPop = d.pop || 0; b.type = t; b.i = spot.i; b.j = spot.j; b.rot = spot.rot; b.mode = undefined; b.upTo = t; b.until = S.gt + d.upT; b.dur = d.upT; b.t0 = b.until; b.doneNote = false;
     S.stats.upgraded = (S.stats.upgraded || 0) + 1; connCache = null; shadowCache = null; sfxCollect(); save(); closeModal(); checkQuest();
     toast(trf('Elkezdődött az átépítés. {0} múlva kész.', dur(d.upT / S.speed)));
   };
@@ -1682,6 +1682,8 @@ function feedTick() {
 }
 function upgradeTick() {
   feedTick();
+  S.buildings.forEach(b => { if (b.upTo && !(b.until && S.gt < b.until)) { b.upTo = null; b.oldPop = 0; } });
+  if (!S.popFix) { S.popFix = 1; S.buildings.forEach(b => { if (b.upTo && b.until && S.gt < b.until && !b.oldPop) { const o = Object.keys(DEF).find(k => DEF[k].up === b.type); b.oldPop = o ? DEF[o].pop || 0 : 0; } }); }
   if (!S.eraDone && S.quest >= QUESTS.length && S.rebuild && !openModal) { S.eraDone = true; save(); showEraEnd(); }
 }
 (function () {
@@ -3633,7 +3635,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611092'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611093'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
