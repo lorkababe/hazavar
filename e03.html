@@ -3536,6 +3536,35 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 // a Beállítások hibajelentés gombja is a visszajelzés ablakot nyitja, ahol a hiba már benne van
 document.addEventListener('click', e => { const t = e.target && e.target.closest && e.target.closest('#sReport'); if (!t) return; e.stopPropagation(); e.preventDefault(); try { closeModal(); } catch (x) {} showFeedback(); }, true);
 })();
+// ---------- egérrel fölé állva látszik, mennyi van még hátra ----------
+(function () {
+  const cv = document.getElementById('cv'); if (!cv) return;
+  const tip = document.createElement('div'); tip.id = 'hoverTip';
+  tip.style.cssText = 'position:fixed;z-index:60;pointer-events:none;background:rgba(43,26,14,.92);color:#FFF4DF;font:800 14px/1.25 "Baloo 2",system-ui,sans-serif;padding:6px 10px;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.3);white-space:nowrap;display:none';
+  document.body.appendChild(tip);
+  let hb = null, mx = 0, my = 0;
+  const clock = sec => { sec = Math.max(0, Math.ceil(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+  const text = b => {
+    const d = DEF[b.type]; if (!d) return ''; const sp = S.speed || 1; let t = '<span style="opacity:.75">' + String(d.name).replace(/</g, '&lt;') + '</span><br>';
+    if (b.ruined) return t + tr('Rom, koppints rá az újjáépítéshez');
+    if (b.until && S.gt < b.until) return t + tr('Épül, még') + ' ' + clock((b.until - S.gt) / sp);
+    if (!d.prod) return t + (d.hang ? '+' + d.hang + ' ' + tr('Hangulat') : d.def ? '+' + d.def + ' ' + tr('Védelem') : d.pop ? '+' + d.pop + ' ' + tr('lakos') : '');
+    if (d.road && typeof connected === 'function' && !connected(b)) return t + tr('Nincs ösvény, nem termel');
+    if (d.input && b.fed === false) return t + tr('Vár az alapanyagra');
+    if (ready(b)) return t + tr('Kész, koppints rá!');
+    try { const left = (bTime(b) - (S.gt - b.t0)) / sp; const r = Object.keys(d.prod)[0]; return t + tr('Még') + ' ' + clock(left) + (RES[r] ? ' · ' + RES[r].name : ''); } catch (e) { return t; }
+  };
+  const show = () => { if (!hb || !S.buildings.includes(hb)) { tip.style.display = 'none'; return; } const h = text(hb); if (!h) { tip.style.display = 'none'; return; } tip.innerHTML = h; tip.style.display = 'block'; const w = tip.offsetWidth; tip.style.left = Math.min(innerWidth - w - 8, mx + 16) + 'px'; tip.style.top = Math.max(8, my - 54) + 'px'; };
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || e.buttons || (typeof tool !== 'undefined' && tool)) { hb = null; tip.style.display = 'none'; return; }
+    mx = e.clientX; my = e.clientY;
+    try { const p = toBg(e.offsetX, e.offsetY); hb = pick(p[0], p[1]) || null; } catch (x) { hb = null; }
+    show();
+  });
+  cv.addEventListener('pointerleave', () => { hb = null; tip.style.display = 'none'; });
+  cv.addEventListener('pointerdown', () => { tip.style.display = 'none'; });
+  setInterval(() => { if (hb) show(); }, 500);
+})();
 /*SOCIAL-END*/
 })();
 </script>

@@ -978,7 +978,7 @@ function place(i, j) {
   if (!canPay(costOf(tool.type))) { const pt = $('placeText'); pt.textContent = trf('Elfogyott a nyersanyag. Hiányzik · {0}', missText(costOf(tool.type))); pt.classList.add('warn'); setTimeout(() => pt.classList.remove('warn'), 2500); if (tool.type === 'ut') { roadPaint = null; } return; }
   if (d.workers && pop() - workers() < d.workers) { toast(trf('Nincs elég szabad ember, {0} kellene. Építs még egy Jobbágytelket vagy Vendégtelepet!', d.workers)); return; }
   pay(costOf(tool.type)); if (d.free1) { S.freeUsed = S.freeUsed || {}; S.freeUsed[tool.type] = 1; }
-  const nb = { id: S.nextId++, type: tool.type, i, j, t0: S.gt, built: S.gt, rot: tool.rot || 0 }; { const bt = d.buildTime || d.bt; if (bt) { nb.until = S.gt + bt; nb.t0 = nb.until; nb.dur = bt; toast(trf('Elkezdődött az építkezés! {0} múlva készül el.', dur(bt / S.speed))); } }
+  const nb = { id: S.nextId++, type: tool.type, i, j, t0: S.gt, built: S.gt, rot: tool.rot || 0 }; if (d.input) nb.fed = false; { const bt = d.buildTime || d.bt; if (bt) { nb.until = S.gt + bt; nb.t0 = nb.until; nb.dur = bt; toast(trf('Elkezdődött az építkezés! {0} múlva készül el.', dur(bt / S.speed))); } }
   S.buildings.push(nb);
   S.stats.built++; if (S.newTypes) delete S.newTypes[tool.type]; connCache = null; dailyHit('epit');
   { const [w, h] = dimsT(tool.type, tool.rot); floatText(...tileTop(i + w / 2, j + h / 2), d.bt ? tr('Elkezdtük!') : tr('Felépült!'), '#FFF4DF'); }
@@ -992,14 +992,13 @@ const modeMul = (t, m) => m.t ? Math.max(1, Math.round(m.t / DEF[t].time * m.eff
 const modeOf = b => MODES.find(m => m.id === (b.mode || 'q'));
 const bTime = b => { const d = DEF[b.type], m = d.modes ? modeOf(b) : MODES[0]; return m.t || d.time; };
 const bMul = b => DEF[b.type].modes ? modeMul(b.type, modeOf(b)) : 1;
-function ready(b) { return working(b) && !b.dry && S.gt - b.t0 >= bTime(b); }
+function ready(b) { return working(b) && !b.dry && (!DEF[b.type].input || b.fed !== false) && S.gt - b.t0 >= bTime(b); }
 function inputNeed(b) { const d = DEF[b.type]; return d.input ? Object.fromEntries(Object.entries(d.input).map(([k, v]) => [k, v * bMul(b)])) : null; }
 function inputOk(b) { const n = inputNeed(b); return !n || canPay(n); }
 function storeFull(b) { return false; const d = DEF[b.type]; return !!(d.prod && d.prod.termeny && S.res.termeny >= termCap() && Object.keys(d.prod).length === 1); }
 function collect(b) {
   if (storeFull(b)) { toast('Megtelt a raktár! A termés itt vár, amíg nem csinálsz helyet. Nézz be a Raktárba.'); return; }
-  if (!inputOk(b)) { if (S.gt - (b.inWarn || 0) > 20) { b.inWarn = S.gt; toast(trf('{0} nem tud dolgozni, mert hiányzik · {1}', DEF[b.type].name, missText(inputNeed(b)))); } return; }
-  if (inputNeed(b)) pay(inputNeed(b));
+  if (DEF[b.type].input) { b.fed = false; b.paid = null; }
   sfxCollect();
   const d = DEF[b.type]; const m = mood().mult; const [bw, bh] = dimsB(b); const [tx, ty] = tileTop(b.i + bw / 2, b.j + bh / 2);
   let k = 0;
@@ -1678,7 +1677,11 @@ function showUpgrade(b) {
     toast(trf('Elkezdődött az átépítés. {0} múlva kész.', dur(d.upT / S.speed)));
   };
 }
+function feedTick() {
+  S.buildings.forEach(b => { const d = DEF[b.type]; if (!d.input || b.fed !== false || !working(b)) return; const n = inputNeed(b); if (canPay(n)) { pay(n); b.paid = n; b.fed = true; b.t0 = S.gt; } else b.t0 = S.gt; });
+}
 function upgradeTick() {
+  feedTick();
   if (!S.eraDone && S.quest >= QUESTS.length && S.rebuild && !openModal) { S.eraDone = true; save(); showEraEnd(); }
 }
 (function () {
@@ -1688,49 +1691,53 @@ function upgradeTick() {
   const j = document.getElementById('rJavak'); if (j) { const go = () => showStore(); j.onclick = go; j.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; }
 })();
 
-// ---------- mi mire jó: láncok és környék ----------
-const RAW_OF = { szolo: 'bor', gyapju: 'poszto', erc: 'vas' };
+// ---------- mi mire jó: láncok egyszerűen ----------
+const CHAINS = [
+  { id: 'fa', name: 'Fa', steps: ['favago', 'fa'], why: 'Szinte minden új épülethez kell. Ebből fogy el a leggyorsabban, ezért legyen belőle mindig két favágód.' },
+  { id: 'bor', name: 'Bor', steps: ['szolohegy', 'szolo', 'preshaz', 'bor'], why: 'A Fogadó pénzt csinál belőle, és kell a Vásártérhez, a Ciszterci apátsághoz és a Jáki templomhoz. A Raktárban drágán el is adhatod.' },
+  { id: 'poszto', name: 'Posztó', steps: ['juhaszat', 'gyapju', 'posztomuhely', 'poszto'], why: 'Kell a Vendégtelephez, a Vásártérhez, a Lovagi tornatérhez, és a tatárjárás előtti kutatáshoz is.' },
+  { id: 'vas', name: 'Vas', steps: ['ercbanya', 'erc', 'kovacsmuhely', 'vas'], why: 'A kőépületekhez, a Kővárhoz, a kőfalhoz és a legendás épületekhez kell. A tatárjárás előtt ez a legfontosabb áru.' }
+];
+const GOOD_WHY = { fa: CHAINS[0].why, bor: CHAINS[1].why, poszto: CHAINS[2].why, vas: CHAINS[3].why, szolo: 'Ez csak alapanyag. A Présház csinál belőle bort.', gyapju: 'Ez csak alapanyag. A Posztóműhely sző belőle posztót.', erc: 'Ez csak alapanyag. A Kovácsműhely olvaszt belőle vasat.' };
+const chainOf = t => CHAINS.find(c => c.steps.includes(t));
 function usesOf(r) {
   const p = [], c = [], t = [];
   Object.entries(DEF).forEach(([k, d]) => { if (d.old || d.secret || k === 'fo') return; if (d.input && d.input[r]) p.push(d.name); if (d.cost && d.cost[r]) c.push(d.name); });
   TECH.forEach(x => { if (x.cost && x.cost[r]) t.push(x.name); });
   return { p, c, t };
 }
-function usesTxt(type) {
-  const d = DEF[type]; if (!d.prod) return '';
-  const r = Object.keys(d.prod)[0]; if (!RES[r] || !RES[r].good) return '';
-  const u = usesOf(r), out = [];
-  if (u.p.length) out.push(trf('{0} dolgozza fel', u.p.join(', ')));
-  if (u.c.length) out.push(trf('kell hozzá: {0}', u.c.slice(0, 6).join(', ') + (u.c.length > 6 ? '…' : '')));
-  return out.length ? trf('Mire jó a {0}? {1}', RES[r].name, out.join(', ')) : '';
+function usesTxt() { return ''; }
+// a lánc kis képsorban, a mostani lépés kiemelve
+function chainStrip(ch, here) {
+  return `<div class="ch-strip">${ch.steps.map((st, k) => {
+    const isB = !!DEF[st], on = st === here, has = isB ? count(st) > 0 : (S.res[st] || 0) > 0;
+    const img = isB ? DEF[st].img : RES[st].icon, nm = isB ? DEF[st].name : RES[st].name;
+    const sub = isB ? (count(st) ? trf('{0} db', count(st)) + (DEF[st].terrain ? ' · ' + tr(TERRAIN[DEF[st].terrain].short).replace('Csak ', '') : '') : (unlocked(st) ? tr('még nincs') : tr('kutatás kell'))) : trf('van {0}', fmt(S.res[st] || 0));
+    return `${k ? '<i>→</i>' : ''}<span class="ch-s ${isB ? 'b' : 'r'}${on ? ' on' : ''}${has ? '' : ' miss'}"><img src="img/${img}.png" alt=""><b>${nm}</b><small>${sub}</small></span>`; }).join('')}</div>`;
 }
-function chainRow(prod, raw, proc, good) {
-  const pi = t => `<span class="ch-b"><img src="img/${DEF[t].img}.png" alt=""><b>${DEF[t].name}</b>${DEF[t].terrain ? `<small>${tr(TERRAIN[DEF[t].terrain].short)}</small>` : ''}</span>`;
-  const ri = r => `<span class="ch-r"><img src="img/${RES[r].icon}.png" alt=""><b>${RES[r].name}</b><small>${trf('van {0}', fmt(S.res[r] || 0))}</small></span>`;
-  const u = usesOf(good);
-  return `<div class="ch-row">${pi(prod)}<i>→</i>${ri(raw)}${proc ? `<i>→</i>${pi(proc)}<i>→</i>${ri(good)}` : ''}</div>
-    <div class="ch-use">${u.c.length ? `<b>${tr('Építéshez')}</b> ${u.c.join(', ')}` : ''}${u.t.length ? `<br><b>${tr('Kutatáshoz')}</b> ${u.t.join(', ')}` : ''}${u.p.length && proc == null ? `<br><b>${tr('Feldolgozza')}</b> ${u.p.join(', ')}` : ''}</div>`;
+function chainNext(ch) {
+  for (const st of ch.steps) { if (!DEF[st]) continue; if (!count(st)) return unlocked(st) ? trf('Következő lépés · építs egy {0} épületet.', DEF[st].name) : trf('Következő lépés · kutasd ki, ami a {0} épülethez kell.', DEF[st].name); }
+  return tr('Ez a lánc működik.');
+}
+function chainInfoHTML(type) {
+  const ch = chainOf(type); if (!ch) return '';
+  return `<div class="ch-box"><b>${trf('{0}-lánc', ch.name)}</b>${chainStrip(ch, type)}<p>${tr(ch.why)}</p></div>`;
 }
 function showChains() {
   hideInfo(); closeDrawer();
   const aur = Object.entries(DEF).filter(([k, d]) => d.aura && !d.old);
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('MANKÓ')}</span><h2>${tr('Mi mire jó?')}</h2>
-    <p>${tr('Ebben a korban a nyersanyagból műhelyben lesz áru, és az áru kell a nagyobb épületekhez. A műhely csak akkor dolgozik, ha van alapanyag a raktárban.')}</p>
-    <div class="store-row" style="flex-direction:column;align-items:stretch;gap:6px"><b>${tr('Áruláncok')}</b>
-      ${chainRow('favago', 'fa', null, 'fa')}
-      ${chainRow('szolohegy', 'szolo', 'preshaz', 'bor')}
-      ${chainRow('juhaszat', 'gyapju', 'posztomuhely', 'poszto')}
-      ${chainRow('ercbanya', 'erc', 'kovacsmuhely', 'vas')}</div>
-    <div class="store-row" style="flex-direction:column;align-items:stretch"><b>${tr('Környék-hatás')}</b>
-      <span style="font-size:14px">${tr('Ezek az épületek a közelükben lévőkre is hatnak. Lerakáskor szaggatott keret mutatja, meddig ér a hatásuk.')}</span>
-      ${aur.map(([k, d]) => `<div class="ch-aura"><img src="img/${d.img}.png" alt=""><span><b>${d.name}</b> · <span style="color:${d.aura.mul > 0 ? 'var(--good)' : 'var(--bad)'};font-weight:800">${d.aura.mul > 0 ? '+' : ''}${Math.round(d.aura.mul * 100)}%</span><br>${trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt)}</span></div>`).join('')}</div>
-    <div class="store-row" style="flex-direction:column;align-items:stretch"><b>${tr('Terep')}</b>
-      ${Object.values(TERRAIN).map(t => `<span>${trf('{0} · {1}', tr(t.short), t.where)}. ${Object.values(DEF).filter(d => d.terrain && TERRAIN[d.terrain] === t && !d.old).map(d => d.name).join(', ')}</span>`).join('<br>')}</div></div>`, '', 'chains');
+    <p>${tr('Négy fontos áru van. Mindegyiknek van egy lánca. Balról jobbra halad, először a nyersanyag terem meg, aztán a műhely árut csinál belőle. A műhely induláskor elveszi a raktárból az alapanyagot, és ha nincs elég, megvárja.')}</p>
+    ${CHAINS.map(ch => `<div class="ch-card"><div class="ch-head"><img src="img/${RES[ch.id].icon}.png" alt=""><b>${ch.name}</b><span>${trf('raktárban {0}', fmt(S.res[ch.id] || 0))}</span></div>
+      ${chainStrip(ch)}<p class="ch-why"><b>${tr('Miért fontos?')}</b> ${tr(ch.why)}</p><p class="ch-next">${chainNext(ch)}</p></div>`).join('')}
+    <div class="ch-card"><div class="ch-head"><b>${tr('Környék-hatás')}</b></div>
+      <p class="ch-why">${tr('Ezek a közelükben lévő épületekre is hatnak. Lerakáskor szaggatott keret mutatja, meddig ér a hatásuk.')}</p>
+      ${aur.map(([k, d]) => `<div class="ch-aura"><img src="img/${d.img}.png" alt=""><span><b>${d.name}</b> · <span style="color:${d.aura.mul > 0 ? 'var(--good)' : 'var(--bad)'};font-weight:800">${d.aura.mul > 0 ? '+' : ''}${Math.round(d.aura.mul * 100)}%</span><br>${trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt)}</span></div>`).join('')}</div></div>`, '', 'chains');
 }
-
 // ---------- korona: gyorsítás ----------
 function speedCost(b) {
   if (b.until && S.gt < b.until) return Math.max(1, Math.ceil((b.until - S.gt) / 1800));
+  if (DEF[b.type].input && b.fed === false) return 0;
   if (DEF[b.type].prod && working(b) && !ready(b)) return Math.max(1, Math.ceil((bTime(b) - (S.gt - b.t0)) / 3600));
   return 0;
 }
@@ -1763,7 +1770,7 @@ function fitFix() {
 }
 (function () {
   const st = document.createElement('style');
-  st.textContent = '.ch-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.ch-row i{font-style:normal;font-weight:900;font-size:20px;color:var(--ochre-dark,#8A5A1E)}.ch-b,.ch-r{display:flex;flex-direction:column;align-items:center;text-align:center;background:#FFF4DF;border-radius:12px;padding:6px 8px;min-width:84px}.ch-b img{width:74px;height:56px;object-fit:contain}.ch-r img{width:34px;height:34px;object-fit:contain}.ch-b b,.ch-r b{font-size:13px}.ch-b small,.ch-r small{font-size:11px;color:var(--ink-soft)}.ch-use{font-size:13px;margin:2px 0 6px 4px}.ch-aura{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:14px}.ch-aura img{width:58px;height:46px;object-fit:contain}';
+  st.textContent = '.ch-card{background:#FFF4DF;border-radius:16px;padding:10px 12px;margin:10px 0;box-shadow:0 2px 0 rgba(90,55,25,.15)}.ch-head{display:flex;align-items:center;gap:8px}.ch-head img{width:34px;height:34px;object-fit:contain}.ch-head b{font-size:19px}.ch-head span{margin-left:auto;font-size:13px;color:var(--ink-soft)}.ch-strip{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:8px 0}.ch-strip i{font-style:normal;font-weight:900;font-size:20px;color:#8A5A1E}.ch-s{display:flex;flex-direction:column;align-items:center;text-align:center;border-radius:12px;padding:5px 6px;min-width:76px;background:#F3E2BE;border:2px solid transparent}.ch-s.on{border-color:#C98B2B;background:#FBEFD6}.ch-s.miss{opacity:.55}.ch-s.b img{width:66px;height:48px;object-fit:contain}.ch-s.r img{width:30px;height:30px;object-fit:contain;margin:9px 0}.ch-s b{font-size:12px;line-height:1.1}.ch-s small{font-size:11px;color:var(--ink-soft)}.ch-why{font-size:14px;margin:4px 0}.ch-next{font-size:13px;font-weight:800;color:#2F6B3A;margin:2px 0}.ch-box{background:#FFF4DF;border-radius:12px;padding:8px 10px;margin:8px 0}.ch-box p{font-size:13px;margin:4px 0 0}.ch-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}.ch-row i{font-style:normal;font-weight:900;font-size:20px;color:var(--ochre-dark,#8A5A1E)}.ch-b,.ch-r{display:flex;flex-direction:column;align-items:center;text-align:center;background:#FFF4DF;border-radius:12px;padding:6px 8px;min-width:84px}.ch-b img{width:74px;height:56px;object-fit:contain}.ch-r img{width:34px;height:34px;object-fit:contain}.ch-b b,.ch-r b{font-size:13px}.ch-b small,.ch-r small{font-size:11px;color:var(--ink-soft)}.ch-use{font-size:13px;margin:2px 0 6px 4px}.ch-aura{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:14px}.ch-aura img{width:58px;height:46px;object-fit:contain}';
   document.head.appendChild(st);
 })();
 (function () { const c = document.getElementById('chainsBtn'); if (c) c.onclick = showChains; setTimeout(() => { try { fitFix(); } catch (e) {} }, 60); })();
@@ -2051,6 +2058,7 @@ function drawOverlay(b, r, now) {
   if (b.ruined) { badge(r.cx, by, '#C9472F', '!'); return; }
   if (b.until && S.gt < b.until) { const p = Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (b.dur || d.buildTime || d.bt || 1))); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); if (d.road && !connected(b)) badge(r.cx + 62, by + 2, '#C9472F', 'ut'); return; }
   if (d.road && !connected(b)) { badge(r.cx, by, '#C9472F', 'ut'); return; }
+  if (d.input && b.fed === false && working(b)) { const k = Object.keys(d.input)[0], ic = IMG[RES[k].icon]; ctx.save(); ctx.beginPath(); ctx.arc(r.cx, by, 20, 0, 7); ctx.fillStyle = 'rgba(60,40,24,0.82)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#E8A08A'; ctx.stroke(); if (ic) { ctx.globalAlpha = 0.75; ctx.drawImage(ic, r.cx - 14, by - 14, 28, 28 * ic.naturalHeight / ic.naturalWidth); } ctx.restore(); return; }
   if (ready(b) && storeFull(b)) { badge(r.cx, by, '#8A5A2B', '!'); return; }
   if (ready(b)) {
     const res = Object.keys(d.prod)[0]; ctx.save(); ctx.beginPath(); ctx.arc(r.cx, by, 24, 0, 7); ctx.fillStyle = '#FFF4DF'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#F5C542'; ctx.stroke();
@@ -2248,26 +2256,26 @@ function showInfo(b, refresh) {
   let status = '';
   if (b.ruined) status = `<span class="status" style="color:var(--bad)">${tr('Romokban áll. Újjáépítheted fél áron.')}</span>`;
   else if (b.until && S.gt < b.until) status = `<span class="status">${b.upTo ? trf('Átépítés {0} épületté, még {1}.', DEF[b.upTo].name, dur((b.until - S.gt) / S.speed)) : trf('Épül, még {0}.', dur((b.until - S.gt) / S.speed))}${d.road && !connected(b) ? ' ' + tr('Ösvény is kell majd hozzá, különben nem fog termelni.') : ''}</span>`;
-  else if (d.input && !inputOk(b) && ready(b)) status = `<span class="status" style="color:var(--bad)">${trf('Kész lenne, de hiányzik · {0}', missText(inputNeed(b)))}</span>`;
+  else if (d.input && b.fed === false && working(b) && !inputOk(b)) status = `<span class="status" style="color:var(--bad)">${trf('Vár az alapanyagra, hiányzik · {0}. Amint lesz, magától elindul.', missText(inputNeed(b)))}</span>`;
   else if (b.dry) status = `<span class="status" style="color:var(--bad)">${tr('Kimerült a legelő. Vonulj tovább, és az új helyen újra zöld lesz.')}</span>`;
   else if (d.road && !connected(b)) status = `<span class="status" style="color:var(--bad)">${tr('Nincs ösvény a táborig, ezért nem működik.')}</span>`;
   else if (d.prod) status = ready(b) ? `<span class="status" style="color:var(--good)">${tr('Kész van! Koppints rá, vagy húzd végig az egeret a kész épületeken, és mindet begyűjtöd.')}</span>` : `<span class="status">${trf('Még {0} és kész', dur((bTime(b) - (S.gt - b.t0)) / S.speed))}</span>`;
   const grassTxt = d.grass && !b.dry ? trf('még {0} legeltetés', grassMax() - (b.uses || 0)) : '';
   const prodTxt = d.prod ? (d.input ? Object.entries(inputNeed(b)).map(([k, v]) => `${v} ${RES[k].name}`).join(', ') + ' → ' : '') + Object.entries(d.prod).map(([k, v]) => `${v * bMul(b)} ${RES[k].name}`).join(tr(' és ')) + ' · ' + dur(bTime(b)) : '';
   const al = auraList(b), auraTxt = al.length ? trf('Környék · {0}', al.map(x => `${DEF[x.s.type].name} ${x.a.mul > 0 ? '+' : ''}${Math.round(x.a.mul * 100)}%`).join(', ')) : '';
-  const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? tr('ösvény kell a táborig') : tr('ösvény nélkül is működik'), d.def ? trf('+{0} Védelem', d.def) : '', prodTxt, usesTxt(b.type), auraTxt, d.aura ? trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt) : '', grassTxt].filter(Boolean).join(' · ');
+  const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? tr('ösvény kell a táborig') : tr('ösvény nélkül is működik'), d.def ? trf('+{0} Védelem', d.def) : '', prodTxt, auraTxt, d.aura ? trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt) : '', grassTxt].filter(Boolean).join(' · ');
   if (refresh && el.dataset.id === String(b.id) && el.dataset.ruined === String(!!b.ruined) && el.dataset.dry === String(!!b.dry)) { const s = el.querySelector('.st'); if (s) s.innerHTML = status; return; }
   el.dataset.id = b.id; el.dataset.ruined = !!b.ruined; el.dataset.dry = !!b.dry;
   el.innerHTML = `<h3>${d.name}${d.gb ? ' · ' + trf('{0}. szint', gbLvl(b.type)) : ''}</h3>${LANG === 'hu' ? rovasHTML(DEF[b.type].name) : ''}<p>${d.desc}</p><p>${extra}</p>${d.gb && !off(b) ? gbHTML() : ''}${d.modes && !off(b) ? `<div class="modes"><b>${tr('Termelési idő')}</b>${MODES.map(m => `<button class="btn ${modeOf(b).id === m.id ? 'coral' : 'ghost'}" type="button" data-mode="${m.id}">${tr(m.lbl)}</button>`).join('')}<span>${tr('A hosszabb idő óránként kevesebbet hoz, de ott vár, mire visszajössz. Váltáskor újraindul.')}</span></div>` : ''}<div class="st">${status}</div>
     <div class="row">${b.ruined ? `<button class="btn teal" type="button" id="iRe">${tr('Újjáépítés')}</button>` : ''}
     ${false ? `<button class="btn coral" type="button" id="iMig">${tr('Továbbvonulás')} · ${moveCost().termeny} ${RES.termeny.name}</button>` : ''}
-    ${speedHTML(b)}
+    ${chainInfoHTML(b.type)}${speedHTML(b)}
     ${d.up && !off(b) ? `<button class="btn coral" type="button" id="iUp">${trf('Átépítés · {0}', DEF[d.up].name)}</button>` : ''}
     ${b.type !== 'fo' && !b.ruined ? `<button class="btn ghost" type="button" id="iMove">${tr('Áthelyezés')}</button><button class="btn ghost" type="button" id="iDel">${tr('Lebontás')}</button>` : ''}
     <button class="btn ghost" type="button" id="iClose">${tr('Bezárás')}</button></div>`;
   $('iClose').onclick = hideInfo;
   if ($('iMig')) $('iMig').onclick = migrate;
-  el.querySelectorAll('[data-mode]').forEach(x => x.onclick = () => { if (b.mode === x.dataset.mode || (!b.mode && x.dataset.mode === 'q')) return; if (ready(b)) collect(b); b.mode = x.dataset.mode; b.t0 = S.gt; save(); el.dataset.id = ''; showInfo(b); });
+  el.querySelectorAll('[data-mode]').forEach(x => x.onclick = () => { if (b.mode === x.dataset.mode || (!b.mode && x.dataset.mode === 'q')) return; if (ready(b)) collect(b); if (DEF[b.type].input) { if (b.fed !== false && b.paid) give(b.paid); b.fed = false; b.paid = null; } b.mode = x.dataset.mode; b.t0 = S.gt; save(); el.dataset.id = ''; showInfo(b); });
   if ($('gbI5')) { $('gbI5').onclick = () => { gbInvest(5); showInfo(b); }; $('gbIall').onclick = () => { gbInvest(9999); showInfo(b); }; }
   if ($('iMove')) $('iMove').onclick = () => startMove(b);
   if ($('iUp')) $('iUp').onclick = () => showUpgrade(b);
@@ -3773,6 +3781,35 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 })();
 // a Beállítások hibajelentés gombja is a visszajelzés ablakot nyitja, ahol a hiba már benne van
 document.addEventListener('click', e => { const t = e.target && e.target.closest && e.target.closest('#sReport'); if (!t) return; e.stopPropagation(); e.preventDefault(); try { closeModal(); } catch (x) {} showFeedback(); }, true);
+})();
+// ---------- egérrel fölé állva látszik, mennyi van még hátra ----------
+(function () {
+  const cv = document.getElementById('cv'); if (!cv) return;
+  const tip = document.createElement('div'); tip.id = 'hoverTip';
+  tip.style.cssText = 'position:fixed;z-index:60;pointer-events:none;background:rgba(43,26,14,.92);color:#FFF4DF;font:800 14px/1.25 "Baloo 2",system-ui,sans-serif;padding:6px 10px;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.3);white-space:nowrap;display:none';
+  document.body.appendChild(tip);
+  let hb = null, mx = 0, my = 0;
+  const clock = sec => { sec = Math.max(0, Math.ceil(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), x = sec % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); };
+  const text = b => {
+    const d = DEF[b.type]; if (!d) return ''; const sp = S.speed || 1; let t = '<span style="opacity:.75">' + String(d.name).replace(/</g, '&lt;') + '</span><br>';
+    if (b.ruined) return t + tr('Rom, koppints rá az újjáépítéshez');
+    if (b.until && S.gt < b.until) return t + tr('Épül, még') + ' ' + clock((b.until - S.gt) / sp);
+    if (!d.prod) return t + (d.hang ? '+' + d.hang + ' ' + tr('Hangulat') : d.def ? '+' + d.def + ' ' + tr('Védelem') : d.pop ? '+' + d.pop + ' ' + tr('lakos') : '');
+    if (d.road && typeof connected === 'function' && !connected(b)) return t + tr('Nincs ösvény, nem termel');
+    if (d.input && b.fed === false) return t + tr('Vár az alapanyagra');
+    if (ready(b)) return t + tr('Kész, koppints rá!');
+    try { const left = (bTime(b) - (S.gt - b.t0)) / sp; const r = Object.keys(d.prod)[0]; return t + tr('Még') + ' ' + clock(left) + (RES[r] ? ' · ' + RES[r].name : ''); } catch (e) { return t; }
+  };
+  const show = () => { if (!hb || !S.buildings.includes(hb)) { tip.style.display = 'none'; return; } const h = text(hb); if (!h) { tip.style.display = 'none'; return; } tip.innerHTML = h; tip.style.display = 'block'; const w = tip.offsetWidth; tip.style.left = Math.min(innerWidth - w - 8, mx + 16) + 'px'; tip.style.top = Math.max(8, my - 54) + 'px'; };
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || e.buttons || (typeof tool !== 'undefined' && tool)) { hb = null; tip.style.display = 'none'; return; }
+    mx = e.clientX; my = e.clientY;
+    try { const p = toBg(e.offsetX, e.offsetY); hb = pick(p[0], p[1]) || null; } catch (x) { hb = null; }
+    show();
+  });
+  cv.addEventListener('pointerleave', () => { hb = null; tip.style.display = 'none'; });
+  cv.addEventListener('pointerdown', () => { tip.style.display = 'none'; });
+  setInterval(() => { if (hb) show(); }, 500);
 })();
 /*SOCIAL-END*/
 })();
