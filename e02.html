@@ -2534,18 +2534,30 @@ function doGift(id, gi) {
   if (b.real) netEvent(id, 'ajandek', { k: g.k, n: g.n }); else if (Math.random() < 0.55) later({ type: 'gift', from: id }, rnd(10, 90) * 60e3);
   toast(TF('Elküldted az ajándékot {0} részére.', b.name)); sfxClick(); commit(); refresh();
 }
+// zsákmány: mindig van benne pénz, mellé véletlenszerűen egy-három másik dolog abból, ami ebben a korban létezik
+function raidLoot(type) {
+  const L = { penz: amt(rnd(40, 110)) };
+  const pool = Object.keys(RES).filter(k => !['penz', 'tudas', 'hirnev'].includes(k));
+  const prod = type && DEF[type] && DEF[type].prod ? Object.keys(DEF[type].prod).find(k => pool.includes(k)) : null;
+  const size = k => k === 'termeny' ? amt(rnd(30, 90)) : k === 'fa' ? rnd(8, 20) : k === 'kovako' ? rnd(1, 2) : RES[k] && RES[k].raw ? rnd(4, 10) : rnd(2, 6);
+  const picks = []; if (prod) picks.push(prod);
+  const extra = rnd(1, 3); for (let t = 0; t < 12 && picks.length < extra + (prod ? 1 : 0); t++) { const k = pick(pool); if (!picks.includes(k)) picks.push(k); }
+  picks.forEach(k => { L[k] = (L[k] || 0) + size(k); });
+  if (Math.random() < 0.15) L.tudas = rnd(1, 2);
+  return L;
+}
 function raidChance(b) { const m = Math.max(1, myDef()), d = b.def + (inAlly(b.id) ? 3 : 0); return Math.max(0.2, Math.min(0.85, m / (m + d))); }
 function inAlly(id) { return !!(SOC.ally && SOC.ally.members.includes(id)); }
 function doRaid(id) {
   const b = bot(id); if (!canDo('raid', id) || inAlly(id)) return; mark('raid', id);
-  if (b.real) { SOC.stats.raids++; const t = NET.towns[id] || {}; const ok = Math.random() < raidChance(b) && (t.ready || 0) > 0; const n = amt(rnd(40, 110));
-    if (ok) { giveR({ penz: n }); log(TF('Kifosztottad {0} városát. {1}', b.name, resTxt({ penz: n })), 'portya'); RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} városát.', b.name), loot: resTxt({ penz: n }) }; sfxCollect(); }
+  if (b.real) { SOC.stats.raids++; const t = NET.towns[id] || {}; const ok = Math.random() < raidChance(b) && (t.ready || 0) > 0; const L = raidLoot(), n = L.penz;
+    if (ok) { giveR(L); log(TF('Kifosztottad {0} városát. {1}', b.name, resTxt(L)), 'portya'); RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} városát.', b.name), loot: resTxt(L) }; sfxCollect(); }
     else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); RAIDRES = { ok: false, name: b.name, text: TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name) }; }
     netEvent(id, 'portya', { ok, n }); if (SOC.stats.raids >= 10) kitAward('fosztogato'); commit(); refresh(); raidShow(); return; }
   const town = townOf(b); const ready = town.list.filter(x => NOW() - x.ready > 3 * HOUR);
   SOC.stats.raids++; b.friend -= 3;
   if (Math.random() < raidChance(b) && ready.length) {
-    const x = pick(ready); x.ready = NOW(); const r = { penz: amt(rnd(40, 110)) }; giveR(r);
+    const x = pick(ready); x.ready = NOW(); const r = raidLoot(x.type); giveR(r);
     log(TF('Kifosztottad {0} épületét ({1}). {2}', b.name, DEF[x.type] ? DEF[x.type].name : x.type, resTxt(r)), 'portya');
     RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} épületét ({1}).', b.name, DEF[x.type] ? DEF[x.type].name : x.type), loot: resTxt(r) }; sfxCollect();
     if (Math.random() < 0.7) later({ type: 'angry', from: id }, rnd(2, 20) * 60e3);
