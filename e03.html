@@ -3577,6 +3577,71 @@ document.addEventListener('click', e => { const t = e.target && e.target.closest
   cv.addEventListener('pointerdown', () => { tip.style.display = 'none'; });
   setInterval(() => { if (hb) show(); }, 500);
 })();
+
+// ---------- átrendezés: épületek felszedése és újra lerakása ----------
+let REAR = null;
+const REAR_KEY = () => 'panelvar-rearr-' + (typeof SAVE_KEY !== 'undefined' ? SAVE_KEY : location.pathname);
+const rDims = (t, rot) => typeof dimsT === 'function' ? dimsT(t, rot) : [DEF[t].size || 1, DEF[t].size || 1];
+function rearStart() {
+  if (REAR) return; try { closeDrawer(); } catch (e) {} try { hideInfo(); } catch (e) {} try { endTool(); } catch (e) {}
+  REAR = { tray: [], snap: JSON.stringify({ b: S.buildings, r: S.roads }) };
+  try { localStorage.setItem(REAR_KEY(), REAR.snap); } catch (e) {}
+  rearUI(); toast(tr('Koppints egy épületre, és felkerül a tálcára. Onnan bárhová leteheted, ingyen.'));
+}
+function rearPick(b) {
+  if (!b || b.type === 'fo' && !REAR.allowFo) { if (b && b.type === 'fo') toast(tr('A főépület a helyén marad, a többit rendezd köré.')); return; }
+  S.buildings = S.buildings.filter(x => x !== b); REAR.tray.push(b); rearDirty(); rearUI();
+}
+function rearAll() { const keep = S.buildings.filter(b => b.type === 'fo'); S.buildings.filter(b => b.type !== 'fo').forEach(b => REAR.tray.push(b)); S.buildings = keep; rearDirty(); rearUI(); }
+function rearDirty() { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} }
+function rearHold(k) { const b = REAR.tray[k]; if (!b) return; REAR.cur = k; tool = { mode: 'rear', type: b.type, rot: b.rot || 0, id: b.id }; hover = null; rearUI(); }
+function rearPlace(i, j) {
+  const b = REAR.tray[REAR.cur]; if (!b || !tool) return;
+  if (!free(b.type, i, j, null, tool.rot)) { toast(tr('Ide nem fér, vagy ez a terep nem jó neki.')); return; }
+  b.i = i; b.j = j; b.rot = tool.rot || 0; S.buildings.push(b); REAR.tray.splice(REAR.cur, 1); REAR.cur = null; tool = null; hover = null;
+  try { sfxClick(); } catch (e) {} rearDirty();
+  if (REAR.tray.length) rearHold(0); else rearUI();
+}
+function rearCancel() {
+  if (!REAR) return; const d = JSON.parse(REAR.snap); S.buildings = d.b; S.roads = d.r; REAR = null; tool = null; hover = null;
+  try { localStorage.removeItem(REAR_KEY()); } catch (e) {} rearDirty(); try { save(); } catch (e) {} rearUI(); toast(tr('Minden visszakerült a régi helyére.'));
+}
+function rearDone() {
+  if (!REAR || REAR.tray.length) { toast(tr('Előbb tedd le az összes épületet a tálcáról.')); return; }
+  REAR = null; tool = null; hover = null; try { localStorage.removeItem(REAR_KEY()); } catch (e) {} rearDirty(); try { save(); } catch (e) {} rearUI(); toast(tr('Kész az új városkép!'));
+}
+function rearUI() {
+  let bar = document.getElementById('rearBar');
+  if (!REAR) { if (bar) bar.remove(); const n = document.getElementById('nav'); if (n) n.hidden = false; return; }
+  if (!bar) { bar = document.createElement('div'); bar.id = 'rearBar'; bar.className = 'wood'; document.body.appendChild(bar); }
+  const n = document.getElementById('nav'); if (n) n.hidden = true; const pb = document.getElementById('placebar'); if (pb) pb.hidden = true;
+  const cur = REAR.cur != null ? REAR.tray[REAR.cur] : null, sq = cur && (() => { const [w, h] = rDims(cur.type, 0); return w === h; })();
+  bar.innerHTML = `<div class="rb-head"><b>${tr('Átrendezés')}</b><span>${REAR.tray.length ? trf('{0} épület vár a tálcán', REAR.tray.length) : tr('A tálca üres')}</span>
+    <button class="btn ghost" type="button" id="rbAll">${tr('Mindet felszedem')}</button>${cur && !sq ? `<button class="btn ghost" type="button" id="rbRot">${tr('Forgatás')}</button>` : ''}
+    <button class="btn ghost" type="button" id="rbNo">${tr('Mégse')}</button><button class="btn coral" type="button" id="rbOk" ${REAR.tray.length ? 'disabled' : ''}>${tr('Kész')}</button></div>
+    <div class="rb-tray">${REAR.tray.map((b, k) => `<button type="button" class="rb-card${k === REAR.cur ? ' on' : ''}" data-rk="${k}"><img src="img/${(DEF[b.type].stages ? DEF[b.type].stages[0] : DEF[b.type].img)}.png" alt=""><span>${String(DEF[b.type].name)}</span></button>`).join('') || `<p>${tr('Koppints egy épületre a térképen, és felkerül ide. Ha mindent letettél, nyomd meg a Kész gombot. A Mégse mindent visszatesz a régi helyére.')}</p>`}</div>`;
+  bar.querySelector('#rbAll').onclick = rearAll; bar.querySelector('#rbNo').onclick = rearCancel; bar.querySelector('#rbOk').onclick = rearDone;
+  const rr = bar.querySelector('#rbRot'); if (rr) rr.onclick = () => { if (tool) { tool.rot = tool.rot ? 0 : 1; } };
+  bar.querySelectorAll('[data-rk]').forEach(x => x.onclick = () => rearHold(+x.dataset.rk));
+}
+(function () {
+  const st = document.createElement('style');
+  st.textContent = '#rearBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:40;width:min(980px,calc(100vw - 16px));border-radius:22px;padding:10px 12px;box-sizing:border-box;background:#6B4423;color:#FFF4DF;box-shadow:0 6px 18px rgba(0,0,0,.35)}#rearBar .rb-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#rearBar .rb-head b{font-size:20px;font-family:"Baloo 2",sans-serif}#rearBar .rb-head span{flex:1;font-weight:700;font-size:14px;opacity:.9}#rearBar .btn{min-height:38px;padding:0 14px;font-size:15px}#rearBar .btn.ghost{background:#F3E2BE;color:#3A2618;border-color:#F3E2BE}#rearBar .btn:disabled{opacity:.45}#rearBar .rb-tray{display:flex;gap:8px;overflow-x:auto;margin-top:8px;padding-bottom:4px;min-height:96px;align-items:stretch}#rearBar .rb-tray p{margin:auto 0;font-size:14px;font-weight:700}#rearBar .rb-card{flex:0 0 auto;width:96px;display:flex;flex-direction:column;align-items:center;gap:2px;background:#F3E2BE;color:#3A2618;border:3px solid transparent;border-radius:14px;padding:4px;cursor:pointer;font:800 12px/1.15 "Baloo 2",sans-serif}#rearBar .rb-card img{width:80px;height:58px;object-fit:contain}#rearBar .rb-card.on{border-color:#F5C542;background:#FFF4DF}#rearBar .rb-card span{text-align:center}';
+  document.head.appendChild(st);
+  // a koppintást átrendezés közben mi kezeljük
+  const oldTap = tap;
+  tap = function (sx, sy) {
+    if (!REAR) return oldTap(sx, sy);
+    const [bx, by] = toBg(sx, sy);
+    if (tool && REAR.cur != null) { const [i, j] = tileAt(bx, by); const [hw, hh] = rDims(tool.type, tool.rot); rearPlace(i - Math.floor((hw - 1) / 2), j - Math.floor((hh - 1) / 2)); return; }
+    const b = pick(bx, by); if (b) rearPick(b);
+  };
+  // ha félbehagytad (bezártad az oldalt), minden visszaugrik a régi helyére
+  setTimeout(() => { try { const s = localStorage.getItem(REAR_KEY()); if (s && S) { const d = JSON.parse(s); S.buildings = d.b; S.roads = d.r; localStorage.removeItem(REAR_KEY()); rearDirty(); save(); toast(tr('Az átrendezés félbemaradt, ezért minden visszakerült a régi helyére.')); } } catch (e) {} }, 400);
+  // gomb az Építés menü fejlécében
+  const head = document.querySelector('#drawer .drawer-head h2');
+  if (head) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'rearBtn'; b.style.flex = '0 0 auto'; b.textContent = tr('Átrendezés'); b.onclick = rearStart; head.after(b); }
+})();
 /*SOCIAL-END*/
 })();
 </script>
