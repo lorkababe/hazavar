@@ -271,6 +271,11 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 .card .pic{height:74px!important}.card .pic img{max-height:70px!important}.card .gain{margin:0!important}
 #drawer{padding-top:10px!important;gap:8px!important}
 @media (max-height:760px){.card .desc{display:none}.card .pic{height:70px!important}.card .pic img{max-height:66px!important}}
+/* az építés menü mindig ugyanolyan magas */
+.cards{height:196px;align-items:stretch;box-sizing:border-box}.card{height:184px;box-sizing:border-box;overflow:hidden}.card .pic{height:64px!important}.card .pic img{max-height:60px!important}.card>*{flex-shrink:0}.card .gain{flex:0 1 auto;min-height:0;overflow:hidden}.card .cost,.card .lockmsg{margin-top:auto}
+.drawer-head{flex-wrap:nowrap!important}.drawer-head h2{flex:0 0 auto}.freecnt{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%}#tabs{flex:0 1 auto;flex-wrap:nowrap!important;overflow-x:auto;min-width:0;scrollbar-width:none;padding-bottom:4px}#tabs .tab{flex:0 0 auto}.card>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+@media (max-width:700px){.freecnt{display:none}}
+@media (max-height:760px){.cards{height:180px}.card{height:168px}.card .pic{height:56px!important}.card .pic img{max-height:52px!important}}
 </style>
 
 <div id="app">

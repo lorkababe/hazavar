@@ -349,6 +349,11 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 .card .pic{height:74px!important}.card .pic img{max-height:70px!important}.card .gain{margin:0!important}
 #drawer{padding-top:10px!important;gap:8px!important}
 @media (max-height:760px){.card .desc{display:none}.card .pic{height:70px!important}.card .pic img{max-height:66px!important}}
+/* az építés menü mindig ugyanolyan magas */
+.cards{height:196px;align-items:stretch;box-sizing:border-box}.card{height:184px;box-sizing:border-box;overflow:hidden}.card .pic{height:64px!important}.card .pic img{max-height:60px!important}.card>*{flex-shrink:0}.card .gain{flex:0 1 auto;min-height:0;overflow:hidden}.card .cost,.card .lockmsg{margin-top:auto}
+.drawer-head{flex-wrap:nowrap!important}.drawer-head h2{flex:0 0 auto}.freecnt{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%}#tabs{flex:0 1 auto;flex-wrap:nowrap!important;overflow-x:auto;min-width:0;scrollbar-width:none;padding-bottom:4px}#tabs .tab{flex:0 0 auto}.card>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+@media (max-width:700px){.freecnt{display:none}}
+@media (max-height:760px){.cards{height:180px}.card{height:168px}.card .pic{height:56px!important}.card .pic img{max-height:52px!important}}
 </style>
 
 <div id="app"><button class="ibtn wood" type="button" id="btnDaily" aria-label="Napi feladatok"><span class="newdot" id="bDaily" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h10a2 2 0 0 1 2 2v14a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2z"/><path d="M6 3a2 2 0 0 0-2 2v2h2M10 9h5M10 13h5"/></svg>Napi</button><button class="ibtn wood" type="button" id="btnSide" aria-label="Monda" hidden><span class="newdot" id="bSide" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l9-9M13 11l3-3a2.5 2.5 0 1 1 3.5 3.5l-3 3M11 13l3 3"/><circle cx="17.5" cy="6.5" r="1"/></svg><span>Monda</span></button><div id="chiefPops"></div><button class="btn coral" type="button" id="migChip" hidden></button><div class="movefx" id="moveFx"><span id="moveTxt"></span></div>
@@ -479,9 +484,9 @@ const H1 = 3600, M = 60;
 
 // terep: erdőszél bal felül, szőlődomb és sziklák jobb felül, folyópart lent
 const TERRAIN = {
-  forest: { name: 'erdőszél', where: 'a térkép bal felső szélén, az erdő mellett', test: (i, j) => i <= 3 },
-  hill: { name: 'domboldal', where: 'a térkép jobb felső szélén, a dombok és sziklák alatt', test: (i, j) => j <= 3 },
-  bank: { name: 'folyópart', where: 'a térkép alsó szélén, a folyó mentén', test: (i, j) => j >= 16 || i + j >= 34 }
+  forest: { short: 'Csak erdőszélen', name: 'erdőszél', where: 'a térkép bal felső szélén, az erdő mellett', test: (i, j) => i <= 3 },
+  hill: { short: 'Csak domboldalon', name: 'domboldal', where: 'a térkép jobb felső szélén, a dombok és sziklák alatt', test: (i, j) => j <= 3 },
+  bank: { short: 'Csak folyóparton', name: 'folyópart', where: 'a térkép alsó szélén, a folyó mentén', test: (i, j) => j >= 16 || i + j >= 34 }
 };
 
 const DEF = {
@@ -567,14 +572,14 @@ const TECH = [
 ];
 
 const QUESTS = [
-  { face: 'magyaraz', text: 'Üdvözöllek, IV. Béla vagyok. A városod elkísért ide is, csak a térkép lett sokkal nagyobb. Ebben a korban fa nélkül semmi nem épül, ezért rakj le egy Favágót az erdő szélére, a térkép bal felső részén.', check: () => count('favago') >= 1, rew: { fa: 40 } },
-  { face: 'magyaraz', text: 'A régi parasztházak kicsik. Koppints egy régi épületre, és nyomd meg az Átépítés gombot, vagy építs egy új Jobbágytelket.', check: () => S.buildings.some(b => b.type === 'jobbagytelek' && !off(b)) || S.buildings.some(b => b.upTo), rew: { penz: 150 } },
-  { face: 'orul', text: 'Tanuld ki a Háromnyomásos gazdálkodást, és rakj le egy új szántót. Egyharmada mindig pihen, a paraszt viszont soha.', check: () => count('haromnyomasos_szanto') >= 1, rew: { termeny: 200 } },
-  { face: 'magyaraz', text: 'Posztó nélkül nincs köpeny és nincs vásár. Építs Juhászatot, és gyűjts össze 10 Gyapjút.', check: () => (S.res.gyapju || 0) >= 10 || count('posztomuhely') >= 1, rew: { penz: 200 } },
-  { face: 'nevet', text: 'Szőlőt a dombra! A szőlő csak a jobb felső domboldalon terem meg, ott sok a nap.', check: () => count('szolohegy') >= 1, rew: { penz: 200 } },
+  { face: 'magyaraz', text: 'Üdvözöllek, IV. Béla vagyok. A városod elkísért ide is, csak a térkép lett sokkal nagyobb. Ebben a korban fa nélkül semmi nem épül, ezért rakj le egy Favágót az erdő szélére, a térkép bal felső részén.', check: () => has('favago'), rew: { fa: 40 } },
+  { face: 'magyaraz', text: 'A régi parasztházak kicsik. Koppints egy régi épületre, és nyomd meg az Átépítés gombot, vagy építs egy új Jobbágytelket.', check: () => has('jobbagytelek'), rew: { penz: 150 } },
+  { face: 'orul', text: 'Tanuld ki a Háromnyomásos gazdálkodást, és rakj le egy új szántót. Egyharmada mindig pihen, a paraszt viszont soha.', check: () => has('haromnyomasos_szanto'), rew: { termeny: 200 } },
+  { face: 'magyaraz', text: 'Posztó nélkül nincs köpeny és nincs vásár. Építs Juhászatot, és gyűjts össze 10 Gyapjút.', check: () => (S.res.gyapju || 0) >= 10 || has('posztomuhely'), rew: { penz: 200 } },
+  { face: 'nevet', text: 'Szőlőt a dombra! A szőlő csak a jobb felső domboldalon terem meg, ott sok a nap.', check: () => has('szolohegy'), rew: { penz: 200 } },
   { face: 'orul', text: 'A szőlőből bor lesz, ha van Présház. Szűrj le hat hordó Bort.', check: () => (S.stats.bor || 0) >= 6, rew: { tudas: 4 } },
-  { face: 'magyaraz', text: 'Érc a sziklákból, vas a kovácstól. Építs Kovácsműhelyt, de ne a házak mellé, mert a kalapálást senki nem szereti.', check: () => count('kovacsmuhely') >= 1, rew: { penz: 300 } },
-  { face: 'magyaraz', text: 'Hívjunk vendégeket! Tanuld ki a Hospesek behívását, és építs Vendégtelepet.', check: () => count('vendegtelep') >= 1, rew: { poszto: 4 } },
+  { face: 'magyaraz', text: 'Érc a sziklákból, vas a kovácstól. Építs Kovácsműhelyt, de ne a házak mellé, mert a kalapálást senki nem szereti.', check: () => has('kovacsmuhely'), rew: { penz: 300 } },
+  { face: 'magyaraz', text: 'Hívjunk vendégeket! Tanuld ki a Hospesek behívását, és építs Vendégtelepet.', check: () => has('vendegtelep'), rew: { poszto: 4 } },
   { face: 'aggodik', text: 'A bárók túl sok földet kaptak apámtól. Tanuld ki az Aranybullát, és hirdess ki egy törvényt a Törvények menüben.', check: () => (S.laws || []).length >= 1, rew: { penz: 300 } },
   { face: 'orul', text: 'A jókedv ragadós. Tegyél egy Kutat vagy egy Plébániatemplomot a házak közé, és a közelben lakók többet termelnek.', check: () => S.buildings.some(b => !off(b) && (b.type === 'kut_ter' || b.type === 'plebaniatemplom' || b.type === 'fogado') && S.buildings.some(x => x !== b && DEF[x.type].cat === 'lak' && auraHits(b, x))), rew: { penz: 250 } },
   { face: 'orul', text: 'Legyünk kétszázan! A nagy ország sok emberrel nagy.', check: () => pop() >= 200, rew: { penz: 500 } },
@@ -583,6 +588,7 @@ const QUESTS = [
   { face: 'aggodik', text: 'Jönnek! Kővár, kőfal, teli magtár és kincstár kell. Ami fából van, azt felgyújtják.', check: () => !!(S.winter && S.winter.done), rew: {} },
   { face: 'magyaraz', text: 'Elmentek. Újjá kell építeni az országot. Építsd újra a romokat, tanuld ki A visegrádi fellegvárat, és kezdd el építeni.', check: () => S.buildings.some(b => b.type === 'visegrad'), rew: { hirnev: 20 } }
 ];
+const has = t => S.buildings.some(b => b.type === t && !b.ruined);
 const qText = q => tr(typeof q.text === 'function' ? q.text() : q.text);
 
 // ---------- környék-hatás és terep ----------
@@ -732,10 +738,10 @@ function gainHTML(t) {
   const d = DEF[t], out = [], ic = k => `<img src="img/${RES[k].file || RES[k].icon + '.png'}" alt="${RES[k].name}">`;
   const secs = s => s >= 3600 ? trf('{0} óra', +(s / 3600).toFixed(1)) : s >= 60 ? trf('{0} perc', Math.round(s / 60)) : trf('{0} mp', s);
   if (d.prod && d.time) { const [k, v] = Object.entries(d.prod)[0]; out.push(`<span>${d.input ? Object.entries(d.input).map(([a, b]) => `${ic(a)}${b} → `).join('') : ''}${ic(k)}+${fmt(v)} / ${secs(d.time)}</span>`);
-    if (d.modes && typeof MODES !== 'undefined') { const h = MODES.find(m => m.id === 'h'); if (h) out.push(`<span class="gsub">${tr('vagy 4 óra alatt')} ${ic(k)}+${fmt(v * modeMul(t, h))}</span>`); } }
-  if (d.terrain) out.push(`<span class="gsub" style="color:#2F6B3A">${trf('Csak {0}', TERRAIN[d.terrain].where)}</span>`);
-  if (d.aura) out.push(`<span class="gsub" style="color:${d.aura.mul > 0 ? '#2F6B3A' : '#A33A22'}">${trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt)}</span>`);
-  if (d.bt) out.push(`<span class="gsub">${trf('Építési idő {0}', secs(d.bt))}</span>`);
+    }
+  if (d.terrain) out.push(`<span class="gsub" style="color:#2F6B3A">${tr(TERRAIN[d.terrain].short)}</span>`);
+  if (d.aura) out.push(`<span class="gsub" style="color:${d.aura.mul > 0 ? '#2F6B3A' : '#A33A22'}">${trf('Környék {0}{1}%', d.aura.mul > 0 ? '+' : '', Math.round(d.aura.mul * 100))}</span>`);
+
   if (d.pop) out.push(`<span>${trf('+{0} lakos', d.pop)}</span>`);
   if (d.hang) out.push(`<span>${d.faith === 'ker' ? trf('+{0} Hangulat az uraknak', d.hang) : d.faith === 'pog' ? trf('+{0} Hangulat a népnek', d.hang) : trf('+{0} Hangulat', d.hang)}</span>`);
   if (d.def) out.push(`<span>${trf('+{0} Védelem', d.def)}</span>`);
@@ -969,7 +975,7 @@ function place(i, j) {
   if (!canPay(costOf(tool.type))) { const pt = $('placeText'); pt.textContent = trf('Elfogyott a nyersanyag. Hiányzik · {0}', missText(costOf(tool.type))); pt.classList.add('warn'); setTimeout(() => pt.classList.remove('warn'), 2500); if (tool.type === 'ut') { roadPaint = null; } return; }
   if (d.workers && pop() - workers() < d.workers) { toast(trf('Nincs elég szabad ember, {0} kellene. Építs még egy Jobbágytelket vagy Vendégtelepet!', d.workers)); return; }
   pay(costOf(tool.type)); if (d.free1) { S.freeUsed = S.freeUsed || {}; S.freeUsed[tool.type] = 1; }
-  const nb = { id: S.nextId++, type: tool.type, i, j, t0: S.gt, built: S.gt, rot: tool.rot || 0 }; { const bt = d.buildTime || d.bt; if (bt) { nb.until = S.gt + bt; nb.t0 = nb.until; toast(trf('Elkezdődött az építkezés! {0} múlva készül el.', dur(bt / S.speed))); } }
+  const nb = { id: S.nextId++, type: tool.type, i, j, t0: S.gt, built: S.gt, rot: tool.rot || 0 }; { const bt = d.buildTime || d.bt; if (bt) { nb.until = S.gt + bt; nb.t0 = nb.until; nb.dur = bt; toast(trf('Elkezdődött az építkezés! {0} múlva készül el.', dur(bt / S.speed))); } }
   S.buildings.push(nb);
   S.stats.built++; if (S.newTypes) delete S.newTypes[tool.type]; connCache = null; dailyHit('epit');
   { const [w, h] = dimsT(tool.type, tool.rot); floatText(...tileTop(i + w / 2, j + h / 2), d.bt ? tr('Elkezdtük!') : tr('Felépült!'), '#FFF4DF'); }
@@ -1664,7 +1670,7 @@ function showUpgrade(b) {
   $('upGo').onclick = () => {
     if (!canPay(cost) || !spot) return; pay(cost);
     if (S.gb && d.gb && S.gb[b.type]) { S.gb[t] = S.gb[b.type]; }
-    b.type = t; b.i = spot.i; b.j = spot.j; b.rot = spot.rot; b.mode = undefined; b.upTo = t; b.until = S.gt + d.upT; b.t0 = b.until; b.doneNote = false;
+    b.type = t; b.i = spot.i; b.j = spot.j; b.rot = spot.rot; b.mode = undefined; b.upTo = t; b.until = S.gt + d.upT; b.dur = d.upT; b.t0 = b.until; b.doneNote = false;
     S.stats.upgraded = (S.stats.upgraded || 0) + 1; connCache = null; shadowCache = null; sfxCollect(); save(); closeModal(); checkQuest();
     toast(trf('Elkezdődött az átépítés. {0} múlva kész.', dur(d.upT / S.speed)));
   };
@@ -1898,14 +1904,14 @@ function diamondRaw(i, j, k, fill, stroke) {
 }
 function spriteRect(b) {
   const d = DEF[b.type]; const [w, h] = dimsB(b); const k = Math.min(3, Math.max(w, h));
-  const gbB = !b.ruined && b.until && S.gt < b.until && d.gb; // a nagy emlékhely épülés közben a saját képét mutatja, alulról színesedve
-  const temp = b.ruined || (b.until && S.gt < b.until && !d.gb);
-  const name = b.ruined ? 'kozos_rom_' + k + 'x' + k : (b.until && S.gt < b.until && !d.gb) ? 'kozos_epitesi_terulet_' + k + 'x' + k : d.stages ? d.stages[Math.min(2, Math.floor(gbLvl(b.type) / 4))] : d.img; const im = IMG[name]; if (!im) return null;
+  const gbB = !b.ruined && b.until && S.gt < b.until; // a nagy emlékhely épülés közben a saját képét mutatja, alulról színesedve
+  const temp = b.ruined;
+  const name = b.ruined ? 'kozos_rom_' + k + 'x' + k : d.stages ? d.stages[Math.min(2, Math.floor(gbLvl(b.type) / 4))] : d.img; const im = IMG[name]; if (!im) return null;
   const flip = !!b.rot && !temp; const mk = maskFor(name); const dw = Math.max(1, mk.maxX - mk.minX); const s = (w + h) * TW / 2 / dw;
   const L = tileTop(b.i, b.j + h), R = tileTop(b.i + w, b.j), B = tileTop(b.i + w, b.j + h);
   const leftX = flip ? mk.w - mk.maxX : mk.minX, leftY = temp ? mk.vY : flip ? (mk.rY != null ? mk.rY : mk.vY) : (mk.lY != null ? mk.lY : mk.vY);
   const x = L[0] - leftX * s, y = mk.bY != null ? B[1] - mk.bY * s : L[1] - leftY * s, iw = im.naturalWidth * s, ih = im.naturalHeight * s;
-  return { name, im, x, y, w: iw, h: ih, cx: (L[0] + R[0]) / 2, L, R, B, flip, gbB: !!gbB, prog: gbB ? Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (d.buildTime || 1))) : 1 };
+  return { name, im, x, y, w: iw, h: ih, cx: (L[0] + R[0]) / 2, L, R, B, flip, gbB: !!gbB, prog: gbB ? Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (b.dur || d.buildTime || d.bt || 1))) : 1 };
 }
 // A akkor van B mögött, ha valamelyik tengelyen teljesen előtte ér véget (kisebb i vagy j = hátrébb)
 function behind(a, b) {
@@ -1960,7 +1966,7 @@ function drawBuilding(b, now, pass = 0) {
 function drawOverlay(b, r, now) {
   const d = DEF[b.type]; const bob = Math.sin(now / 300 + b.id) * 3; const by = Math.max(r.y + 10, r.y + r.h * 0.12) + bob;
   if (b.ruined) { badge(r.cx, by, '#C9472F', '!'); return; }
-  if (b.until && S.gt < b.until) { const p = Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (DEF[b.type].buildTime || 1))); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); return; }
+  if (b.until && S.gt < b.until) { const p = Math.max(0, Math.min(1, 1 - (b.until - S.gt) / (b.dur || d.buildTime || d.bt || 1))); ctx.fillStyle = 'rgba(36,22,12,0.75)'; roundRect(r.cx - 40, by - 4, 80, 11, 6); ctx.fill(); ctx.fillStyle = '#7FC4E8'; roundRect(r.cx - 39, by - 3, 78 * p, 9, 5); ctx.fill(); if (d.road && !connected(b)) badge(r.cx + 62, by + 2, '#C9472F', 'ut'); return; }
   if (d.road && !connected(b)) { badge(r.cx, by, '#C9472F', 'ut'); return; }
   if (ready(b) && storeFull(b)) { badge(r.cx, by, '#8A5A2B', '!'); return; }
   if (ready(b)) {
@@ -2114,7 +2120,7 @@ function renderDrawer() {
     const pic = t === 'ut' ? 'ut_egyenes' : d.img;
     const isNew = !!S.newTypes[t];
     return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" title="${(d.desc || '').replace(/"/g, '&quot;')}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
-      <span class="pic">${t === 'ut' ? '<img src="img/fold.png" alt="" style="width:150px;height:76px;max-height:none;margin-bottom:18px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:6px">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${dimsT(t).join('×')}</span>${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
+      <span class="pic">${t === 'ut' ? '<img src="img/fold.png" alt="" style="width:150px;height:76px;max-height:none;margin-bottom:18px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:6px">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${dimsT(t).join('×')}</span>${d.bt ? `<span class="chip" style="top:auto;bottom:4px" title="${tr('Építési idő')}">${d.bt >= 3600 ? trf('{0} óra', +(d.bt / 3600).toFixed(1)) : trf('{0} perc', Math.round(d.bt / 60))}</span>` : ''}${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
       <b>${d.name}</b><span class="desc">${d.desc}</span>
       ${t === 'ut' ? '' : gainHTML(t)}
       ${!lock && !canPay(costOf(t)) ? `<span class="miss">${trf('Hiányzik · {0}', missText(costOf(t)))}</span>` : ''}
@@ -2158,7 +2164,7 @@ function showInfo(b, refresh) {
   infoId = b.id; const d = DEF[b.type]; const el = $('info'); el.hidden = false; if (d.gb) gbCur = b.type;
   let status = '';
   if (b.ruined) status = `<span class="status" style="color:var(--bad)">${tr('Romokban áll. Újjáépítheted fél áron.')}</span>`;
-  else if (b.until && S.gt < b.until) status = `<span class="status">${b.upTo ? trf('Átépítés {0} épületté, még {1}.', DEF[b.upTo].name, dur((b.until - S.gt) / S.speed)) : trf('Épül, még {0}.', dur((b.until - S.gt) / S.speed))}</span>`;
+  else if (b.until && S.gt < b.until) status = `<span class="status">${b.upTo ? trf('Átépítés {0} épületté, még {1}.', DEF[b.upTo].name, dur((b.until - S.gt) / S.speed)) : trf('Épül, még {0}.', dur((b.until - S.gt) / S.speed))}${d.road && !connected(b) ? ' ' + tr('Ösvény is kell majd hozzá, különben nem fog termelni.') : ''}</span>`;
   else if (d.input && !inputOk(b) && ready(b)) status = `<span class="status" style="color:var(--bad)">${trf('Kész lenne, de hiányzik · {0}', missText(inputNeed(b)))}</span>`;
   else if (b.dry) status = `<span class="status" style="color:var(--bad)">${tr('Kimerült a legelő. Vonulj tovább, és az új helyen újra zöld lesz.')}</span>`;
   else if (d.road && !connected(b)) status = `<span class="status" style="color:var(--bad)">${tr('Nincs ösvény a táborig, ezért nem működik.')}</span>`;
