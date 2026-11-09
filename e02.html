@@ -689,7 +689,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611090' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611091' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -2407,7 +2407,7 @@ const HOUR = 3600e3, DAY = 24 * HOUR;
 const today = () => new Date(NOW()).toDateString();
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const ERA_F = [1, 1.6, 2.5, 3.5][typeof CUR_ERA === 'number' ? CUR_ERA : 0] || 1;
+const ERA_F = [1, 1.6, 2.5, 3.5, 5][typeof CUR_ERA === 'number' ? CUR_ERA : 0] || 1;
 const amt = n => Math.round(n * ERA_F);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const T = (x) => tr(x), TF = (x, ...a) => trf(x, ...a);
@@ -2845,7 +2845,7 @@ function botLayout(b) {
   b.layout = { era, list }; saveSoc(); return list;
 }
 // közös rajzoló: szorosan a városra vág, halvány rács, lágy keret
-function paintTown(cv, bg, ox, oy, sprites, n) {
+function paintTown(cv, bg, ox, oy, sprites, n, bw, bh) {
   if (!cv) return; const g = cv.getContext('2d');
   const TT = (i, j) => [ox + (i - j) * TW / 2, oy + (i + j) * TH / 2];
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -2859,7 +2859,7 @@ function paintTown(cv, bg, ox, oy, sprites, n) {
   const sc = cv.width / (x1 - x0); cv.height = Math.round(want);
   g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#7d9a44'; g.fillRect(0, 0, cv.width, cv.height);
   g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
-  if (bg && bg.naturalWidth) g.drawImage(bg, 0, 0, BGW, BGH);
+  if (bg && bg.naturalWidth) g.drawImage(bg, 0, 0, bw || BGW, bh || BGH);
   // rács
   g.save(); g.strokeStyle = 'rgba(255,248,220,.38)'; g.lineWidth = 1.4;
   for (let k = 0; k <= n; k++) { let a = TT(k, 0), b = TT(k, n); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); a = TT(0, k); b = TT(n, k); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
@@ -2974,7 +2974,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
@@ -3118,7 +3118,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611090'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611091'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
@@ -3141,7 +3141,7 @@ function renderRemoteTown(cv, town) {
       const w = b.rot ? b.h : b.w, h = b.rot ? b.w : b.h, flip = !!b.rot, s = (w + h) * TW / 2 / Math.max(1, m.maxX - m.minX);
       const L = TT(b.i, b.j + h); const lx = flip ? m.w - m.maxX : m.minX, ly = w === h ? (m.lY + m.rY) / 2 : flip ? m.rY : m.lY;
       return { im, flip, sq: w === h, L, R: TT(b.i + w, b.j), B: TT(b.i + w, b.j + h), x: L[0] - lx * s, y: L[1] - ly * s, w: im.naturalWidth * s, h: im.naturalHeight * s }; }).filter(Boolean);
-    paintTown(cv, RIMG[names[0]], ox, oy, sprites, town.n || 9);
+    paintTown(cv, RIMG[names[0]], ox, oy, sprites, town.n || 9, town.bgw || 1672, town.bgh || 941);
   };
   names.forEach(n => rimg(n, () => { if (--left <= 0) draw(); }));
 }
@@ -3265,4 +3265,5 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 /*SOCIAL-END*/
 })();
 </script>
+
 </body></html>
