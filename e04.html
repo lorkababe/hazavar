@@ -2403,7 +2403,7 @@ function roadPaintAt(sx, sy) {
   if (roadPaint.mode === 'erase') { if (S.roads[k]) { give(S.roads[k] === 2 ? DEF.kout.cost : DEF.ut.cost); delete S.roads[k]; connCache = null; save(); sfxClick(); } }
   else if (!S.roads[k] || (tool && tool.stone && S.roads[k] === 1)) { const before = JSON.stringify(S.roads[k]); place(i, j); if (JSON.stringify(S.roads[k]) !== before) sfxClick(); }
 }
-cv.addEventListener('pointerdown', e => { if (!$('drawer').hidden && !tool && !(typeof lotPick !== 'undefined' && lotPick)) { const [bx0, by0] = toBg(e.offsetX, e.offsetY), [ti0, tj0] = tileAt(bx0, by0); const onLot = typeof lotAt === 'function' && !inGrid(ti0, tj0) && lotAt(ti0, tj0) && !lotOwned(lotAt(ti0, tj0).id); if (!onLot) { closeDrawer(); return; } } if ($('info') && !$('info').hidden && !tool) { const [bx0, by0] = toBg(e.offsetX, e.offsetY); if (!pick(bx0, by0)) { hideInfo(); return; } } cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); downAt = [e.offsetX, e.offsetY, camX, camY]; dragging = false; harvesting = false; roadPaint = null;
+cv.addEventListener('pointerdown', e => { if (!$('drawer').hidden && !tool && !(typeof lotPick !== 'undefined' && lotPick)) { const [bx0, by0] = toBg(e.offsetX, e.offsetY), [ti0, tj0] = tileAt(bx0, by0); const onLot = typeof lotAt === 'function' && !inGrid(ti0, tj0) && lotAt(ti0, tj0) && !lotOwned(lotAt(ti0, tj0).id);  } if ($('info') && !$('info').hidden && !tool) { const [bx0, by0] = toBg(e.offsetX, e.offsetY); if (!pick(bx0, by0)) { hideInfo(); return; } } cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); downAt = [e.offsetX, e.offsetY, camX, camY]; dragging = false; harvesting = false; roadPaint = null;
   if (ptrs.size === 1 && tool && tool.type === 'ut') { const [bx, by] = toBg(e.offsetX, e.offsetY); const [i, j] = tileAt(bx, by); if (!inArea(i, j)) { endTool(); return; } roadPaint = { mode: S.roads[key(i, j)] && !(tool.stone && S.roads[key(i, j)] === 1) && !(!tool.stone && S.roads[key(i, j)] === 2 && false) ? 'erase' : 'add', last: null }; roadPaintAt(e.offsetX, e.offsetY); dragging = true; }
   if (ptrs.size === 1 && !tool && harvestAt(e.offsetX, e.offsetY)) harvesting = true;
   if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
@@ -2480,7 +2480,7 @@ $('samuBtn').onclick = () => setGuide($('guide').classList.contains('mini'));
 
 // építés panel
 let curCat = 'all'; const drawerSeen = new Set();
-function openDrawer() { setTimeout(() => { const dh = $('drawer').offsetHeight || 0; if (dh) { camY += Math.max(0, dh - (($('nav') && $('nav').offsetHeight) || 0)) / scale / 2; clampCam(); } }, 0); hideInfo(); drawerSeen.clear(); renderDrawer(); $('drawer').hidden = false; $('nav').hidden = true; }
+function openDrawer() { hideInfo(); drawerSeen.clear(); renderDrawer(); $('drawer').hidden = false; $('nav').hidden = true; }
 function closeDrawer() {
   if (!$('drawer').hidden) { drawerSeen.clear(); save(); badges(); }
   $('drawer').hidden = true; if (!tool) $('nav').hidden = false;
