@@ -544,7 +544,8 @@ const DEF = {
   r_jurta:   { name: 'Vezéri jurta', size: 3, img: 'e01_vezeri_jurta', cat: 'emlek', cost: {}, hang: 6, pop: 4, tech: 'r_jurta', secret: true, unique: true, desc: 'Az Emléktárból. A régi idők jurtája.' },
   r_feherlo: { name: 'A fehér ló', size: 3, img: 'e02_feher_lo', cat: 'emlek', cost: {}, hang: 6, tech: 'r_feherlo', secret: true, unique: true, desc: 'Az Emléktárból. Ezért a lóért kaptuk az országot.' },
   r_kurt:    { name: 'Lehel kürtje', size: 2, img: 'e02_lehel_kurtje', cat: 'emlek', cost: {}, hang: 6, def: 1, tech: 'r_kurt', secret: true, unique: true, desc: 'Az Emléktárból. Senki nem fújja meg, mert senki nem tudja, mi történik utána.' },
-  ut:        { name: 'Út', size: 1, cat: 'ut', cost: { penz: 8 }, desc: 'Kövezett út. Ezen jár a szekér a vásárba, a jobbágy a földre, a király mindenhova.' }
+  ut:        { name: 'Ösvény', size: 1, cat: 'ut', img: 'ikon_ut', cost: { penz: 8 }, desc: 'Kitaposott földút. Ezen jár a szekér a vásárba, a jobbágy a földre, a király mindenhova.' },
+  kout:      { name: 'Köves út', size: 1, cat: 'ut', img: 'e04_ikon_kout', cost: { penz: 40, vas: 1 }, tech: 'vasar', desc: 'Kőből rakott út, ahogy a rómaiak csinálták. Ezek a kövek ráadásul tényleg római kövek, a régi Aquincumból hordták el. Három darab +1 Hangulatot ad, és a mellette álló házak 5%-kal több Pénzt termelnek.' }
 };
 const CATS = [['all','Mind'],['telek','Terület'],['lak','Lakóház'],['term','Termelő'],['hang','Hangulat'],['ved','Védelem'],['emlek','Emléktár'],['ut','Út']];
 
@@ -608,6 +609,7 @@ function auraHits(src, dst) {
 function auraFits(a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz) && dst.type !== 'vasarter'; return true; }
 function auraMul(b, res) {
   let m = 1; S.buildings.forEach(s => { if (s === b || off(s)) return; const a = DEF[s.type].aura; if (!a || !auraFits(a, b, res)) return; if (a.to === 'termeny' && res !== 'termeny') return; if (a.to === 'penz' && res !== 'penz') return; if (auraHits(s, b)) m += a.mul; });
+  if (res === 'penz' && DEF[b.type].cat === 'lak' && stoneNear(b)) m += 0.05;
   return Math.max(0.4, m);
 }
 function auraList(b) { const out = []; S.buildings.forEach(s => { if (s === b || off(s)) return; const a = DEF[s.type].aura; if (a && auraFits(a, b) && auraHits(s, b)) out.push({ s, a }); }); return out; }
@@ -719,7 +721,7 @@ const off = b => !!(b.ruined || (b.until && S.gt < b.until));
 function pop() { return S.buildings.reduce((a, b) => a + (b.ruined ? 0 : off(b) ? (b.upTo && b.oldPop) || 0 : (DEF[b.type].pop || 0)), 0); }
 function workers() { return S.buildings.reduce((a, b) => a + (off(b) ? 0 : (DEF[b.type].workers || 0)), 0); }
 function hangOf(f) { return S.buildings.reduce((a, b) => a + (off(b) || (DEF[b.type].faith || '') !== f ? 0 : (DEF[b.type].hang || 0)), 0); }
-function hangSum() { return hangOf('') + ((S.site && S.site.hang) || 0) + (S.council === 'rovas' ? 2 : 0) + relics().reduce((a, r) => a + (r.hang || 0), 0) + (S.gt < (S.feastUntil || 0) ? 15 : 0) + lawSum('hang') + gbHang(''); }
+function hangSum() { return hangOf('') + ((S.site && S.site.hang) || 0) + (S.council === 'rovas' ? 2 : 0) + relics().reduce((a, r) => a + (r.hang || 0), 0) + (S.gt < (S.feastUntil || 0) ? 15 : 0) + lawSum('hang') + gbHang('') + Math.floor(stoneCount() / 3); }
 function kerH() { return 4 + hangOf('ker') + lawSum('ker') + gbHang('ker'); }
 function pogH() { return 3 + hangOf('pog') + lawSum('pog') + gbHang('pog'); }
 function faith() {
@@ -974,9 +976,11 @@ function place(i, j) {
     b.i = i; b.j = j; b.rot = tool.rot || 0; connCache = null; endTool(); save(); return;
   }
   if (tool.type === 'ut') {
-    if (!free('ut', i, j)) return;
-    if (!canPay(d.cost)) { toast('Elfogyott a Pénz, most nem tudunk több ösvényt rakni.'); return; }
-    pay(d.cost); S.roads[key(i, j)] = 1; connCache = null; save(); return;
+    const rd = tool.stone ? DEF.kout : d, up = tool.stone && S.roads[key(i, j)] === 1;
+    if (!up && !free('ut', i, j)) return;
+    const rc = up ? { penz: rd.cost.penz - DEF.ut.cost.penz, vas: rd.cost.vas } : rd.cost;
+    if (!canPay(rc)) { toast(trf('Elfogyott a nyersanyag. Hiányzik · {0}', missText(rc))); return; }
+    pay(rc); S.roads[key(i, j)] = tool.stone ? 2 : 1; connCache = null; roadCache = null; save(); return;
   }
   if (!free(tool.type, i, j, null, tool.rot)) { toast('Ide nem fér el, keress neki szabad helyet.'); return; }
   if (!canPay(costOf(tool.type))) { const pt = $('placeText'); pt.textContent = trf('Elfogyott a nyersanyag. Hiányzik · {0}', missText(costOf(tool.type))); pt.classList.add('warn'); setTimeout(() => pt.classList.remove('warn'), 2500); if (tool.type === 'ut') { roadPaint = null; } return; }
@@ -1840,6 +1844,36 @@ function showClear(k) {
     connCache = null; sfxCollect(); save(); closeModal(); const [x, y] = tileTop(OBST_P[k].i + 0.5, OBST_P[k].j + 0.5); floatText(x, y, hill ? tr('Elhordva!') : tr('Kivágva!'), '#FFF4DF'); };
 }
 
+// ---------- köves út: drágább, de szebb, és jobb kedvre deríti a környéket ----------
+const isStone = k => S.roads[k] === 2;
+function stoneCount() { let n = 0; for (const k in S.roads) if (S.roads[k] === 2) n++; return n; }
+function stoneNear(b) { const [w, h] = dimsB(b); for (let a = -1; a <= w; a++) for (let c = -1; c <= h; c++) { if (a >= 0 && a < w && c >= 0 && c < h) continue; if ((a === -1 || a === w) && (c === -1 || c === h)) continue; if (isStone(key(b.i + a, b.j + c))) return true; } return false; }
+const _startBuild = startBuild;
+startBuild = function (type) {
+  if (type !== 'kout') return _startBuild(type);
+  _startBuild('ut'); tool.stone = true;
+  $('placeText').textContent = tr('Húzd végig a mezőkön, és köves út lesz belőle. Ha meglévő ösvényen húzod végig, azt kikövezi. Köves útról indulva törlöd, és visszakapod az árát.');
+};
+const _buildRoadLayer = buildRoadLayer;
+buildRoadLayer = function (fast) {
+  const c = _buildRoadLayer(fast); const st = Object.keys(S.roads).filter(isStone); if (!st.length || c.width < 4) return c;
+  const K = fast ? 1 : 2, g = c.getContext('2d'); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.filter = 'none'; g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; g.scale(K, K); g.translate(-c.ox, -c.oy);
+  const fo = S.buildings.find(x => x.type === 'fo') || { i: -9, j: -9 }, isFo = (a, b) => a >= fo.i && a < fo.i + 3 && b >= fo.j && b < fo.j + 3;
+  const RX = TW * 0.19, pts = [];
+  st.forEach(k => { const [i, j] = k.split(',').map(Number), [x, y] = tileTop(i, j), cx = x, cy = y + TH / 2; pts.push([cx, cy]);
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj]) => { const a = i + di, b = j + dj; if (!S.roads[key(a, b)] && !isFo(a, b)) return; const [nx, ny] = tileTop(a, b), ex = (cx + nx) / 2, ey = (cy + ny + TH / 2) / 2;
+      for (let q = 1; q <= 12; q++) pts.push([cx + (ex - cx) * q / 12, cy + (ey - cy) * q / 12]); }); });
+  const path = new Path2D(); pts.forEach(([x, y]) => { path.moveTo(x + RX, y); path.ellipse(x, y, RX, RX * 0.5, 0, 0, 7); });
+  g.fillStyle = 'rgba(60,48,36,0.45)'; g.filter = 'blur(1.5px)'; g.translate(0, 1.2); g.fill(path); g.translate(0, -1.2); g.filter = 'none';
+  g.fillStyle = '#7E766A'; g.fill(path); g.save(); g.clip(path);
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; pts.forEach(([x, y]) => { x0 = Math.min(x0, x - RX); x1 = Math.max(x1, x + RX); y0 = Math.min(y0, y - RX); y1 = Math.max(y1, y + RX); });
+  for (let y = y0, row = 0; y < y1; y += 4.2, row++) for (let x = x0 + (row % 2) * 3.4; x < x1; x += 6.8) {
+    const r = hash(x * 1.3, y * 0.7), px = x + (r - 0.5) * 1.6, py = y + (hash(y, x) - 0.5) * 1.2, rw = 2.7 + r * 0.9, rh = 1.7 + hash(x, y * 3) * 0.5;
+    const t = 150 + Math.floor(hash(px, py) * 55); g.fillStyle = `rgb(${t},${t - 8},${t - 22})`; g.beginPath(); g.ellipse(px, py, rw, rh, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,248,230,0.35)'; g.beginPath(); g.ellipse(px - rw * 0.25, py - rh * 0.3, rw * 0.5, rh * 0.35, 0, 0, 7); g.fill(); }
+  g.restore(); g.restore(); return c;
+};
+
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;
 function tick(dt) {
@@ -2048,7 +2082,7 @@ function buildRoadLayer(fast) {
   return c;
 }
 function drawRoads() {
-  const sig = Object.keys(S.roads).sort().join('|');
+  const sig = Object.keys(S.roads).sort().map(k => k + S.roads[k]).join('|');
   const fast = !!roadPaint; // húzás közben egyszerűbb, gyors rajz; elengedéskor a szép változat
   if (!roadCache || sig !== roadSig || (roadCache.fast && !fast)) { roadCache = buildRoadLayer(fast); roadCache.fast = fast; roadSig = sig; }
   if (roadCache.width > 2) ctx.drawImage(roadCache, roadCache.ox, roadCache.oy, roadCache.width / (roadCache.fast ? 1 : 2), roadCache.height / (roadCache.fast ? 1 : 2));
@@ -2170,11 +2204,11 @@ function harvestAt(sx, sy) { const [bx, by] = toBg(sx, sy); const x = surpAt(bx,
 let roadPaint = null;
 function roadPaintAt(sx, sy) {
   const [bx, by] = toBg(sx, sy); const [i, j] = tileAt(bx, by); const k = key(i, j); if (!roadPaint || roadPaint.last === k) return; roadPaint.last = k;
-  if (roadPaint.mode === 'erase') { if (S.roads[k]) { delete S.roads[k]; give(DEF.ut.cost); connCache = null; save(); sfxClick(); } }
-  else if (!S.roads[k]) { const before = Object.keys(S.roads).length; place(i, j); if (Object.keys(S.roads).length > before) sfxClick(); }
+  if (roadPaint.mode === 'erase') { if (S.roads[k]) { give(S.roads[k] === 2 ? DEF.kout.cost : DEF.ut.cost); delete S.roads[k]; connCache = null; save(); sfxClick(); } }
+  else if (!S.roads[k] || (tool && tool.stone && S.roads[k] === 1)) { const before = JSON.stringify(S.roads[k]); place(i, j); if (JSON.stringify(S.roads[k]) !== before) sfxClick(); }
 }
 cv.addEventListener('pointerdown', e => { if (!$('drawer').hidden && !tool && !(typeof lotPick !== 'undefined' && lotPick)) { const [bx0, by0] = toBg(e.offsetX, e.offsetY), [ti0, tj0] = tileAt(bx0, by0); const onLot = typeof lotAt === 'function' && !inGrid(ti0, tj0) && lotAt(ti0, tj0) && !lotOwned(lotAt(ti0, tj0).id); if (!onLot) { closeDrawer(); return; } } if ($('info') && !$('info').hidden && !tool) { const [bx0, by0] = toBg(e.offsetX, e.offsetY); if (!pick(bx0, by0)) { hideInfo(); return; } } cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); downAt = [e.offsetX, e.offsetY, camX, camY]; dragging = false; harvesting = false; roadPaint = null;
-  if (ptrs.size === 1 && tool && tool.type === 'ut') { const [bx, by] = toBg(e.offsetX, e.offsetY); const [i, j] = tileAt(bx, by); if (!inArea(i, j)) { endTool(); return; } roadPaint = { mode: S.roads[key(i, j)] ? 'erase' : 'add', last: null }; roadPaintAt(e.offsetX, e.offsetY); dragging = true; }
+  if (ptrs.size === 1 && tool && tool.type === 'ut') { const [bx, by] = toBg(e.offsetX, e.offsetY); const [i, j] = tileAt(bx, by); if (!inArea(i, j)) { endTool(); return; } roadPaint = { mode: S.roads[key(i, j)] && !(tool.stone && S.roads[key(i, j)] === 1) && !(!tool.stone && S.roads[key(i, j)] === 2 && false) ? 'erase' : 'add', last: null }; roadPaintAt(e.offsetX, e.offsetY); dragging = true; }
   if (ptrs.size === 1 && !tool && harvestAt(e.offsetX, e.offsetY)) harvesting = true;
   if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
 cv.addEventListener('pointermove', e => {
@@ -2278,7 +2312,7 @@ function renderDrawer() {
     const pic = t === 'ut' ? 'ut_egyenes' : d.img;
     const isNew = !!S.newTypes[t];
     return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" title="${(d.desc || '').replace(/"/g, '&quot;')}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
-      <span class="pic">${t === 'ut' ? '<img src="img/fold.png" alt="" style="width:100px;height:50px;max-height:none;margin-bottom:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:6px">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${dimsT(t).join('×')}</span>${d.bt ? `<span class="chip" style="top:auto;bottom:4px" title="${tr('Építési idő')}">${d.bt >= 3600 ? trf('{0} óra', +(d.bt / 3600).toFixed(1)) : trf('{0} perc', Math.round(d.bt / 60))}</span>` : ''}${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
+      <span class="pic">${t === 'ut' ? '<img src="img/ikon_ut.png" alt="">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${dimsT(t).join('×')}</span>${d.bt ? `<span class="chip" style="top:auto;bottom:4px" title="${tr('Építési idő')}">${d.bt >= 3600 ? trf('{0} óra', +(d.bt / 3600).toFixed(1)) : trf('{0} perc', Math.round(d.bt / 60))}</span>` : ''}${d.cat === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
       <b>${d.name}</b><span class="desc">${d.desc}</span>
       ${t === 'ut' ? '' : gainHTML(t)}
       ${!lock && !canPay(costOf(t)) ? `<span class="miss">${trf('Hiányzik · {0}', missText(costOf(t)))}</span>` : ''}
@@ -3905,11 +3939,14 @@ function rearPick(b) {
   if (!b || b.type === 'fo' && !REAR.allowFo) { if (b && b.type === 'fo') toast(tr('A főépület a helyén marad, a többit rendezd köré.')); return; }
   S.buildings = S.buildings.filter(x => x !== b); REAR.tray.push(b); rearDirty(); rearUI();
 }
-function rearAll() { const keep = S.buildings.filter(b => b.type === 'fo'); S.buildings.filter(b => b.type !== 'fo').forEach(b => REAR.tray.push(b)); S.buildings = keep; rearDirty(); rearUI(); }
-function rearDirty() { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} }
-function rearHold(k) { const b = REAR.tray[k]; if (!b) return; REAR.cur = k; REAR.curType = b.type; tool = { mode: 'rear', type: b.type, rot: b.rot || 0, id: b.id }; hover = null; rearUI(); }
+function rearRoadType(v) { return v === 2 && DEF.kout ? 'kout' : 'ut'; }
+function rearAll() { const keep = S.buildings.filter(b => b.type === 'fo'); S.buildings.filter(b => b.type !== 'fo').forEach(b => REAR.tray.push(b)); S.buildings = keep; Object.keys(S.roads).forEach(k => REAR.tray.push({ road: 1, type: rearRoadType(S.roads[k]), id: 'r' + k })); S.roads = {}; rearDirty(); rearUI(); }
+function rearPickRoad(k) { REAR.tray.push({ road: 1, type: rearRoadType(S.roads[k]), id: 'r' + k }); delete S.roads[k]; rearDirty(); rearUI(); }
+function rearDirty() { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} try { roadCache = null; } catch (e) {} }
+function rearHold(k) { const b = REAR.tray[k]; if (!b) return; REAR.cur = k; REAR.curType = b.type; tool = { mode: 'rear', type: b.road ? 'ut' : b.type, rot: b.rot || 0, id: b.id, stone: b.type === 'kout' }; hover = null; rearUI(); }
 function rearPlace(i, j) {
   const b = REAR.tray[REAR.cur]; if (!b || !tool) return;
+  if (b.road) { if (!free('ut', i, j)) return false; S.roads[key(i, j)] = b.type === 'kout' ? 2 : 1; REAR.tray.splice(REAR.cur, 1); try { roadCache = null; } catch (e) {} rearDirty(); const nx = REAR.tray.findIndex(x => x.type === b.type); if (nx >= 0) { REAR.cur = nx; rearUI(); } else { REAR.cur = null; tool = null; hover = null; if (REAR.tray.length) rearHold(0); else rearUI(); } return true; }
   if (!free(b.type, i, j, null, tool.rot)) { if (!REAR.quiet) toast(tr('Ide nem fér, vagy ez a terep nem jó neki.')); return false; }
   b.i = i; b.j = j; b.rot = tool.rot || 0; S.buildings.push(b); REAR.tray.splice(REAR.cur, 1); REAR.cur = null; tool = null; hover = null;
   try { sfxClick(); } catch (e) {} rearDirty();
@@ -3921,7 +3958,8 @@ function rearCancel() {
   try { localStorage.removeItem(REAR_KEY()); } catch (e) {} rearDirty(); try { save(); } catch (e) {} rearUI(); toast(tr('Minden visszakerült a régi helyére.'));
 }
 function rearDone() {
-  if (!REAR || REAR.tray.length) { toast(tr('Előbb tedd le az összes épületet a tálcáról.')); return; }
+  if (!REAR || REAR.tray.some(b => !b.road)) { toast(tr('Előbb tedd le az összes épületet a tálcáról.')); return; }
+  const left = REAR.tray.filter(b => b.road); if (left.length) { left.forEach(b => give(DEF[b.type].cost)); toast(trf('A le nem rakott {0} útdarab árát visszakaptad.', left.length)); REAR.tray = []; }
   REAR = null; tool = null; hover = null; try { localStorage.removeItem(REAR_KEY()); } catch (e) {} rearDirty(); try { save(); } catch (e) {} rearUI(); toast(tr('Kész az új városkép!'));
 }
 function rearGroups() { const m = {}, out = []; REAR.tray.forEach((b, k) => { if (!m[b.type]) { m[b.type] = { type: b.type, n: 0, first: k }; out.push(m[b.type]); } m[b.type].n++; }); return out; }
@@ -3931,10 +3969,10 @@ function rearUI() {
   if (!bar) { bar = document.createElement('div'); bar.id = 'rearBar'; bar.className = 'wood'; document.body.appendChild(bar); }
   const n = document.getElementById('nav'); if (n) n.hidden = true; const pb = document.getElementById('placebar'); if (pb) pb.hidden = true;
   const cur = REAR.cur != null ? REAR.tray[REAR.cur] : null, sq = cur && (() => { const [w, h] = rDims(cur.type, 0); return w === h; })();
-  bar.innerHTML = `<div class="rb-head"><b>${tr('Átrendezés')}</b><span>${REAR.tray.length ? trf('{0} épület vár a tálcán', REAR.tray.length) + (REAR.tray.length > 1 ? ' · ' + tr('nyomva tartva húzd végig az egeret, és sorban lerakja') : '') : tr('A tálca üres')}${REAR.tray.some(b => DEF[b.type].old) ? ` <small class="rb-old">${trf('{0} régi korból maradt', REAR.tray.filter(b => DEF[b.type].old).length)}</small>` : ''}</span>
+  bar.innerHTML = `<div class="rb-head"><b>${tr('Átrendezés')}</b><span>${REAR.tray.length ? (() => { const nb = REAR.tray.filter(b => !b.road).length, nr = REAR.tray.length - nb; return [nb ? trf('{0} épület', nb) : '', nr ? trf('{0} útdarab', nr) : ''].filter(Boolean).join(tr(' és ')) + ' ' + tr('vár a tálcán') + (nr ? ' · ' + tr('a le nem rakott utak árát visszakapod') : ''); })() + (REAR.tray.length > 1 ? ' · ' + tr('nyomva tartva húzd végig az egeret, és sorban lerakja') : '') : tr('A tálca üres')}${REAR.tray.some(b => DEF[b.type].old) ? ` <small class="rb-old">${trf('{0} régi korból maradt', REAR.tray.filter(b => DEF[b.type].old).length)}</small>` : ''}</span>
     <button class="btn ghost" type="button" id="rbAll">${tr('Mindet felszedem')}</button>${cur && !sq ? `<button class="btn ghost" type="button" id="rbRot">${tr('Forgatás')}</button>` : ''}
-    <button class="btn ghost" type="button" id="rbNo">${tr('Mégse')}</button><button class="btn coral" type="button" id="rbOk" ${REAR.tray.length ? 'disabled' : ''}>${tr('Kész')}</button></div>
-    <div class="rb-tray">${rearGroups().map(g => { const d = DEF[g.type]; return `<button type="button" class="rb-card${g.type === REAR.curType && REAR.cur != null ? ' on' : ''}${d.old ? ' old' : ''}" data-rk="${g.first}" title="${d.old ? tr('Előző korszakból maradt, Átépítéssel korszerűsíthető') : ''}"><img src="img/${(d.stages ? d.stages[0] : d.img)}.png" alt="">${g.n > 1 ? `<em>×${g.n}</em>` : ''}${d.old ? `<i>${tr('régi')}</i>` : ''}<span>${String(d.name)}</span></button>`; }).join('') || `<p>${tr('Koppints egy épületre a térképen, és felkerül ide. Ha mindent letettél, nyomd meg a Kész gombot. A Mégse mindent visszatesz a régi helyére.')}</p>`}</div>`;
+    <button class="btn ghost" type="button" id="rbNo">${tr('Mégse')}</button><button class="btn coral" type="button" id="rbOk" ${REAR.tray.some(b => !b.road) ? 'disabled' : ''}>${tr('Kész')}</button></div>
+    <div class="rb-tray">${rearGroups().map(g => { const d = DEF[g.type]; return `<button type="button" class="rb-card${g.type === REAR.curType && REAR.cur != null ? ' on' : ''}${d.old ? ' old' : ''}" data-rk="${g.first}" title="${d.old ? tr('Előző korszakból maradt, Átépítéssel korszerűsíthető') : ''}"><img src="img/${(d.stages ? d.stages[0] : d.img || 'ikon_ut')}.png" alt="">${g.n > 1 ? `<em>×${g.n}</em>` : ''}${d.old ? `<i>${tr('régi')}</i>` : ''}<span>${String(d.name)}</span></button>`; }).join('') || `<p>${tr('Koppints egy épületre a térképen, és felkerül ide. Ha mindent letettél, nyomd meg a Kész gombot. A Mégse mindent visszatesz a régi helyére.')}</p>`}</div>`;
   bar.querySelector('#rbAll').onclick = rearAll; bar.querySelector('#rbNo').onclick = rearCancel; bar.querySelector('#rbOk').onclick = rearDone;
   const rr = bar.querySelector('#rbRot'); if (rr) rr.onclick = () => { if (tool) { tool.rot = tool.rot ? 0 : 1; } };
   bar.querySelectorAll('[data-rk]').forEach(x => x.onclick = () => rearHold(+x.dataset.rk));
@@ -3949,13 +3987,13 @@ function rearUI() {
     if (!REAR) return oldTap(sx, sy);
     const [bx, by] = toBg(sx, sy);
     if (tool && REAR.cur != null) { const [i, j] = tileAt(bx, by); const [hw, hh] = rDims(tool.type, tool.rot); rearPlace(i - Math.floor((hw - 1) / 2), j - Math.floor((hh - 1) / 2)); return; }
-    const b = pick(bx, by); if (b) rearPick(b);
+    const b = pick(bx, by); if (b) { rearPick(b); return; } const [ri, rj] = tileAt(bx, by); if (S.roads[key(ri, rj)]) rearPickRoad(key(ri, rj));
   };
   // nyomva tartva és húzva sorban lerakja ugyanabból a fajtából, amíg van
   const cvx = document.getElementById('cv'); let paint = false, skipTap = false;
   const tileOf = e => { const [bx, by] = toBg(e.offsetX, e.offsetY), [i, j] = tileAt(bx, by), [hw, hh] = rDims(tool.type, tool.rot); return [i - Math.floor((hw - 1) / 2), j - Math.floor((hh - 1) / 2)]; };
   if (cvx) {
-    cvx.addEventListener('pointerdown', e => { if (!REAR || !tool || REAR.cur == null || e.button) return; const [i, j] = tileOf(e); const b = REAR.tray[REAR.cur]; if (!b || !free(b.type, i, j, null, tool.rot)) return; e.stopImmediatePropagation(); e.preventDefault(); rearPlace(i, j); paint = true; skipTap = true; }, true);
+    cvx.addEventListener('pointerdown', e => { if (!REAR || !tool || REAR.cur == null || e.button) return; const [i, j] = tileOf(e); const b = REAR.tray[REAR.cur]; if (b && b.road && !free('ut', i, j)) { e.stopImmediatePropagation(); return; } if (!b || (!b.road && !free(b.type, i, j, null, tool.rot))) return; e.stopImmediatePropagation(); e.preventDefault(); rearPlace(i, j); paint = true; skipTap = true; }, true);
     cvx.addEventListener('pointermove', e => { if (!paint) return; e.stopImmediatePropagation(); if (!REAR || !tool || REAR.cur == null) { paint = false; return; } const [i, j] = tileOf(e); hover = [i, j]; REAR.quiet = true; rearPlace(i, j); REAR.quiet = false; }, true);
     addEventListener('pointerup', () => { if (paint) { paint = false; setTimeout(() => { skipTap = false; }, 50); } }, true);
   }
