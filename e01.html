@@ -334,7 +334,7 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 #drawer{padding-top:10px!important;gap:8px!important}
 @media (max-height:760px){.card .desc{display:none}.card .pic{height:70px!important}.card .pic img{max-height:66px!important}}
 /* az építés menü mindig ugyanolyan magas, a magasságot a legmagasabb kártya adja */
-.card{box-sizing:border-box}.card .pic{height:64px!important}.card .pic img{max-height:60px!important}.card .cost,.card .lockmsg{margin-top:auto}.drawer-head{flex-wrap:nowrap!important}.drawer-head h2{flex:0 0 auto}.freecnt{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%}#tabs{flex:0 1 auto;flex-wrap:nowrap!important;overflow-x:auto;min-width:0;scrollbar-width:none;padding-bottom:4px}#tabs .tab{flex:0 0 auto}.card>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;line-height:1.35;padding-top:3px}.cards:empty{display:flex;align-items:center;justify-content:center}.cards:empty::before{content:'Ebben a csoportban most nincs mit építeni.';font-weight:800;color:var(--ink-soft,#7A5A3A);font-size:15px}
+.card{box-sizing:border-box}.card .pic{height:64px!important}.card .pic img{max-height:60px!important}.card .cost,.card .lockmsg{margin-top:auto}.drawer-head{flex-wrap:nowrap!important}.drawer-head h2{flex:0 0 auto}.freecnt{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30%}#tabs{flex:0 1 auto;flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;min-width:0;scrollbar-width:none;padding:12px 10px 4px 2px;margin-top:-12px}#tabs .tab{flex:0 0 auto}.card>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;line-height:1.35;padding-top:3px}.cards:empty{display:flex;align-items:center;justify-content:center}.cards:empty::before{content:'Ebben a csoportban most nincs mit építeni.';font-weight:800;color:var(--ink-soft,#7A5A3A);font-size:15px}
 @media (max-width:1650px){.freecnt{display:none}}.card .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.card[data-lot] .pic>span:first-child{width:110px!important;height:56px!important;margin:0 0 4px!important}.card[data-lot] .pic>span:first-child img{width:110px!important;height:56px!important;max-height:none!important}.card[data-lot] .pic>span:first-child b{width:28px!important;height:28px!important;font-size:20px!important}
 @media (max-height:760px){.card .pic{height:56px!important}.card .pic img{max-height:52px!important}}
 @media (max-height:620px){.card .pic{height:44px!important}.card .pic img{max-height:42px!important}.card .chip{font-size:10px;padding:1px 6px}.drawer-head{padding-top:4px!important;padding-bottom:4px!important}}
@@ -1545,7 +1545,7 @@ function renderDrawer() {
     const pic = t === 'ut' ? 'ut_egyenes' : d.img;
     const isNew = !!S.newTypes[t];
     return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" title="${(d.desc || '').replace(/"/g, '&quot;')}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
-      <span class="pic">${t === 'ut' ? '<img src="img/fold.png" alt="" style="width:150px;height:76px;max-height:none;margin-bottom:18px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:6px">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${d.size}×${d.size}</span>${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
+      <span class="pic">${t === 'ut' ? '<img src="img/fold.png" alt="" style="width:100px;height:50px;max-height:none;margin-bottom:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:6px">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${d.size}×${d.size}</span>${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
       <b>${d.name}</b><span class="desc">${d.desc}</span>
       ${t === 'ut' ? '' : gainHTML(t)}
       ${!lock && !canPay(costOf(t)) ? `<span class="miss">${trf('Hiányzik · {0}', missText(costOf(t)))}</span>` : ''}
@@ -3168,13 +3168,14 @@ function rearPick(b) {
 }
 function rearAll() { const keep = S.buildings.filter(b => b.type === 'fo'); S.buildings.filter(b => b.type !== 'fo').forEach(b => REAR.tray.push(b)); S.buildings = keep; rearDirty(); rearUI(); }
 function rearDirty() { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} }
-function rearHold(k) { const b = REAR.tray[k]; if (!b) return; REAR.cur = k; tool = { mode: 'rear', type: b.type, rot: b.rot || 0, id: b.id }; hover = null; rearUI(); }
+function rearHold(k) { const b = REAR.tray[k]; if (!b) return; REAR.cur = k; REAR.curType = b.type; tool = { mode: 'rear', type: b.type, rot: b.rot || 0, id: b.id }; hover = null; rearUI(); }
 function rearPlace(i, j) {
   const b = REAR.tray[REAR.cur]; if (!b || !tool) return;
-  if (!free(b.type, i, j, null, tool.rot)) { toast(tr('Ide nem fér, vagy ez a terep nem jó neki.')); return; }
+  if (!free(b.type, i, j, null, tool.rot)) { if (!REAR.quiet) toast(tr('Ide nem fér, vagy ez a terep nem jó neki.')); return false; }
   b.i = i; b.j = j; b.rot = tool.rot || 0; S.buildings.push(b); REAR.tray.splice(REAR.cur, 1); REAR.cur = null; tool = null; hover = null;
   try { sfxClick(); } catch (e) {} rearDirty();
-  if (REAR.tray.length) rearHold(0); else rearUI();
+  if (REAR.tray.length) { const same = REAR.tray.findIndex(x => x.type === b.type); rearHold(same >= 0 ? same : 0); } else rearUI();
+  return true;
 }
 function rearCancel() {
   if (!REAR) return; const d = JSON.parse(REAR.snap); S.buildings = d.b; S.roads = d.r; REAR = null; tool = null; hover = null;
@@ -3184,23 +3185,24 @@ function rearDone() {
   if (!REAR || REAR.tray.length) { toast(tr('Előbb tedd le az összes épületet a tálcáról.')); return; }
   REAR = null; tool = null; hover = null; try { localStorage.removeItem(REAR_KEY()); } catch (e) {} rearDirty(); try { save(); } catch (e) {} rearUI(); toast(tr('Kész az új városkép!'));
 }
+function rearGroups() { const m = {}, out = []; REAR.tray.forEach((b, k) => { if (!m[b.type]) { m[b.type] = { type: b.type, n: 0, first: k }; out.push(m[b.type]); } m[b.type].n++; }); return out; }
 function rearUI() {
   let bar = document.getElementById('rearBar');
   if (!REAR) { if (bar) bar.remove(); const n = document.getElementById('nav'); if (n) n.hidden = false; return; }
   if (!bar) { bar = document.createElement('div'); bar.id = 'rearBar'; bar.className = 'wood'; document.body.appendChild(bar); }
   const n = document.getElementById('nav'); if (n) n.hidden = true; const pb = document.getElementById('placebar'); if (pb) pb.hidden = true;
   const cur = REAR.cur != null ? REAR.tray[REAR.cur] : null, sq = cur && (() => { const [w, h] = rDims(cur.type, 0); return w === h; })();
-  bar.innerHTML = `<div class="rb-head"><b>${tr('Átrendezés')}</b><span>${REAR.tray.length ? trf('{0} épület vár a tálcán', REAR.tray.length) : tr('A tálca üres')}</span>
+  bar.innerHTML = `<div class="rb-head"><b>${tr('Átrendezés')}</b><span>${REAR.tray.length ? trf('{0} épület vár a tálcán', REAR.tray.length) + (REAR.tray.length > 1 ? ' · ' + tr('nyomva tartva húzd végig az egeret, és sorban lerakja') : '') : tr('A tálca üres')}${REAR.tray.some(b => DEF[b.type].old) ? ` <small class="rb-old">${trf('{0} régi korból maradt', REAR.tray.filter(b => DEF[b.type].old).length)}</small>` : ''}</span>
     <button class="btn ghost" type="button" id="rbAll">${tr('Mindet felszedem')}</button>${cur && !sq ? `<button class="btn ghost" type="button" id="rbRot">${tr('Forgatás')}</button>` : ''}
     <button class="btn ghost" type="button" id="rbNo">${tr('Mégse')}</button><button class="btn coral" type="button" id="rbOk" ${REAR.tray.length ? 'disabled' : ''}>${tr('Kész')}</button></div>
-    <div class="rb-tray">${REAR.tray.map((b, k) => `<button type="button" class="rb-card${k === REAR.cur ? ' on' : ''}" data-rk="${k}"><img src="img/${(DEF[b.type].stages ? DEF[b.type].stages[0] : DEF[b.type].img)}.png" alt=""><span>${String(DEF[b.type].name)}</span></button>`).join('') || `<p>${tr('Koppints egy épületre a térképen, és felkerül ide. Ha mindent letettél, nyomd meg a Kész gombot. A Mégse mindent visszatesz a régi helyére.')}</p>`}</div>`;
+    <div class="rb-tray">${rearGroups().map(g => { const d = DEF[g.type]; return `<button type="button" class="rb-card${g.type === REAR.curType && REAR.cur != null ? ' on' : ''}${d.old ? ' old' : ''}" data-rk="${g.first}" title="${d.old ? tr('Előző korszakból maradt, Átépítéssel korszerűsíthető') : ''}"><img src="img/${(d.stages ? d.stages[0] : d.img)}.png" alt="">${g.n > 1 ? `<em>×${g.n}</em>` : ''}${d.old ? `<i>${tr('régi')}</i>` : ''}<span>${String(d.name)}</span></button>`; }).join('') || `<p>${tr('Koppints egy épületre a térképen, és felkerül ide. Ha mindent letettél, nyomd meg a Kész gombot. A Mégse mindent visszatesz a régi helyére.')}</p>`}</div>`;
   bar.querySelector('#rbAll').onclick = rearAll; bar.querySelector('#rbNo').onclick = rearCancel; bar.querySelector('#rbOk').onclick = rearDone;
   const rr = bar.querySelector('#rbRot'); if (rr) rr.onclick = () => { if (tool) { tool.rot = tool.rot ? 0 : 1; } };
   bar.querySelectorAll('[data-rk]').forEach(x => x.onclick = () => rearHold(+x.dataset.rk));
 }
 (function () {
   const st = document.createElement('style');
-  st.textContent = '#rearBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:40;width:min(980px,calc(100vw - 16px));border-radius:22px;padding:10px 12px;box-sizing:border-box;background:#6B4423;color:#FFF4DF;box-shadow:0 6px 18px rgba(0,0,0,.35)}#rearBar .rb-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#rearBar .rb-head b{font-size:20px;font-family:"Baloo 2",sans-serif}#rearBar .rb-head span{flex:1;font-weight:700;font-size:14px;opacity:.9}#rearBar .btn{min-height:38px;padding:0 14px;font-size:15px}#rearBar .btn.ghost{background:#F3E2BE;color:#3A2618;border-color:#F3E2BE}#rearBar .btn:disabled{opacity:.45}#rearBar .rb-tray{display:flex;gap:8px;overflow-x:auto;margin-top:8px;padding-bottom:4px;min-height:96px;align-items:stretch}#rearBar .rb-tray p{margin:auto 0;font-size:14px;font-weight:700}#rearBar .rb-card{flex:0 0 auto;width:96px;display:flex;flex-direction:column;align-items:center;gap:2px;background:#F3E2BE;color:#3A2618;border:3px solid transparent;border-radius:14px;padding:4px;cursor:pointer;font:800 12px/1.15 "Baloo 2",sans-serif}#rearBar .rb-card img{width:80px;height:58px;object-fit:contain}#rearBar .rb-card.on{border-color:#F5C542;background:#FFF4DF}#rearBar .rb-card span{text-align:center}';
+  st.textContent = '#rearBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:40;width:min(980px,calc(100vw - 16px));border-radius:22px;padding:10px 12px;box-sizing:border-box;background:#6B4423;color:#FFF4DF;box-shadow:0 6px 18px rgba(0,0,0,.35)}#rearBar .rb-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#rearBar .rb-head b{font-size:20px;font-family:"Baloo 2",sans-serif}#rearBar .rb-head span{flex:1;font-weight:700;font-size:14px;opacity:.9}#rearBar .btn{min-height:38px;padding:0 14px;font-size:15px}#rearBar .btn.ghost{background:#F3E2BE;color:#3A2618;border-color:#F3E2BE}#rearBar .btn:disabled{opacity:.45}#rearBar .rb-tray{display:flex;gap:8px;overflow-x:auto;margin-top:8px;padding-bottom:4px;min-height:96px;align-items:stretch}#rearBar .rb-tray p{margin:auto 0;font-size:14px;font-weight:700}#rearBar .rb-card{flex:0 0 auto;width:96px;display:flex;flex-direction:column;align-items:center;gap:2px;background:#F3E2BE;color:#3A2618;border:3px solid transparent;border-radius:14px;padding:4px;cursor:pointer;font:800 12px/1.15 "Baloo 2",sans-serif}#rearBar .rb-card img{width:80px;height:58px;object-fit:contain}#rearBar .rb-card.on{border-color:#F5C542;background:#FFF4DF}#rearBar .rb-card span{text-align:center}#rearBar .rb-card{position:relative}#rearBar .rb-card em{position:absolute;top:4px;right:4px;background:#3A2618;color:#FFF4DF;font-style:normal;font-weight:900;font-size:13px;border-radius:9px;padding:0 7px;line-height:20px}#rearBar .rb-card i{position:absolute;top:4px;left:4px;font-style:normal;font-size:10px;font-weight:800;color:#7A5A3A;background:#E6D3AE;border-radius:7px;padding:0 5px;line-height:16px}#rearBar .rb-card.old img{filter:sepia(.45) saturate(.8)}#rearBar small.rb-old{font-size:12px;opacity:.75;font-weight:700;margin-left:4px}';
   document.head.appendChild(st);
   // a koppintást átrendezés közben mi kezeljük
   const oldTap = tap;
@@ -3210,6 +3212,15 @@ function rearUI() {
     if (tool && REAR.cur != null) { const [i, j] = tileAt(bx, by); const [hw, hh] = rDims(tool.type, tool.rot); rearPlace(i - Math.floor((hw - 1) / 2), j - Math.floor((hh - 1) / 2)); return; }
     const b = pick(bx, by); if (b) rearPick(b);
   };
+  // nyomva tartva és húzva sorban lerakja ugyanabból a fajtából, amíg van
+  const cvx = document.getElementById('cv'); let paint = false, skipTap = false;
+  const tileOf = e => { const [bx, by] = toBg(e.offsetX, e.offsetY), [i, j] = tileAt(bx, by), [hw, hh] = rDims(tool.type, tool.rot); return [i - Math.floor((hw - 1) / 2), j - Math.floor((hh - 1) / 2)]; };
+  if (cvx) {
+    cvx.addEventListener('pointerdown', e => { if (!REAR || !tool || REAR.cur == null || e.button) return; const [i, j] = tileOf(e); const b = REAR.tray[REAR.cur]; if (!b || !free(b.type, i, j, null, tool.rot)) return; e.stopImmediatePropagation(); e.preventDefault(); rearPlace(i, j); paint = true; skipTap = true; }, true);
+    cvx.addEventListener('pointermove', e => { if (!paint) return; e.stopImmediatePropagation(); if (!REAR || !tool || REAR.cur == null) { paint = false; return; } const [i, j] = tileOf(e); hover = [i, j]; REAR.quiet = true; rearPlace(i, j); REAR.quiet = false; }, true);
+    addEventListener('pointerup', () => { if (paint) { paint = false; setTimeout(() => { skipTap = false; }, 50); } }, true);
+  }
+  const tap2 = tap; tap = function (sx, sy) { if (skipTap) { skipTap = false; return; } return tap2(sx, sy); };
   // ha félbehagytad (bezártad az oldalt), minden visszaugrik a régi helyére
   setTimeout(() => { try { const s = localStorage.getItem(REAR_KEY()); if (s && S) { const d = JSON.parse(s); S.buildings = d.b; S.roads = d.r; localStorage.removeItem(REAR_KEY()); rearDirty(); save(); toast(tr('Az átrendezés félbemaradt, ezért minden visszakerült a régi helyére.')); } } catch (e) {} }, 400);
   // gomb az Építés menü fejlécében
