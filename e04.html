@@ -1977,10 +1977,10 @@ const MG_KIND = {
   futar: { name: 'Magyar futár', img: 'e04_mg_futar', v: 95, hp: 1, pts: 0, col: '#C9472F', w: 1.4, from: 6, friend: true }
 };
 const MG_PIC = {};
-function mgPic(name) { if (!(name in MG_PIC)) { const im = new Image(); im.onerror = () => { MG_PIC[name] = null; }; im.onload = () => { MG_PIC[name] = im; }; MG_PIC[name] = undefined; im.src = 'img/' + name + '.png?v=2611095'; } return MG_PIC[name] || null; }
+function mgPic(name) { if (!(name in MG_PIC)) { const im = new Image(); im.onerror = () => { MG_PIC[name] = null; }; im.onload = () => { MG_PIC[name] = im; }; MG_PIC[name] = undefined; im.src = 'img/' + name + (/\.\w+$/.test(name) ? '' : '.png') + '?v=2611095'; } return MG_PIC[name] || null; }
 function playMuhi() {
   if (!miniStart('muhi')) return;
-  Object.values(MG_KIND).forEach(k => mgPic(k.img)); mgPic('e04_mg_sajo_hid');
+  Object.values(MG_KIND).forEach(k => mgPic(k.img)); mgPic('e04_mg_sajo_hid.jpg');
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('MUHI, 1241. ÁPRILIS')}</span><h2>${tr('Védd a Sajó hídját!')}</h2>
     <p>${tr('Koppints a tatár lovasokra, mielőtt átérnek. A páncélost háromszor kell eltalálni, a zászlóvivő lelassít mindenkit. A piros köpenyes futár a mieink közül való, őt ne bántsd, mert ha átér, hoz egy életet. Három lovas átjuthat, a negyediknél vége.')}</p>
     <div class="mg-legend">${Object.values(MG_KIND).map(k => `<span><img src="img/${k.img}.png?v=2611095" alt="" style="height:34px;width:auto" onerror="this.outerHTML='<i style=&quot;background:${k.col}&quot;></i>'">${tr(k.name)}</span>`).join('')}</div>
@@ -1991,10 +1991,11 @@ function playMuhi() {
   let Wc = 0, Hc = 0, run = false, t0 = 0, last = 0, spawnT = 0, score = 0, life = 3, combo = 0, best = 0, slowT = 0, riders = [], fx = [], raf = 0, ended = false, hits = 0, friends = 0;
   const fit = () => { const r = cv2.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); Wc = r.width; Hc = r.height; cv2.width = Wc * dp; cv2.height = Hc * dp; g.setTransform(dp, 0, 0, dp, 0, 0); };
   fit();
-  const bTop = () => Hc * 0.2, bBot = () => Hc * 0.86, laneY = n => bTop() + (bBot() - bTop()) * (n + 0.62) / LANES, sz = () => Math.max(0.8, Math.min(1.35, Hc / 380)), laneH = () => (bBot() - bTop()) / LANES;
+  const BG = () => { const im = mgPic('e04_mg_sajo_hid.jpg'); if (!im) return null; const deck = Math.min(Hc * 0.52, Math.max(Wc * 0.42, Hc * 0.36)), sc = Math.max(deck / (0.355 * im.naturalHeight), Wc / im.naturalWidth, Hc / im.naturalHeight), w = im.naturalWidth * sc, h = im.naturalHeight * sc; return { im, x: Math.min(0, Wc > Hc * 1.2 ? Wc - w : Math.max(Wc - w, Wc * 0.94 - 0.9 * w)), y: Math.max(Hc - h, Math.min(0, Hc / 2 - 0.4775 * h)), w, h }; };
+  const bTop = () => { const b = BG(); return b ? b.y + b.h * 0.30 : Hc * 0.2; }, bBot = () => { const b = BG(); return b ? b.y + b.h * 0.655 : Hc * 0.86; }, endX = () => { const b = BG(); return b ? b.x + b.w * 0.9 : Wc - 40; }, laneY = n => bTop() + (bBot() - bTop()) * (n + 0.62) / LANES, sz = () => Math.max(0.8, Math.min(1.35, Hc / 380)), laneH = () => (bBot() - bTop()) / LANES;
   function scene() {
-    const bg = mgPic('e04_mg_sajo_hid');
-    if (bg) { const s = Math.max(Wc / bg.naturalWidth, Hc / bg.naturalHeight); g.drawImage(bg, (Wc - bg.naturalWidth * s) / 2, (Hc - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s); return; }
+    const bg = BG();
+    if (bg) { g.drawImage(bg.im, bg.x, bg.y, bg.w, bg.h); return; }
     g.fillStyle = '#6F9A3E'; g.fillRect(0, 0, Wc, Hc);
     const wv = g.createLinearGradient(0, Hc * 0.1, 0, Hc * 0.96); wv.addColorStop(0, '#4E8FB5'); wv.addColorStop(1, '#2F6E93'); g.fillStyle = wv; g.fillRect(0, Hc * 0.1, Wc, Hc * 0.86);
     g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2; const tt = performance.now() / 600;
@@ -2039,9 +2040,9 @@ function playMuhi() {
       spawnT -= dt; if (spawnT <= 0) { const kind = pickKind(el), k = MG_KIND[kind], lane = Math.floor(Math.random() * LANES); riders.push({ kind, x: -30, y: laneY(lane), lane, ty: laneY(lane), v: k.v * (1 + el / 55) * (0.85 + Math.random() * 0.3), ph: Math.random() * 6, hp: k.hp, zt: 1 + Math.random() }); spawnT = Math.max(0.36, 1.15 - el * 0.018) * (0.7 + Math.random() * 0.6); }
       riders.forEach(r => {
         if (r.fall) { r.fall += dt * 2; r.y += dt * 90; return; }
-        const k = MG_KIND[r.kind]; r.x += r.v * dt * (k.friend ? 1 : slow); r.ph += dt * 12;
+        const k = MG_KIND[r.kind]; r.x += r.v * dt * (k.friend ? 1 : slow) * Math.max(0.45, Math.min(1.15, (endX() + 30) / 760)); r.ph += dt * 12;
         if (k.zig) { r.zt -= dt; if (r.zt <= 0) { r.lane = Math.max(0, Math.min(LANES - 1, r.lane + (Math.random() < 0.5 ? -1 : 1))); r.ty = laneY(r.lane); r.zt = 0.8 + Math.random(); } r.y += (r.ty - r.y) * Math.min(1, dt * 5); }
-        if (r.x > Wc - 40) { r.gone = true; if (k.friend) { friends++; if (life < 3) life++; score += 20; fx.push({ x: Wc - 70, y: r.y - 34, t: 0, txt: tr('Hírt hozott! +1 élet'), c: '#CFE5B4' }); } else { life--; combo = 0; fx.push({ x: Wc - 60, y: r.y - 34, t: 0, txt: tr('Átjutott!'), c: '#FF8A6E' }); } }
+        if (r.x > endX()) { r.gone = true; if (k.friend) { friends++; if (life < 3) life++; score += 20; fx.push({ x: endX() - 30, y: r.y - 34, t: 0, txt: tr('Hírt hozott! +1 élet'), c: '#CFE5B4' }); } else { life--; combo = 0; fx.push({ x: endX() - 20, y: r.y - 34, t: 0, txt: tr('Átjutott!'), c: '#FF8A6E' }); } }
       });
       riders = riders.filter(r => !r.gone && !(r.fall && r.fall > 1.4));
       $('mgTime').textContent = Math.ceil(left); $('mgLife').textContent = '❤'.repeat(Math.max(0, life)) + '♡'.repeat(Math.max(0, 3 - life)); $('mgScore').textContent = score + ' ' + tr('pont'); $('mgCombo').textContent = combo >= 3 ? trf('{0}x sorozat', combo) : '';
