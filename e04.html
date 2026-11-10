@@ -1902,9 +1902,10 @@ const MINI = [
   { id: 'bulla', name: 'Az Aranybulla pecsétje', soon: true, sub: 'Hamarosan' },
   { id: 'gesta', name: 'A Gesta szerkesztője', soon: true, sub: 'Hamarosan' }
 ];
+const MG_DEV = !/github\.io$/.test(location.hostname);
 function miniDay() { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {}, paid: {} }; S.mini.paid = S.mini.paid || {}; return S.mini; }
-function miniFresh() { const m = miniDay(); return MINI.some(g => !g.soon && !m.done[g.id]); }
-function miniStart(id) { const m = miniDay(); if (m.done[id]) { toast('Ezt a kalandot ma már végigjátszottad. Holnap újra jöhet!'); showMini(); return false; } m.done[id] = true; save(); return true; }
+function miniFresh() { const m = miniDay(); if (MG_DEV) return false; return MINI.some(g => !g.soon && !m.done[g.id]); }
+function miniStart(id) { const m = miniDay(); if (MG_DEV) return true; if (m.done[id]) { toast('Ezt a kalandot ma már végigjátszottad. Holnap újra jöhet!'); showMini(); return false; } m.done[id] = true; save(); return true; }
 (function miniBtn() {
   if (document.getElementById('btnMini')) return;
   const b = document.createElement('button'); b.className = 'ibtn wood'; b.type = 'button'; b.id = 'btnMini'; b.setAttribute('aria-label', tr('Kalandok'));
@@ -1936,6 +1937,10 @@ function miniStart(id) { const m = miniDay(); if (m.done[id]) { toast('Ezt a kal
   .jul-opts .btn{justify-content:flex-start;text-align:left;white-space:normal;min-height:48px;height:auto;padding:10px 14px}
   .jul-opts .btn small{display:block;font-weight:700;opacity:.8}
   .jul-dice{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:12px;background:#FFF8EA;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 0 0 3px #8A5A2B;font:900 30px Nunito,sans-serif;color:#3A2410;margin-right:10px;vertical-align:middle}
+  .mg-devnote{background:rgba(63,111,168,.15);border-radius:12px;padding:8px 12px;font-weight:800;color:#2C5F86}
+  .mg-dev{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-weight:800;color:#2C5F86}
+  .mg-dev .btn{min-height:34px;padding:4px 12px}
+  .mg-dev .btn.on{background:#2C5F86;color:#fff}
   .jul-res{margin-top:10px;font-weight:800;min-height:1.4em}
   .mem{width:100%;max-width:440px;margin-left:auto;margin-right:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
   .mem button{aspect-ratio:1;border:0;border-radius:14px;font:900 clamp(15px,3.6vw,22px) Nunito,sans-serif;cursor:pointer;background:#8A5A2B;color:#FFF1D8;box-shadow:0 3px 0 rgba(0,0,0,.3)}
@@ -1959,9 +1964,9 @@ function showMini() {
   try { ['e04_julianus', 'e04_mg_julianus', 'e04_mg_julianus_terkep.jpg', 'e04_mg_sajo_hid.jpg'].forEach(mgPic); Object.values(MG_KIND).forEach(k => mgPic(k.img)); } catch (e) {}
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr('Kalandok IV. Béla korából')}</h2>
     <p>${tr('Minden kalandot naponta egyszer lehet végigjátszani, és egyszer jár érte jutalom. Ha elindítod, a mai menet elkezdődik, úgyhogy csak akkor kezdj bele, ha van rá pár perced.')}</p>
-    <div class="mini-list">${MINI.map(g => `<div class="mini-row ${g.soon ? 'soon' : ''}">${g.img ? `<img src="img/${g.img}.png?v=2611095" alt="">` : '<span style="width:52px"></span>'}
+    ${MG_DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : ''}<div class="mini-list">${MINI.map(g => `<div class="mini-row ${g.soon ? 'soon' : ''}">${g.img ? `<img src="img/${g.img}.png?v=2611095" alt="">` : '<span style="width:52px"></span>'}
       <div class="grow"><b>${tr(g.name)}</b><small>${tr(g.sub)}${g.rew ? ' · ' + tr(g.rew) : ''}</small></div>
-      ${g.soon ? '' : m.done[g.id] ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" data-mg="${g.id}">${tr('Indulás')}</button>`}</div>`).join('')}</div></div>`, '', 'mini');
+      ${g.soon ? '' : m.done[g.id] && !MG_DEV ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" data-mg="${g.id}">${tr('Indulás')}</button>`}</div>`).join('')}</div></div>`, '', 'mini');
   $('modalRoot').querySelectorAll('[data-mg]').forEach(b => b.onclick = () => (b.dataset.mg === 'muhi' ? playMuhi : playJulianus)());
 }
 function miniEnd(eyebrow, title, lines, fact) {
@@ -1998,10 +2003,11 @@ function playMuhi() {
     <div class="mg-legend">${Object.values(MG_KIND).map(k => `<span><img src="img/${k.img}.png?v=2611095" alt="" style="height:34px;width:auto" onerror="this.outerHTML='<i style=&quot;background:${k.col}&quot;></i>'">${tr(k.name)}${k.lvl ? ' <small>(' + trf('{0}. szinttől', k.lvl) + ')</small>' : ''}</span>`).join('')}</div>
     <div id="mgWrap"><canvas id="mgCv"></canvas></div>
     <div class="mg-hud"><span id="mgScore">0 ${tr('pont')}</span><span id="mgLvl">${trf('{0}. szint', 1)}</span><span id="mgCombo"></span><span id="mgLife">❤❤❤</span><span id="mgTime">30</span></div>
-    <div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="mgGo">${tr('Kezdjük!')}</button></div></div>`, '', 'muhi');
+    <div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="mgGo">${tr('Kezdjük!')}</button></div>
+    ${MG_DEV ? `<div class="mg-dev">${tr('Teszt:')} ${[1, 2, 3, 5].map(v => `<button class="btn ghost ${v === 1 ? 'on' : ''}" type="button" data-sp="${v}">${v}×</button>`).join('')}<button class="btn ghost" type="button" id="mgSkip">${tr('Következő szint')}</button><button class="btn ghost" type="button" id="mgGod">${tr('Halhatatlan: ki')}</button></div>` : ''}</div>`, '', 'muhi');
   const cv2 = $('mgCv'), g = cv2.getContext('2d'), LANES = 5;
   let Wc = 0, Hc = 0, run = false, last = 0, spawnT = 0, climbT = 0, acsT = 0, fordT = 0, score = 0, life = 3, combo = 0, best = 0, slowT = 0, riders = [], fx = [], raf = 0, ended = false, hits = 0, friends = 0, oops = 0;
-  let lvl = 0, lvlT = 0, banner = 0, total = 0;
+  let lvl = 0, lvlT = 0, banner = 0, total = 0, spd = 1, god = false;
   const fit = () => { const r = cv2.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); Wc = r.width; Hc = r.height; cv2.width = Wc * dp; cv2.height = Hc * dp; g.setTransform(dp, 0, 0, dp, 0, 0); };
   fit();
   const BG = () => { const im = mgPic('e04_mg_sajo_hid.jpg'); if (!im) return null; const deck = Math.min(Hc * 0.52, Math.max(Wc * 0.42, Hc * 0.36)), sc = Math.max(deck / (0.355 * im.naturalHeight), Wc / im.naturalWidth, Hc / im.naturalHeight), w = im.naturalWidth * sc, h = im.naturalHeight * sc; return { im, x: Math.min(0, Wc > Hc * 1.2 ? Wc - w : Math.max(Wc - w, Wc * 0.94 - 0.9 * w)), y: Math.max(Hc - h, Math.min(0, Hc / 2 - 0.4775 * h)), w, h }; };
@@ -2063,7 +2069,7 @@ function playMuhi() {
   function add(kind, o) { const k = MG_KIND[kind]; riders.push(Object.assign({ kind, x: -30, ph: Math.random() * 6, hp: k.hp, zt: 1 + Math.random(), v: k.v * MG_LVL[lvl].sp * (1 + total / 120) * (0.85 + Math.random() * 0.3) }, o)); }
   function frame(now) {
     if (!document.getElementById('mgCv')) { cancelAnimationFrame(raf); return; }
-    const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; scene();
+    const dt = Math.min(0.05, (now - (last || now)) / 1000) * spd; last = now; scene();
     const L = MG_LVL[lvl];
     if (run && banner > 0) { banner -= dt; }
     else if (run) {
@@ -2084,6 +2090,7 @@ function playMuhi() {
       });
       riders = riders.filter(r => !r.gone && !(r.fall && r.fall > 1.4));
       $('mgTime').textContent = Math.ceil(left); $('mgLife').textContent = '❤'.repeat(Math.max(0, life)) + '♡'.repeat(Math.max(0, 3 - life)); $('mgScore').textContent = score + ' ' + tr('pont'); $('mgCombo').textContent = combo >= 3 ? trf('{0}x sorozat', combo) : '';
+      if (god && life < 3) life = 3;
       if (life < 0) finish(false);
       else if (left <= 0) { if (lvl < MG_LVL.length - 1) { lvl++; lvlT = 0; banner = 3; riders = []; spawnT = 0.6; climbT = 1; acsT = 1.5; fordT = 1; score += 50; $('mgLvl').textContent = trf('{0}. szint', lvl + 1); fx.push({ x: Wc / 2, y: Hc * 0.75, t: 0, txt: tr('Szint teljesítve! +50'), c: '#CFE5B4' }); } else finish(true); }
     }
@@ -2121,6 +2128,11 @@ function playMuhi() {
       '1241. április 10-én éjjel a mongolok megpróbáltak átkelni a Sajó hídján. Kálmán herceg és Ugrin érsek visszaverte őket, a tábor pedig megnyugodott. Hajnalban a mongolok kőhajítókkal tisztították meg a hidat, egy másik csapatuk délebbre a gázlón kelt át, és bekerítették a magyar szekértábort. A csata vereséggel végződött, IV. Béla elmenekült.');
   }
   if (window.__T) window.__mgDbg = () => ({ riders: riders.map(r => ({ k: r.kind, x: r.x, y: r.y - laneH() * 0.35, f: !!r.fall })), lvl, life, score, banner });
+  if (MG_DEV) {
+    $('modalRoot').querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { spd = +b.dataset.sp; $('modalRoot').querySelectorAll('[data-sp]').forEach(x => x.classList.toggle('on', x === b)); });
+    $('mgSkip').onclick = () => { if (!run) return; if (banner > 0) banner = 0; else lvlT = MG_LVL[lvl].dur; };
+    $('mgGod').onclick = () => { god = !god; $('mgGod').textContent = tr(god ? 'Halhatatlan: be' : 'Halhatatlan: ki'); $('mgGod').classList.toggle('on', god); };
+  }
   $('mgGo').onclick = () => { $('mgGo').hidden = true; run = true; banner = 3; spawnT = 0.3; climbT = 1; acsT = 1.5; fordT = 1; };
   raf = requestAnimationFrame(frame);
 }
@@ -2128,8 +2140,8 @@ function playMuhi() {
 // ---------- 2. Julianus barát útja ----------
 // útijáték: elemózsia, erő és ezüst; kockadobás, egy szópárosító a Volgánál és egy bújócska hazafelé
 const JST = [ // a térkép képének 1600x900-as koordinátái
-  { id: 'esz', name: 'Esztergom', x: 287, y: 225 }, { id: 'kon', name: 'Konstantinápoly', x: 612, y: 720 }, { id: 'mat', name: 'Matrika', x: 1014, y: 530 },
-  { id: 'ala', name: 'Alánia', x: 1318, y: 680 }, { id: 'szt', name: 'A sztyeppe', x: 1235, y: 330 }, { id: 'vol', name: 'Magna Hungaria', x: 1435, y: 220 }
+  { id: 'esz', name: 'Esztergom', x: 287, y: 225 }, { id: 'kon', name: 'Konstantinápoly', x: 612, y: 720 }, { id: 'ten', name: 'A Fekete-tenger', x: 820, y: 575 },
+  { id: 'mat', name: 'Matrika', x: 1014, y: 530 }, { id: 'szt', name: 'A sztyeppe', x: 1235, y: 330 }, { id: 'vol', name: 'Magna Hungaria', x: 1435, y: 220 }
 ];
 const JEV = [
   { at: 1, img: 'e04_mg_jul_utonallok', text: 'Útonállók állják el az utat a hegyek között. Azt mondják, csak egy kis útivámot szednek. Nagyon nagy kést hoznak hozzá.', o: [
@@ -2238,6 +2250,15 @@ function playJulianus() {
   }
   screen(`<p>${tr('Esztergomból indulsz kelet felé, hogy megkeresd a keleten maradt magyarokat. Minden útszakasz egy elemózsiába kerül. Ha elfogy az elemózsia vagy az erőd, haza kell fordulnod.')}</p><div class="row"><button class="btn coral" type="button" id="jGo">${tr('Útnak indulok')}</button></div>`, 0, 0, 'e04_ill_julianus');
   $('jGo').onclick = travel;
+  if (MG_DEV) {
+    const d = document.createElement('div'); d.className = 'mg-dev';
+    d.innerHTML = `${tr('Teszt, ugrás:')} ${JEV.map(e => `<button class="btn ghost" type="button" data-jj="${e.at}">${tr(JST[e.at].name)}</button>`).join('')}<button class="btn ghost" type="button" id="jjVol">${tr('Párosító')}</button><button class="btn ghost" type="button" id="jjHome">${tr('Bújócska')}</button><button class="btn ghost" type="button" id="jjRich">${tr('Teli tarisznya')}</button>`;
+    $('modalRoot').querySelector('.inner').appendChild(d);
+    d.querySelectorAll('[data-jj]').forEach(b => b.onclick = () => { st.pos = +b.dataset.jj - 1; travel(); });
+    $('jjVol').onclick = () => { st.pos = JST.length - 2; travel(); };
+    $('jjHome').onclick = () => { st.trust = 2; home(); };
+    $('jjRich').onclick = () => { st.el = 20; st.ero = 9; st.ez = 20; $('modalRoot').querySelector('.jul-stats').outerHTML = stats(); };
+  }
 }
 
 // ---------- logika ciklus ----------
