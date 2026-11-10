@@ -2297,9 +2297,12 @@ const mgImg = (name, cls, alt) => `<img class="${cls || ''}" src="img/${/\.\w+$/
   .bl-meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
   .bl-m{background:rgba(255,244,223,.7);border-radius:14px;padding:6px 8px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25);text-align:center;font-weight:900;font-size:13px;position:relative}
   .bl-m .ic{font-size:22px;display:block}
-  .bl-m .bar{height:8px;border-radius:4px;background:rgba(63,38,20,.18);margin-top:4px;overflow:hidden}
-  .bl-m .bar i{display:block;height:100%;background:#2F8A3A;transition:width .4s}
-  .bl-m.warn .bar i{background:#C9472F}
+  .bl-m .bar{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(201,71,47,.28),rgba(242,193,78,.25) 25%,rgba(47,138,58,.22) 42%,rgba(47,138,58,.22) 58%,rgba(242,193,78,.25) 75%,rgba(201,71,47,.28));margin-top:4px;overflow:hidden}
+  .bl-m .bar::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(63,38,20,.45)}
+  .bl-m .bar i{display:block;height:100%;border-radius:5px;transition:width .4s,background .4s}
+  .bl-m .lbl{font-size:11px;font-weight:800;color:var(--ink-soft);margin-top:2px}
+  .bl-m.warn{box-shadow:inset 0 0 0 2px #C9472F;animation:mgShake .4s}
+  .bl-m.warn .lbl{color:#C9472F}
   .bl-m .dot{position:absolute;top:4px;right:6px;width:10px;height:10px;border-radius:50%;background:#3A2410;opacity:0;transition:opacity .2s,transform .2s}
   .bl-m .dot.big{transform:scale(1.5)}
   .bl-m .dot.on{opacity:.75}
@@ -2339,6 +2342,14 @@ const mgImg = (name, cls, alt) => `<img class="${cls || ''}" src="img/${/\.\w+$/
   .gs-bin.hot{transform:scale(1.06);background:#CFE5B4}
   .gs-timer{position:absolute;left:8px;right:8px;top:8px;height:8px;border-radius:4px;background:rgba(63,38,20,.2);overflow:hidden}
   .gs-timer i{display:block;height:100%;background:#C9472F}
+  .gs-verdict{position:absolute;left:50%;top:50%;transform:translate(-50%,-55%);width:min(420px,86%);background:#FFF8EA;border-radius:16px;padding:14px 16px;text-align:center;box-shadow:0 6px 0 rgba(90,55,25,.25),inset 0 0 0 3px #C9A46A;z-index:3;animation:gsFade .3s ease-out;max-height:94%;overflow:auto}
+  @keyframes gsFade{from{opacity:0}to{opacity:1}}
+  .gs-verdict .big{font:900 clamp(20px,5vw,26px) Grandstander,Nunito,sans-serif;margin-bottom:6px}
+  .gs-verdict .why{font-weight:700;font-size:clamp(13px,3.4vw,15px);margin-bottom:10px}
+  .gs-order .btn{touch-action:none;cursor:grab}
+  .gs-ghost{position:fixed;z-index:9999;pointer-events:none;transform:translate(-50%,-50%) rotate(-3deg);box-shadow:0 10px 20px rgba(0,0,0,.3)!important;background:#FFF8EA!important;opacity:1!important;max-width:260px}
+  .gs-slots div.hot{background:#FFF1C2;border-color:#E2B23A;transform:scale(1.04)}
+  .gs-slots div{transition:transform .12s,background .12s}
   .gs-anon{display:flex;gap:10px;align-items:center;margin-top:8px;min-height:56px}
   .gs-anon img{width:56px;height:56px;object-fit:contain;flex:none}
   .gs-anon .bub{background:#FFF4DF;border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.3)}
@@ -2436,7 +2447,8 @@ function playBulla() {
   if (MG_DEV || rnd() < 0.55) { const e = BL_ENVOY[Math.floor(rnd() * BL_ENVOY.length)]; deck[2 + Math.floor(rnd() * (deck.length - 3))] = Object.assign({ who: 'kovet', envoy: 1 }, e); }
   const m = { kir: 50, nem: 50, egy: 50, kin: 50 }; let k = 0, goodReal = 0, fakeIn = 0, dead = null;
   Object.values(BL_WHO).forEach(w => mgPic(w.img)); mgPic('e04_mg_bulla_terem.jpg');
-  const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 22 || v > 78 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%"></i></div></div>`; }).join('')}</div>`;
+  const mCol = v => { const d = Math.min(1, Math.abs(v - 50) / 50); return `hsl(${Math.round(125 - 125 * Math.pow(d, 1.15))},${62 + d * 10}%,${40 + (d > .5 ? 2 : 0)}%)`; };
+  const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 15 || v > 85 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${mCol(v)}"></i></div><div class="lbl">${v < 15 ? tr('Veszélyesen kevés!') : v > 85 ? tr('Veszélyesen sok!') : v < 32 ? tr('Kevés') : v > 68 ? tr('Sok') : tr('Rendben')}</div></div>`; }).join('')}</div>`;
   const eff = o => { const r = {}; Object.entries(o).forEach(([key, v]) => r[key] = Math.round(v * (day.mod[key] || 1))); return r; };
   function intro() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('FEHÉRVÁR, 1222')}</span><h2>${tr('Az Aranybulla pecsétje')}</h2>
@@ -2767,7 +2779,7 @@ function playGesta() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('ESZTERGOM, 1200 KÖRÜL')}</span><h2>${tr('A Gesta szerkesztője')}</h2>
       ${mgImg('e04_mg_gesta_scriptorium.jpg', 'jul-pic')}
       ${anon(tr('Üdvözöllek a scriptoriumban! Én vagyok Anonymus, a névtelen jegyző. A magyarok történetét írom, de a lapjaim összekeveredtek. Segíts szétválogatni, mi a tény és mi a monda!'))}
-      <p>${tr('Húzd a lapot a jó ládába, vagy nyomd meg a gombot. Gépen a bal nyíl a Tény, a jobb nyíl a Monda. Minél gyorsabban válaszolsz jól, annál több pont jár. A végén a tényeket időrendbe kell tenned.')}</p>
+      <p>${tr('Húzd a lapot a jó ládába, vagy nyomd meg a gombot. Balra a Monda, jobbra a Tény, gépen a bal és a jobb nyíl is jó. Minden válasz után elolvashatod, miért volt jó vagy rossz. Minél gyorsabban válaszolsz jól, annál több pont jár. A végén a tényeket időrendbe kell tenned.')}</p>
       <span class="mg-day">${tr('A mai nap')}: ${tr(D.t)}</span>
       <div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="gsGo">${tr('Kezdjük a válogatást!')}</button></div></div>`, '', 'gesta');
     $('gsGo').onclick = sort;
@@ -2776,8 +2788,9 @@ function playGesta() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('TÉNY VAGY MONDA?')}</span><h2>${tr('Válogasd szét a lapokat!')}</h2>
       <div class="mg-hud"><span id="gsSc">0 ${tr('pont')}</span><span id="gsSt"></span><span id="gsK">1 / ${deck.length}</span></div>
       <div class="gs-stage" id="gsStage">${mgPic('e04_mg_gesta_kodex.jpg') ? mgImg('e04_mg_gesta_kodex.jpg', 'bg') : ''}<div class="gs-timer"><i id="gsT"></i></div>
-        <div class="gs-bins"><div class="gs-bin" id="gsB0">${mgPic('e04_mg_gesta_teny') ? mgImg('e04_mg_gesta_teny') : '📜'} ${tr('Tény')}</div><div class="gs-bin" id="gsB1">${tr('Monda')} ${mgPic('e04_mg_gesta_monda') ? mgImg('e04_mg_gesta_monda') : '🐉'}</div></div></div>
-      <div class="ls-ctl"><button class="btn teal" type="button" id="gsF">◀ ${tr('Tény')}</button><button class="btn coral" type="button" id="gsL">${tr('Monda')} ▶</button></div>
+        <div class="gs-bins"><div class="gs-bin" id="gsB1">${mgPic('e04_mg_gesta_monda') ? mgImg('e04_mg_gesta_monda') : '🐉'} ${tr('Monda')}</div><div class="gs-bin" id="gsB0">${tr('Tény')} ${mgPic('e04_mg_gesta_teny') ? mgImg('e04_mg_gesta_teny') : '📜'}</div></div>
+        <div class="gs-verdict" id="gsV" hidden><div class="big" id="gsVb"></div><div class="why" id="gsVw"></div><button class="btn coral" type="button" id="gsNext">${tr('Tovább')} ⏎</button></div></div>
+      <div class="ls-ctl"><button class="btn coral" type="button" id="gsL">◀ ${tr('Monda')}</button><button class="btn teal" type="button" id="gsF">${tr('Tény')} ▶</button></div>
       ${anon(tr('Na, lássuk, mennyire figyeltél az órán!'))}</div>`, '', 'gesta');
     const stage = $('gsStage'); let card = null, cy = 0, tMax = 0, tl = 0, raf = 0, last = 0, busy = false, drag = null;
     function show() {
@@ -2786,21 +2799,29 @@ function playGesta() {
       card = document.createElement('div'); card.className = 'gs-card'; card.innerHTML = (c.gold ? '<span style="color:#B8860B">✦ ' + tr('Aranyozott lap') + ' ✦</span><br>' : '') + tr(c.t); if (c.gold) card.style.boxShadow = '0 4px 0 rgba(90,55,25,.25),inset 0 0 0 3px #E2B23A';
       stage.appendChild(card); cy = 18; tMax = tl = Math.max(3.4, 7 - k * 0.32) / (D.fast || 1);
       card.onpointerdown = e => { drag = { x0: e.clientX, dx: 0 }; card.setPointerCapture(e.pointerId); };
-      card.onpointermove = e => { if (!drag) return; drag.dx = e.clientX - drag.x0; card.style.transform = `translateX(calc(-50% + ${drag.dx}px)) rotate(${drag.dx / 20}deg)`; $('gsB0').classList.toggle('hot', drag.dx < -40); $('gsB1').classList.toggle('hot', drag.dx > 40); };
-      card.onpointerup = () => { if (!drag) return; const dx = drag.dx; drag = null; $('gsB0').classList.remove('hot'); $('gsB1').classList.remove('hot'); if (dx < -60) answer(1); else if (dx > 60) answer(0); else card.style.transform = 'translateX(-50%)'; };
+      card.onpointermove = e => { if (!drag) return; drag.dx = e.clientX - drag.x0; card.style.transform = `translateX(calc(-50% + ${drag.dx}px)) rotate(${drag.dx / 20}deg)`; $('gsB1').classList.toggle('hot', drag.dx < -40); $('gsB0').classList.toggle('hot', drag.dx > 40); };
+      card.onpointerup = () => { if (!drag) return; const dx = drag.dx; drag = null; $('gsB0').classList.remove('hot'); $('gsB1').classList.remove('hot'); if (dx < -60) answer(0); else if (dx > 60) answer(1); else card.style.transform = 'translateX(-50%)'; };
     }
     function answer(saysFact, timeout) {
       if (busy || !card) return; busy = true; const c = deck[k], ok = !timeout && (saysFact === 1) === !!c.f;
       if (ok) { streak++; right++; const base = Math.round(10 + 20 * (tl / tMax)), mult = (D.combo && streak >= 3 ? 2 : 1) * (1 + Math.min(streak, 6) * 0.15) * (c.gold ? 3 : 1); score += Math.round(base * mult); }
       else streak = 0;
       $('gsSc').textContent = score + ' ' + tr('pont'); $('gsSt').textContent = streak >= 2 ? trf('{0}x sorozat', streak) : '';
-      $('gsBub').textContent = timeout ? tr('Elaludtál a pulton? A lap leesett a földre!') : ok ? (c.f ? tr(/boszork/.test(c.t) ? 'Igen, ez tényleg így van leírva! Kálmán nagyon modern király volt.' : ['Pontosan, ez tény!', 'Így van, ezt a krónikák is írják.', 'Igen, ez megtörtént.'][k % 3]) : tr(c.a)) : (c.f ? tr('Nem, nem! Ez tényleg megtörtént, nézd meg bármelyik krónikában.') : tr('Hohó, ez bizony monda. ') + tr(c.a));
-      const el = card; el.classList.add('out'); el.style.transform = `translateX(calc(-50% + ${saysFact ? -260 : 260}px)) rotate(${saysFact ? -18 : 18}deg)`;
+      const why = timeout ? tr('Elaludtál a pulton? A lap leesett a földre!') : ok ? (c.f ? tr(/boszork/.test(c.t) ? 'Igen, ez tényleg így van leírva! Kálmán nagyon modern király volt.' : ['Pontosan, ez tény!', 'Így van, ezt a krónikák is írják.', 'Igen, ez megtörtént.'][k % 3]) : tr(c.a)) : (c.f ? tr('Nem, nem! Ez tényleg megtörtént, nézd meg bármelyik krónikában.') : tr('Hohó, ez bizony monda. ') + tr(c.a));
+      $('gsBub').textContent = why;
+      $('gsVb').innerHTML = timeout ? '⌛ ' + tr('Lejárt az idő!') : ok ? '✔ ' + tr('Jó válasz!') : '✘ ' + tr('Nem jó!');
+      $('gsVb').style.color = ok ? '#2F8A3A' : '#C9472F'; $('gsVw').innerHTML = `<b>${tr(c.f ? 'Ez tény.' : 'Ez monda.')}</b> ${why}`;
+      const el = card; el.classList.add('out'); el.style.transform = `translateX(calc(-50% + ${saysFact ? 260 : -260}px)) rotate(${saysFact ? 18 : -18}deg)`;
       if (!ok) { stage.classList.add('shake'); setTimeout(() => stage.classList.remove('shake'), 300); }
-      setTimeout(() => el.remove(), 380); card = null; k++; setTimeout(show, 650);
+      setTimeout(() => el.remove(), 380); card = null; k++;
+      setTimeout(() => { $('gsV').hidden = false; $('gsNext').focus(); }, 350);
     }
+    const next = () => { if ($('gsV').hidden) return; $('gsV').hidden = true; show(); };
+    $('gsNext').onclick = next;
     $('gsF').onclick = () => answer(1); $('gsL').onclick = () => answer(0);
-    const kd = e => { if (!document.getElementById('gsStage')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'ArrowLeft') { e.preventDefault(); answer(1); } if (e.code === 'ArrowRight') { e.preventDefault(); answer(0); } };
+    const kd = e => { if (!document.getElementById('gsStage')) { document.removeEventListener('keydown', kd); return; }
+      if (!$('gsV').hidden) { if (['Enter', 'Space', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); next(); } return; }
+      if (e.code === 'ArrowLeft') { e.preventDefault(); answer(0); } if (e.code === 'ArrowRight') { e.preventDefault(); answer(1); } };
     document.addEventListener('keydown', kd);
     const loop = now => { if (!document.getElementById('gsStage')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
       if (card && !busy) { tl -= dt; const H = stage.clientHeight; cy = 18 + (H - 190) * (1 - tl / tMax); if (!drag) card.style.top = cy + 'px'; $('gsT').style.width = Math.max(0, tl / tMax * 100) + '%'; if (tl <= 0) answer(deck[k].f ? 0 : 1, true); }
@@ -2810,18 +2831,30 @@ function playGesta() {
   function order() {
     // időrend: a válogatásban szereplő évszámos tények, kiegészítve, hogy öt legyen
     let dated = deck.filter(c => c.f && c.y); const extra = mgShuffle(GS_CARDS.filter(c => c.f && c.y && !dated.includes(c)), rnd); dated = dated.concat(extra).slice(0, 5);
-    const sorted = dated.slice().sort((a, b) => a.y - b.y), shown = mgShuffle(dated, rnd); let pos = 0;
+    const sorted = dated.slice().sort((a, b) => a.y - b.y), shown = mgShuffle(dated, rnd), filled = sorted.map(() => false);
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('IDŐREND')}</span><h2>${tr('Rakd sorba a tényeket!')}</h2>
-      ${anon(tr('Most a tényeket kell időrendbe tenni a kódexben. Kattints rájuk a legkorábbitól a legkésőbbiig!'))}
-      <div class="mg-hud"><span id="gsSc">${score} ${tr('pont')}</span><span id="gsH">${'❤'.repeat(hearts)}</span></div>
-      <div class="gs-slots">${sorted.map((_, n) => `<div id="gsS${n}">${n + 1}.</div>`).join('')}</div>
+      ${anon(tr('Most a tényeket kell időrendbe tenni a kódexben. Fogd meg a lapot, és húzd a helyére! Ha rákattintasz, a következő üres helyre teszem.'))}
+      <div class="mg-hud"><span id="gsSc">${score} ${tr('pont')}</span><span>${tr('Legkorábbi')} → ${tr('legkésőbbi')}</span><span id="gsH">${'❤'.repeat(hearts)}</span></div>
+      <div class="gs-slots">${sorted.map((_, n) => `<div id="gsS${n}" data-slot="${n}">${n + 1}.</div>`).join('')}</div>
       <div class="gs-order">${shown.map((c, n) => `<button class="btn ghost" type="button" data-go="${n}">${tr(c.o)}</button>`).join('')}</div></div>`, '', 'gesta');
-    $('modalRoot').querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
-      const c = shown[+b.dataset.go];
-      if (c === sorted[pos]) { const s = $('gsS' + pos); s.classList.add('ok'); s.textContent = c.y + ''; b.disabled = true; b.classList.remove('ghost'); b.classList.add('teal'); score += 30; pos++; $('gsSc').textContent = score + ' ' + tr('pont');
-        $('gsBub').textContent = trf('Igen, ez {0}-ben történt.', c.y); if (pos >= sorted.length) setTimeout(() => end(true), 900); }
-      else { hearts--; b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); $('gsH').textContent = '❤'.repeat(Math.max(0, hearts)) + '♡'.repeat(3 - Math.max(0, hearts)); $('gsBub').textContent = tr('Nem, ez később történt. Gondold át még egyszer!');
-        if (hearts <= 0) setTimeout(() => end(false), 900); }
+    const place = (b, slot) => {
+      const c = shown[+b.dataset.go]; if (slot < 0 || filled[slot]) return;
+      if (c === sorted[slot]) { filled[slot] = true; const s2 = $('gsS' + slot); s2.classList.add('ok'); s2.innerHTML = `<b>${c.y}</b><br>${tr(c.o)}`; b.disabled = true; b.hidden = true; score += 30; $('gsSc').textContent = score + ' ' + tr('pont');
+        $('gsBub').textContent = trf('Igen, ez {0}-ben történt.', c.y); if (filled.every(Boolean)) setTimeout(() => end(true), 1100); }
+      else { hearts--; b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); $('gsH').textContent = '❤'.repeat(Math.max(0, hearts)) + '♡'.repeat(3 - Math.max(0, hearts));
+        const later = sorted.indexOf(c) > slot; $('gsBub').textContent = tr(later ? 'Nem, ez később történt. Gondold át még egyszer!' : 'Nem, ez korábban történt. Gondold át még egyszer!');
+        if (hearts <= 0) setTimeout(() => end(false), 1100); }
+    };
+    const slotAt = (x, y) => { const el = document.elementFromPoint(x, y); const sl = el && el.closest('[data-slot]'); return sl ? +sl.dataset.slot : -1; };
+    $('modalRoot').querySelectorAll('[data-go]').forEach(b => {
+      let st = null, ghost = null;
+      b.onpointerdown = e => { st = { x: e.clientX, y: e.clientY }; b.setPointerCapture(e.pointerId); };
+      b.onpointermove = e => { if (!st) return; if (!ghost && Math.hypot(e.clientX - st.x, e.clientY - st.y) > 8) { ghost = b.cloneNode(true); ghost.classList.add('gs-ghost'); ghost.style.width = Math.min(260, b.offsetWidth) + 'px'; document.body.appendChild(ghost); b.style.opacity = .35; }
+        if (ghost) { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; const sl = slotAt(e.clientX, e.clientY); $('modalRoot').querySelectorAll('[data-slot]').forEach(d => d.classList.toggle('hot', +d.dataset.slot === sl && !filled[sl])); } };
+      b.onpointerup = e => { if (!st) return; const dragged = !!ghost; st = null; if (ghost) { ghost.remove(); ghost = null; b.style.opacity = ''; }
+        $('modalRoot').querySelectorAll('[data-slot]').forEach(d => d.classList.remove('hot'));
+        if (dragged) place(b, slotAt(e.clientX, e.clientY)); else place(b, filled.indexOf(false)); };
+      b.onpointercancel = () => { st = null; if (ghost) { ghost.remove(); ghost = null; b.style.opacity = ''; } };
     });
   }
   function end(ok) {
