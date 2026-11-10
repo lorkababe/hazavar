@@ -2994,7 +2994,7 @@ const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, t
 window.__NET = NET;
 const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
-const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-sync-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
+const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-(sync|rearr)-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
 const getJ = k => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } };
 const realId = id => String(id).startsWith('u_') ? String(id).slice(2) : null;
@@ -3045,8 +3045,9 @@ async function netStart(user) {
   try { const r = await NET.sb.rpc('join_megye'); NET.megye = r.data; } catch (e) {}
   await netPushProfile(true); await netRefresh();
   toast(TF('Bejelentkezve. A mentésed a szerveren van, {0}. megye.', NET.megye || '?'));
-  setInterval(netPush, 20e3); setInterval(() => netPushProfile(false), 60e3); setInterval(netRefresh, 60e3);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) netPush(); });
+  setInterval(() => { if (!document.hidden) netPush(); }, 20e3); setInterval(() => netPushProfile(false), 60e3); setInterval(netRefresh, 60e3);
+  // háttérben hagyott fül vagy másik gép ne írja felül a frissebb mentést: visszatéréskor előbb megnézzük a szervert
+  document.addEventListener('visibilitychange', () => { if (document.hidden) netPush(); else netPull().catch(e => console.warn('pull', e)); });
   window.addEventListener('pagehide', netPush);
 }
 // felhőmentés: minden panelvar-* kulcs egy sor a saves táblában
@@ -3055,16 +3056,23 @@ async function netPull() {
   const hashes = getJ(SYNC_HASH), firstHere = !localStorage.getItem(SYNC_AT);
   if (!data || !data.length) { await netPush(true); return; }
   let took = 0;
+  // az átrendezés félkész pillanatképe csak helyi, a régi felhős példány visszaforgatta a várost
+  if (data.some(r => /^panelvar-rearr-/.test(r.slot))) { try { await NET.sb.from('saves').delete().eq('user_id', NET.me).like('slot', 'panelvar-rearr-%'); } catch (e) {} }
+  const stamp = v => { try { const d = JSON.parse(v); return d && typeof d.savedAt === 'number' ? d.savedAt : null; } catch (e) { return null; } };
   data.forEach(row => {
+    if (/^panelvar-rearr-/.test(row.slot)) return;
     const val = row.data && typeof row.data.v === 'string' ? row.data.v : null; if (val == null) return;
     const loc = localStorage.getItem(row.slot); if (loc === val) { hashes[row.slot] = hashStr(val); return; }
     if (row.slot === 'panelvar-profile' && loc) { try { if (JSON.parse(loc).name && !JSON.parse(val).name) return; } catch (e) {} }
-    const localUnchanged = loc == null || hashes[row.slot] === hashStr(loc);
-    if (firstHere || localUnchanged) { localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); took++; }
+    // ha mindkettőn van időbélyeg, mindig a frissebb mentés nyer
+    const ta = stamp(val), tl = loc == null ? null : stamp(loc);
+    let take;
+    if (ta != null && tl != null) take = ta > tl + 1000;
+    else take = firstHere || loc == null || hashes[row.slot] === hashStr(loc);
+    if (take) { localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); took++; }
   });
   localStorage.setItem(SYNC_HASH, JSON.stringify(hashes)); localStorage.setItem(SYNC_AT, String(Date.now()));
   if (took) {
-    try { if (sessionStorage.getItem('panelvar-pulled')) return; sessionStorage.setItem('panelvar-pulled', '1'); } catch (e) {}
     save = function () {}; saveSoc = function () {}; // a régi állapot ne írja felül a letöltöttet
     toast('Letöltöttem a mentésedet a szerverről. Újratöltöm a játékot.'); setTimeout(() => location.reload(), 900); throw new Error('reload');
   }
@@ -3448,5 +3456,4 @@ function rearUI() {
 /*SOCIAL-END*/
 })();
 </script>
-
 </body></html>
