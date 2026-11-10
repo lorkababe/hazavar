@@ -2365,28 +2365,47 @@ const BL_WHO = {
 };
 // real: valódi pont az Aranybullából; ezeket érdemes elfogadni, a kamukat inkább nem
 const BL_CARDS = [
-  { who: 'bar', real: 1, t: 'Minden évben Szent István napján Székesfehérváron tartsanak törvénynapot, ahol bárki elmondhatja a panaszát.', y: { kir: -8, nem: 12, egy: 4 }, n: { kir: 6, nem: -14 } },
-  { who: 'oreg', real: 1, t: 'Nemest senki ne fogjon el és ne büntessen meg, amíg előbb törvényesen el nem ítélték.', y: { kir: -10, nem: 14 }, n: { kir: 6, nem: -16 } },
+  { who: 'nemes', real: 1, t: 'Minden évben Szent István napján Székesfehérváron tartsanak törvénynapot, ahol bárki elmondhatja a panaszát.', y: { kir: -8, nem: 12, egy: 4 }, n: { kir: 6, nem: -14 } },
+  { who: 'nemes', real: 1, t: 'Nemest senki ne fogjon el és ne büntessen meg, amíg előbb törvényesen el nem ítélték.', y: { kir: -10, nem: 14 }, n: { kir: 6, nem: -16 } },
   { who: 'kov', real: 1, t: 'A nemesek birtokáról ne szedjenek pénzadót. Elég, ha karddal szolgálunk.', y: { nem: 14, kin: -14 }, n: { nem: -12, kin: 8 } },
-  { who: 'bar', real: 1, t: 'Ha a király külföldre visz hadat, a nemesek csak a király pénzén menjenek vele.', y: { nem: 12, kin: -10, kir: -4 }, n: { nem: -12, kir: 6 } },
-  { who: 'rav', real: 1, t: 'Egész vármegyét senki ne kapjon örökbe. A király ne ossza szét az országot!', y: { kir: 8, nem: 6, kin: 6 }, n: { kir: -6, nem: -8 } },
+  { who: 'nemes', real: 1, t: 'Ha a király külföldre visz hadat, a nemesek csak a király pénzén menjenek vele.', y: { nem: 12, kin: -10, kir: -4 }, n: { nem: -12, kir: 6 } },
+  { who: 'nemes', real: 1, t: 'Egész vármegyét senki ne kapjon örökbe. A király ne ossza szét az országot!', y: { kir: 8, nem: 6, kin: 6 }, n: { kir: -6, nem: -8 } },
   { who: 'kin', real: 1, t: 'Az új dénár egy egész évig maradjon érvényes, ne cseréljék le minden tavasszal.', y: { nem: 10, kin: -12 }, n: { kin: 10, nem: -10 } },
-  { who: 'oreg', real: 1, t: 'Ha egy nemes fiú nélkül hal meg, a lánya kapja meg a birtok negyedét.', y: { nem: 8, egy: 4, kir: -4 }, n: { nem: -8 } },
-  { who: 'rav', real: 1, t: 'Senki ne viseljen két tisztséget egyszerre, kivéve a nádort és a bánt.', y: { kir: 6, nem: 6 }, n: { nem: -8, kir: 4 } },
+  { who: 'nemes', real: 1, t: 'Ha egy nemes fiú nélkül hal meg, a lánya kapja meg a birtok negyedét.', y: { nem: 8, egy: 4, kir: -4 }, n: { nem: -8 } },
+  { who: 'nemes', real: 1, t: 'Senki ne viseljen két tisztséget egyszerre, kivéve a nádort és a bánt.', y: { kir: 6, nem: 6 }, n: { nem: -8, kir: 4 } },
   { who: 'pap', real: 1, t: 'Ha a király megszegi a bullát, a püspökök és a nemesek ellenállhassanak neki, és ezért ne vádolják őket hűtlenséggel.', y: { kir: -16, nem: 14, egy: 10 }, n: { kir: 8, egy: -12, nem: -12 } },
-  { who: 'kov', real: 1, t: 'A királyi emberek ne szálljanak meg ingyen a szegényebb nemesek házában.', y: { nem: 10, kin: -6 }, n: { nem: -10, kin: 4 } },
+  { who: 'nemes', real: 1, t: 'A királyi emberek ne szálljanak meg ingyen a szegényebb nemesek házában.', y: { nem: 10, kin: -6 }, n: { nem: -10, kin: 4 } },
+  { who: 'nemes', real: 1, t: 'Külföldről jött vendégek a tanács beleegyezése nélkül ne kapjanak magas tisztséget.', y: { nem: 12, kir: -6 }, n: { kir: 6, nem: -10 } },
+  { who: 'nemes', real: 1, t: 'A nádor ítélkezhet bárki fölött, de nemes ember életéről és birtokáról csak a király tudtával dönthessen.', y: { nem: 10, kir: 4, egy: 2 }, n: { nem: -10 } },
+  { who: 'pap', real: 1, t: 'A papoknak járó tizedet terményben szedjék, ne ezüstben, mert a parasztoknak nincs pénzük.', y: { egy: -6, nem: 8, kin: -4 }, n: { egy: 8, nem: -8 } },
+  { who: 'nemes', real: 1, t: 'A király kondái ne legeljenek ingyen a nemesek erdejében.', y: { nem: 10, kin: -8 }, n: { nem: -10, kin: 4 } },
+  { who: 'nemes', real: 1, t: 'Az ispánok csak a saját vármegyéjük népe fölött ítélkezzenek, a királyi szolgák fölött ne.', y: { nem: 10, kir: -8 }, n: { kir: 6, nem: -10 } },
   { who: 'kov', real: 0, t: 'Minden nemesnek járjon vasárnaponként egy ingyen lángos a királyi konyháról.', y: { nem: 8, kin: -16 }, n: { kir: 4, kin: 2 }, fun: 'A lángos 1222-ben még fel sem volt találva. Kozma nagyon csalódott.' },
   { who: 'rav', real: 0, t: 'A király ne énekeljen a lakomán. Mindenkinek fáj a füle.', y: { nem: 10, kir: -12 }, n: { kir: 6, nem: -6 }, fun: 'II. András hangjáról sajnos nincs korabeli feljegyzés. Talán nem véletlenül.' },
   { who: 'bar', real: 0, t: 'Minden báró kapjon egy saját sárkányt a vára őrzésére.', y: { nem: 6, kin: -18 }, n: { kir: 4 }, fun: 'Sárkány nem volt raktáron. A kincstárnok elájult az árától.' },
   { who: 'kov', real: 0, t: 'A hétfő legyen pihenőnap. És a kedd is. Szerdán majd meglátjuk.', y: { nem: 10, kin: -12, egy: -6 }, n: { kir: 4, egy: 4 }, fun: 'Ha ez bekerül, az ország csütörtökönként működne. Jó döntés volt.' },
   { who: 'rav', real: 0, t: 'A vitás ügyekben a király macskája döntsön. Ő legalább pártatlan.', y: { kir: -14, nem: 4 }, n: { kir: 6, egy: 2 }, fun: 'A macska egyébként tényleg pártatlan, mindenkit egyformán megkarmolt.' },
+  { who: 'kov', real: 0, t: 'Minden lovagnak járjon egy macska, hogy ne egyék meg az egerek a vára sajtjait.', y: { nem: 6, kin: -10 }, n: { kir: 2 }, fun: 'A macskák egyébként maguktól is szívesen beköltöztek volna. Ingyen.' },
+  { who: 'rav', real: 0, t: 'A lovagi tornán a király mindig veszítsen, hogy mindenkinek jó kedve legyen.', y: { nem: 10, kir: -14 }, n: { kir: 6, nem: -4 }, fun: 'Egy király, aki mindig veszít? Ezt a krónikások nagyon élvezték volna.' },
+  { who: 'kov', real: 0, t: 'Töröljük el a pénteki böjtöt. A hal úgyis szálkás.', y: { nem: 8, egy: -18 }, n: { egy: 6 }, fun: 'Az érsek ennél a kérésnél majdnem lefordult a székről.' },
+  { who: 'bar', real: 0, t: 'Mostantól minden nemesnek kötelező legyen bajuszt viselni. Aki nem tud növeszteni, ragasszon!', y: { nem: 4, kir: -6 }, n: { kir: 4 }, fun: 'Bertalan báró bajusza egyébként tényleg lenyűgöző volt.' },
+  { who: 'rav', real: 0, t: 'A nádor évente egyszer táncoljon a piactéren a nép szórakoztatására.', y: { nem: 8, kir: -8 }, n: { kir: 4 }, fun: 'A nádor ezt a kérést soha nem bocsátotta meg Rezsőnek.' },
+  { who: 'bar', real: 0, t: 'Ha esik az eső, azért mostantól a kincstárnok legyen a felelős.', y: { nem: 6, kin: -8 }, n: { kir: 2, kin: 2 }, fun: 'A kincstárnok azóta is az eget figyeli, és idegesen.' },
+  { who: 'kov', real: 0, t: 'Minden lakomán legyen legalább tizenkét fogás. Az első tizenegy csak előétel.', y: { nem: 10, kin: -18 }, n: { kin: 4 }, fun: 'Kozma szerint ez a valódi Aranybulla legfontosabb pontja lett volna.' },
   { who: 'kin', ev: 1, t: 'Felség, a szentföldi keresztes hadjárat kiürítette a kincstárt. Vessünk ki új adót a városokra?', y: { kin: 18, nem: -8, kir: 4 }, n: { kin: -10, nem: 4 } },
   { who: 'pap', ev: 1, t: 'A pápa levelet küldött. Azt kéri, hogy az egyház birtokait is védje a bulla.', y: { egy: 14, kir: -6, kin: -4 }, n: { egy: -14, kir: 4 } },
   { who: 'bela', ev: 1, t: 'Fiad, Béla herceg a nemesek pártjára állt. Adj neki nagyobb szerepet az udvarban?', y: { nem: 10, kir: -10 }, n: { kir: 6, nem: -10 } },
   { who: 'kin', ev: 1, t: 'Egy kereskedő aranyat kínál, ha egy évig vámmentesen jöhet be az országba.', y: { kin: 16, nem: -6, kir: -4 }, n: { kin: -4, kir: 4 } },
   { who: 'pap', ev: 1, t: 'Az érsek szerint nagy ünnepséget kellene tartani a bulla aláírására. Drága lesz, de szép.', y: { egy: 10, nem: 6, kin: -14 }, n: { egy: -8, kin: 4 } },
   { who: 'oreg', ev: 1, t: 'A szegényebb királyi szolgák panaszkodnak. Ők is ugyanazokat a jogokat kérik, mint a gazdag bárók.', y: { nem: 8, kir: 6, kin: -6 }, n: { nem: -6, kir: -4 } },
-  { who: 'bela', ev: 1, t: 'Béla herceg szerint vissza kellene venni a túl sok elajándékozott királyi birtokot.', y: { kir: 14, kin: 10, nem: -16 }, n: { nem: 6, kir: -6 } }
+  { who: 'bela', ev: 1, t: 'Béla herceg szerint vissza kellene venni a túl sok elajándékozott királyi birtokot.', y: { kir: 14, kin: 10, nem: -16 }, n: { nem: 6, kir: -6 } },
+  { who: 'kin', ev: 1, t: 'Tűz ütött ki a királyi palota konyháján. Újjáépíted azonnal, drágán?', y: { kin: -14, kir: 8 }, n: { kir: -8, nem: 4 } },
+  { who: 'pap', ev: 1, t: 'Szárazság van, a parasztok éheznek. Megnyitod a királyi magtárakat?', y: { kin: -12, egy: 8, nem: 4 }, n: { egy: -10, kin: 4 } },
+  { who: 'kin', ev: 1, t: 'Fehérvári kereskedők nagy vásárt rendeznének. Megengeded, cserébe a vámért?', y: { kin: 12, nem: -4 }, n: { nem: 4, kin: -4 } },
+  { who: 'nemes', ev: 1, t: 'Két báró összeveszett egy erdőn, és párbajra hívják egymást a trónterem közepén. Közbelépsz?', y: { kir: 8, nem: -6 }, n: { kir: -10, nem: 4 } },
+  { who: 'kin', ev: 1, t: 'Egy külföldi követ drága ajándékot hozott, és szövetséget kér. Elfogadod?', y: { kin: 10, kir: 6, nem: -8 }, n: { kir: -4, nem: 4 } },
+  { who: 'pap', ev: 1, t: 'A püspökök új templomot építenének Esztergomban. Adsz hozzá pénzt?', y: { egy: 12, kin: -10 }, n: { egy: -10 } },
+  { who: 'bela', ev: 1, t: 'Béla herceg szerint a király túl bőkezű. Szerinte egy évig senki ne kapjon új birtokot. Hallgatsz rá?', y: { kir: 10, kin: 8, nem: -14 }, n: { nem: 6, kir: -4 } }
 ];
 const BL_DAY = [
   { t: 'Ma esik az eső, mindenki morcos. Minden nemesi változás erősebb.', mod: { nem: 1.4 } },
@@ -2399,7 +2418,8 @@ function playBulla() {
   if (!miniStart('bulla')) return;
   const rnd = mgRng('bulla'), day = BL_DAY[Math.floor(rnd() * BL_DAY.length)];
   const real = mgShuffle(BL_CARDS.filter(c => c.real), rnd).slice(0, 6), fake = mgShuffle(BL_CARDS.filter(c => c.real === 0), rnd).slice(0, 3), ev = mgShuffle(BL_CARDS.filter(c => c.ev), rnd).slice(0, 3);
-  const deck = mgShuffle(real.concat(fake, ev), rnd);
+  const NOBLES = ['bar', 'rav', 'kov', 'oreg'];
+  const deck = mgShuffle(real.concat(fake, ev), rnd).map(c => c.who === 'nemes' ? Object.assign({}, c, { who: NOBLES[Math.floor(rnd() * NOBLES.length)] }) : c);
   const m = { kir: 50, nem: 50, egy: 50, kin: 50 }; let k = 0, goodReal = 0, fakeIn = 0, dead = null;
   Object.values(BL_WHO).forEach(w => mgPic(w.img)); mgPic('e04_mg_bulla_terem.jpg');
   const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 22 || v > 78 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%"></i></div></div>`; }).join('')}</div>`;
@@ -2508,7 +2528,7 @@ function playLaszlo() {
       ${mgImg('e04_mg_laszlo_birkozas.jpg', 'jul-pic')}
       <p>${tr('Egy kun harcos elrabolt egy magyar lányt, és lóháton menekül. László herceg utána ered! Ugord át az akadályokat, hajolj le az ágak és a nyilak elől, és érd utol a kunt. Ha utolérted, jön a birkózás.')}</p>
       <span class="mg-day">${tr('Mai pálya')}: ${tr(D.name)}. ${tr(D.txt)}</span>
-      <p style="font-size:14px;font-weight:700">${tr('Gépen a Szóköz vagy a felfelé nyíl ugrik, a lefelé nyíl lehajol. Telefonon a két nagy gombbal.')}</p>
+      <p style="font-size:14px;font-weight:700">${tr('Gépen a bal egérgomb, a Szóköz vagy a felfelé nyíl ugrik, a jobb egérgomb vagy a lefelé nyíl lehajol. Telefonon a két nagy gombbal, vagy a pálya felső és alsó részére koppintva.')}</p>
       <div class="row" style="margin-top:8px"><button class="btn coral" type="button" id="lsGo">${tr('Utána!')}</button></div></div>`, '', 'laszlo');
     $('lsGo').onclick = chase;
   }
@@ -2526,7 +2546,10 @@ function playLaszlo() {
     const jump = () => { if (y === 0 && !duck) vy = -H * 2.25; };
     const doDuck = () => { if (y === 0) duck = 0.7; };
     $('lsJ').onpointerdown = e => { e.preventDefault(); jump(); }; $('lsD').onpointerdown = e => { e.preventDefault(); doDuck(); };
-    cv.onpointerdown = e => { const r = cv.getBoundingClientRect(); (e.clientY - r.top > r.height * 0.6 ? doDuck : jump)(); };
+    cv.onpointerdown = e => { if (e.pointerType === 'mouse') return; const r = cv.getBoundingClientRect(); (e.clientY - r.top > r.height * 0.6 ? doDuck : jump)(); };
+    const md = e => { if (!document.getElementById('lsCv')) { document.removeEventListener('mousedown', md, true); return; } if (e.target.closest('button')) return; if (e.button === 0) { e.preventDefault(); jump(); } else if (e.button === 2) { e.preventDefault(); doDuck(); } };
+    document.addEventListener('mousedown', md, true);
+    $('modalRoot').oncontextmenu = e => { if (document.getElementById('lsCv') || document.getElementById('lsMk') || document.getElementById('lsRing')) e.preventDefault(); };
     const kd = e => { if (!document.getElementById('lsCv')) { document.removeEventListener('keydown', kd); return; } if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); jump(); } if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); doDuck(); } };
     document.addEventListener('keydown', kd);
     if (MG_DEV) { $('lsSkip').onclick = () => { gap = 0; }; $('lsSlow').onclick = () => { spd = spd === 1 ? 0.5 : 1; $('lsSlow').classList.toggle('on', spd < 1); }; }
@@ -2623,11 +2646,13 @@ function playLaszlo() {
     let p = 50, last = 0, lastKey = '', raf = 0, t = 0, over = false;
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A BIRKÓZÁS')}</span><h2>${tr('Utolérted! Birkózz meg vele!')}</h2>
       ${mgImg('e04_mg_laszlo_birkozas.jpg', 'jul-pic')}
-      <p>${tr('Nyomd felváltva a bal és a jobb gombot, minél gyorsabban! Gépen a bal és a jobb nyíl is jó. Told a jelet a zöld oldalra, mielőtt a kun visszahúzza.')}</p>
+      <p>${tr('Nyomd felváltva a bal és a jobb gombot, minél gyorsabban! Gépen a bal és a jobb egérgomb, vagy a bal és a jobb nyíl is jó. Told a jelet a zöld oldalra, mielőtt a kun visszahúzza.')}</p>
       <div class="ls-tug"><span style="left:12px">${tr('Kun')}</span><span style="right:12px">${tr('László')}</span><div class="mk" id="lsMk" style="left:50%"></div></div>
       <div class="ls-ctl"><button class="btn teal" type="button" id="lsL">◀ ${tr('Bal')}</button><button class="btn teal" type="button" id="lsR">${tr('Jobb')} ▶</button></div><div class="bl-res" id="lsRes"></div></div>`, '', 'laszlo');
     const push = side => { if (over) return; if (side !== lastKey) { p += 2.9; lastKey = side; } else p += 0.4; };
-    $('lsL').onpointerdown = e => { e.preventDefault(); push('L'); }; $('lsR').onpointerdown = e => { e.preventDefault(); push('R'); };
+    $('lsL').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); push('L'); }; $('lsR').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); push('R'); };
+    const md = e => { if (!document.getElementById('lsMk')) { document.removeEventListener('mousedown', md, true); return; } if (e.target.closest('button')) return; if (e.button === 0) { e.preventDefault(); push('L'); } else if (e.button === 2) { e.preventDefault(); push('R'); } };
+    document.addEventListener('mousedown', md, true);
     const kd = e => { if (!document.getElementById('lsMk')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); push('L'); } if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); push('R'); } };
     document.addEventListener('keydown', kd);
     const loop = now => { if (!document.getElementById('lsMk')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
@@ -2648,7 +2673,7 @@ function playLaszlo() {
     const tap = () => { if (done) return; const d = Math.abs(r - 0.36); if (d < 0.07) { done = true; girlQ = d < 0.035 ? 2 : 1; $('lsRes').textContent = tr(girlQ === 2 ? 'Tökéletes! A kun hanyatt esik, a lány szabad!' : 'Sikerült! A kun megbotlik, László győzött!'); $('lsRes').style.color = 'var(--good)'; setTimeout(win, 1300); }
       else { tries--; $('modalRoot').querySelector('.ls-ring').classList.add('shake'); setTimeout(() => { const e = $('modalRoot').querySelector('.ls-ring'); if (e) e.classList.remove('shake'); }, 300); if (tries <= 0) { done = true; girlQ = 0; $('lsRes').textContent = tr('Nem sikerült a pillanat, de László így is legyőzte a kunt, csak nehezebben.'); setTimeout(win, 1500); } else $('lsRes').textContent = trf('Nem jó pillanat! Még {0} próbálkozás.', tries); } };
     $('lsRing').onpointerdown = e => { e.preventDefault(); tap(); };
-    const kd = e => { if (!document.getElementById('lsRing')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'Space') { e.preventDefault(); tap(); } };
+    const kd = e => { if (!document.getElementById('lsRing')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); tap(); } };
     document.addEventListener('keydown', kd);
     const loop = now => { if (!document.getElementById('lsRg')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; if (!done) { r -= dt * 0.7; if (r < 0.12) r = 1; } $('lsRg').style.width = $('lsRg').style.height = r * 100 + '%'; raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
@@ -2671,6 +2696,25 @@ const GS_CARDS = [
   { t: 'Julianus barát 1236-ban rátalált a keleti magyarokra.', f: 1, y: 1236, o: 'Julianus rátalál a keleti magyarokra' }, { t: 'A muhi csata 1241-ben volt.', f: 1, y: 1241, o: 'A muhi csata' },
   { t: 'A 955-ös augsburgi csatában a magyar sereg vereséget szenvedett.', f: 1, y: 955, o: 'Vereség Augsburgnál' },
   { t: 'Anonymus egy Béla nevű király jegyzője volt.', f: 1 }, { t: 'A Gesta Hungarorumot latin nyelven írták.', f: 1 }, { t: 'Álmos Árpád apja volt.', f: 1 },
+  { t: 'Szent István király 1038-ban halt meg.', f: 1, y: 1038, o: 'Meghal István király' },
+  { t: 'László 1077-ben lett király.', f: 1, y: 1077, o: 'László trónra lép' },
+  { t: 'László király 1092-ben zsinatot tartott Szabolcson.', f: 1, y: 1092, o: 'A szabolcsi zsinat' },
+  { t: 'Könyves Kálmánt 1102-ben horvát királlyá koronázták.', f: 1, y: 1102, o: 'Kálmán horvát király lesz' },
+  { t: 'III. Béla 1172-ben lépett trónra.', f: 1, y: 1172, o: 'III. Béla trónra lép' },
+  { t: 'Lászlót 1192-ben szentté avatták.', f: 1, y: 1192, o: 'László szentté avatása' },
+  { t: 'II. András 1205-ben lett király.', f: 1, y: 1205, o: 'II. András trónra lép' },
+  { t: 'IV. Béla 1235-ben lépett trónra.', f: 1, y: 1235, o: 'IV. Béla trónra lép' },
+  { t: 'Könyves Kálmán törvénye kimondta, hogy boszorkányok pedig nincsenek.', f: 1, a: '' },
+  { t: 'Szent István intelmeket írt a fiának, Imre hercegnek.', f: 1 },
+  { t: 'István király felesége, Gizella bajor hercegnő volt.', f: 1 },
+  { t: 'Jászberényben ma is őriznek egy kürtöt, amelyet Lehel kürtjének hívnak.', f: 1 },
+  { t: 'III. Béla második felesége a francia király húga volt.', f: 1 },
+  { t: 'Esztergom volt az első magyar királyok egyik székhelye.', f: 1 },
+  { t: 'Attila hun király sírját a hagyomány szerint egy folyó medrébe rejtették.', f: 0, a: 'Sokan keresték már, de senki nem találta meg. Pont ettől jó monda.' },
+  { t: 'Csaba királyfi a Tejúton, a Hadak útján vágtatott vissza segíteni a székelyeknek.', f: 0, a: 'A csillagos ég felé nézve szinte látni a lovak patanyomát. Szép monda.' },
+  { t: 'Salamon király a trónja elvesztése után remeteként élt tovább, és szentként halt meg.', f: 0, a: 'A krónikák ezt mesélik róla, de bizonyítani nem lehet. Monda.' },
+  { t: 'Én, Anonymus azt írtam, hogy a magyarok őshazája, Szkítia, tele van arannyal és drágakővel.', f: 0, a: 'Na jó, ezt kicsit kiszíneztem. Egy jó történethez kell egy kis arany.' },
+  { t: 'Szent László egy kardcsapással forrást fakasztott egy sziklából.', f: 0, a: 'Több Szent László-forrás is van, mind ugyanezt állítja magáról. Monda.' },
   { t: 'Árpád egy fehér lóért cserébe kapta meg az egész országot.', f: 0, a: 'Egy lóért egy országot? Hát, jó vásár volt. De ez csak monda.' },
   { t: 'Emese álmában egy turulmadár jelent meg, és megjövendölte, hogy fiából nagy királyok származnak.', f: 0, a: 'Gyönyörű álom, nagyon szeretem. De mondának számít.' },
   { t: 'Hunor és Magor egy csodaszarvast követve találtak új hazát.', f: 0, a: 'Szarvast követni szép dolog, de a térképészek inkább térképet használnak.' },
@@ -2726,7 +2770,7 @@ function playGesta() {
       if (ok) { streak++; right++; const base = Math.round(10 + 20 * (tl / tMax)), mult = (D.combo && streak >= 3 ? 2 : 1) * (1 + Math.min(streak, 6) * 0.15) * (c.gold ? 3 : 1); score += Math.round(base * mult); }
       else streak = 0;
       $('gsSc').textContent = score + ' ' + tr('pont'); $('gsSt').textContent = streak >= 2 ? trf('{0}x sorozat', streak) : '';
-      $('gsBub').textContent = timeout ? tr('Elaludtál a pulton? A lap leesett a földre!') : ok ? (c.f ? tr(['Pontosan, ez tény!', 'Így van, ezt a krónikák is írják.', 'Igen, ez megtörtént.'][k % 3]) : tr(c.a)) : (c.f ? tr('Nem, nem! Ez tényleg megtörtént, nézd meg bármelyik krónikában.') : tr('Hohó, ez bizony monda. ') + tr(c.a));
+      $('gsBub').textContent = timeout ? tr('Elaludtál a pulton? A lap leesett a földre!') : ok ? (c.f ? tr(/boszork/.test(c.t) ? 'Igen, ez tényleg így van leírva! Kálmán nagyon modern király volt.' : ['Pontosan, ez tény!', 'Így van, ezt a krónikák is írják.', 'Igen, ez megtörtént.'][k % 3]) : tr(c.a)) : (c.f ? tr('Nem, nem! Ez tényleg megtörtént, nézd meg bármelyik krónikában.') : tr('Hohó, ez bizony monda. ') + tr(c.a));
       const el = card; el.classList.add('out'); el.style.transform = `translateX(calc(-50% + ${saysFact ? -260 : 260}px)) rotate(${saysFact ? -18 : 18}deg)`;
       if (!ok) { stage.classList.add('shake'); setTimeout(() => stage.classList.remove('shake'), 300); }
       setTimeout(() => el.remove(), 380); card = null; k++; setTimeout(show, 650);
