@@ -1929,10 +1929,12 @@ function miniStart(id) { const m = miniDay(); if (MG_DEV) return true; if (m.don
   .mg-legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
   .jul-stats{display:flex;gap:10px;flex-wrap:wrap;font-weight:900;font-size:17px;margin:8px 0}
   .jul-stats span{background:rgba(255,244,223,.7);border-radius:12px;padding:4px 10px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
-  .jul-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center}
-  .jul-pic{flex:1 1 260px;max-width:440px;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.2),inset 0 0 0 2px rgba(138,90,43,.3)}
+  .jul-top{display:flex;justify-content:center;margin:6px 0 8px}
+  .jul-reveal{margin:10px auto 4px;max-width:760px;animation:julIn .45s ease-out}
+  @keyframes julIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .jul-pic{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.2),inset 0 0 0 2px rgba(138,90,43,.3)}
   .mem button img{width:84%;height:84%;object-fit:contain;pointer-events:none}
-  .jul-map{flex:1 1 320px;width:100%;max-width:600px;height:auto;display:block;margin:6px 0 4px;border-radius:14px;background:#EAD3A4;box-shadow:inset 0 0 0 2px rgba(138,90,43,.3)}
+  .jul-map{width:100%;max-width:760px;height:auto;display:block;margin:6px 0 4px;border-radius:14px;background:#EAD3A4;box-shadow:inset 0 0 0 2px rgba(138,90,43,.3)}
   .jul-opts{display:grid;gap:8px;margin-top:10px}
   .jul-opts .btn{justify-content:flex-start;text-align:left;white-space:normal;min-height:48px;height:auto;padding:10px 14px}
   .jul-opts .btn small{display:block;font-weight:700;opacity:.8}
@@ -2175,24 +2177,26 @@ function playJulianus() {
     ${JST.map((p, n) => `<circle cx="${p.x}" cy="${p.y}" r="${n === to ? 22 : 16}" fill="${n <= to ? '#C9472F' : '#FFF8EA'}" stroke="#3A2410" stroke-width="5"/><text x="${n === JST.length - 1 ? p.x + 30 : p.x}" y="${p.y + (n % 2 && n < JST.length - 1 ? 76 : -40)}" text-anchor="${n === JST.length - 1 ? 'end' : 'middle'}" font-family="Grandstander,Nunito,sans-serif" font-weight="900" font-size="46" fill="#3A2410" stroke="#FFF4DF" stroke-width="12" paint-order="stroke" stroke-linejoin="round">${tr(p.name)}</text>`).join('')}
     <g id="julMk" transform="translate(${JST[from].x} ${JST[from].y})">${mk()}</g></svg>`;
   const apply = (o, sign) => Object.entries(o || {}).forEach(([k, v]) => { st[k] = Math.max(0, st[k] + sign * v); });
-  function screen(html, from, to, pic) {
-    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('JULIANUS BARÁT ÚTJA, 1235')}</span><h2>${tr(JST[to].name)}</h2>${stats()}<div class="jul-top">${map(from, to)}${pic ? julPic(pic) : ''}</div>${html}</div>`, '', 'julianus');
+  function screen(html, from, to, pic, show) {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('JULIANUS BARÁT ÚTJA, 1235')}</span><h2>${tr(JST[to].name)}</h2>${stats()}<div class="jul-top">${map(from, to)}</div>${html.replace('<!--PIC-->', pic ? `<div class="jul-reveal" id="jPic" ${show ? '' : 'hidden'}>${julPic(pic)}</div>` : '')}</div>`, '', 'julianus');
     if (from !== to) { const mk = document.getElementById('julMk'), a = JST[from], b = JST[to], t0 = performance.now(); const step = now => { const k = Math.min(1, (now - t0) / 700); if (!document.getElementById('julMk')) return; mk.setAttribute('transform', `translate(${a.x + (b.x - a.x) * k} ${a.y + (b.y - a.y) * k})`); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
   }
   function dead() { return st.ero <= 0 || st.el <= 0; }
+  // a válasz és a kép legyen szem előtt, ne ugorjon a lap tetejére
+  function julFocus() { requestAnimationFrame(() => { const t = document.getElementById('jNext') && !document.getElementById('jNext').hidden ? document.getElementById('jNext') : document.getElementById('jRes'); if (t && t.scrollIntoView) try { t.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) {} }); }
   function travel() {
     const from = st.pos; st.pos++; st.el = Math.max(0, st.el - 1); // minden szakasz egy elemózsiába kerül
     if (st.pos >= JST.length - 1) { volga(from); return; }
     const ev = JEV.find(e => e.at === st.pos);
-    screen(`<p>${tr(ev.text)}</p><div class="jul-opts">${ev.o.map((o, n) => { const can = Object.entries(o.cost || {}).every(([k, v]) => st[k] >= v); return `<button class="btn ghost" type="button" data-jo="${n}" ${can ? '' : 'disabled'}>${tr(o.t)}<small>${tr(o.sub)}</small></button>`; }).join('')}</div><div class="jul-res" id="jRes"></div><div class="row"><button class="btn coral" type="button" id="jNext" hidden>${tr('Tovább')}</button></div>`, from, st.pos, ev.img);
+    screen(`<p>${tr(ev.text)}</p><div class="jul-opts">${ev.o.map((o, n) => { const can = Object.entries(o.cost || {}).every(([k, v]) => st[k] >= v); return `<button class="btn ghost" type="button" data-jo="${n}" ${can ? '' : 'disabled'}>${tr(o.t)}<small>${tr(o.sub)}</small></button>`; }).join('')}</div><div class="jul-res" id="jRes"></div><!--PIC--><div class="row"><button class="btn coral" type="button" id="jNext" hidden>${tr('Tovább')}</button></div>`, from, st.pos, ev.img);
     let used = false;
     $('modalRoot').querySelectorAll('[data-jo]').forEach(b => b.onclick = () => {
       if (used) return; used = true; const o = ev.o[+b.dataset.jo]; b.classList.remove('ghost'); b.classList.add('teal');
       $('modalRoot').querySelectorAll('[data-jo]').forEach(x => x.disabled = true);
-      const done = (txt, good) => { $('jRes').innerHTML = txt; $('jRes').style.color = good ? 'var(--good)' : 'var(--bad)'; $('modalRoot').querySelector('.jul-stats').outerHTML = stats(); $('jNext').hidden = false; $('jNext').onclick = () => dead() ? fail() : travel(); };
+      const done = (txt, good) => { $('jRes').innerHTML = txt; $('jRes').style.color = good ? 'var(--good)' : 'var(--bad)'; $('modalRoot').querySelector('.jul-stats').outerHTML = stats(); const pic = document.getElementById('jPic'); if (pic) pic.hidden = false; $('jNext').hidden = false; $('jNext').onclick = () => dead() ? fail() : travel(); julFocus(); };
       if (!o.dice) { apply(o.cost, -1); apply(o.gain, 1); done(tr(o.ok), true); return; }
       // kockadobás: pörög, aztán megáll
-      let n = 0; const res = $('jRes'); res.innerHTML = `<span class="jul-dice" id="jDie">1</span>`; const die = document.getElementById('jDie');
+      let n = 0; const res = $('jRes'); res.innerHTML = `<span class="jul-dice" id="jDie">1</span>`; const die = document.getElementById('jDie'); julFocus();
       const spin = setInterval(() => { die.textContent = 1 + Math.floor(Math.random() * 6); if (++n > 12) { clearInterval(spin); const v = 1 + Math.floor(Math.random() * 6); die.textContent = v; const win = v >= o.dice;
         if (win) { apply(o.cost, -1); apply(o.gain, 1); } else apply(o.pen, -1);
         setTimeout(() => done(`<span class="jul-dice">${v}</span>${tr(win ? o.win : o.lose)}`, win), 250); } }, 70);
@@ -2204,15 +2208,15 @@ function playJulianus() {
     cards.sort(() => Math.random() - 0.5);
     let open = [], found = 0, miss = 0, lock = false;
     screen(`<p>${tr('A Volga mentén emberekkel találkozol, akik ismerősen beszélnek. Megmutatják a sátruk kincseit, és megmondják a nevüket. Furcsa, de pont úgy hívják őket, mint otthon! Párosítsd a képet a szóval. Minden pár után jobban megbíznak benned. Nyolc tévedés után elfogy a türelmük.')}</p>
-      <div class="mem" id="mem">${cards.map((c, k) => `<button type="button" data-k="${k}" aria-label="${tr('Kártya')}">?</button>`).join('')}</div><div class="jul-res" id="jRes">${trf('Tévedés: {0} / 8', 0)}</div>`, from, JST.length - 1, 'e04_mg_jul_volga');
+      <div class="mem" id="mem">${cards.map((c, k) => `<button type="button" data-k="${k}" aria-label="${tr('Kártya')}">?</button>`).join('')}</div><div class="jul-res" id="jRes">${trf('Tévedés: {0} / 8', 0)}</div><!--PIC--><div class="row"><button class="btn coral" type="button" id="jNext" hidden>${tr('Tovább, haza')}</button></div>`, from, JST.length - 1, 'e04_mg_jul_volga');
     $('mem').querySelectorAll('button').forEach(b => b.onclick = () => {
       const k = +b.dataset.k; if (lock || b.classList.contains('up') || b.classList.contains('ok')) return;
       b.classList.add('up'); b.innerHTML = cards[k].face; open.push(k);
       if (open.length < 2) return;
       const [a, c] = open; open = [];
-      if (cards[a].n === cards[c].n) { [a, c].forEach(x => $('mem').querySelector(`[data-k="${x}"]`).classList.add('ok')); found++; if (found === JMEM.length) { st.trust = miss <= 2 ? 3 : miss <= 5 ? 2 : 1; setTimeout(home, 600); } return; }
+      if (cards[a].n === cards[c].n) { [a, c].forEach(x => $('mem').querySelector(`[data-k="${x}"]`).classList.add('ok')); found++; if (found === JMEM.length) { st.trust = miss <= 2 ? 3 : miss <= 5 ? 2 : 1; $('jRes').textContent = tr(st.trust >= 3 ? 'Mind megvan! Nevetnek, és testvérként ölelnek meg.' : 'Megvan mind! Egy kicsit még gyanakodnak, de befogadnak.'); $('jRes').style.color = 'var(--good)'; const pic = document.getElementById('jPic'); if (pic) pic.hidden = false; $('jNext').hidden = false; $('jNext').onclick = home; julFocus(); } return; }
       miss++; $('jRes').textContent = trf('Tévedés: {0} / 8', miss); lock = true;
-      setTimeout(() => { [a, c].forEach(x => { const e = $('mem') && $('mem').querySelector(`[data-k="${x}"]`); if (e) { e.classList.remove('up'); e.textContent = '?'; } }); lock = false; if (miss >= 8) { st.trust = 0; home(); } }, 750);
+      setTimeout(() => { [a, c].forEach(x => { const e = $('mem') && $('mem').querySelector(`[data-k="${x}"]`); if (e) { e.classList.remove('up'); e.textContent = '?'; } }); lock = false; if (miss >= 8) { st.trust = 0; $('jRes').textContent = tr('Elfogyott a türelmük, de a lényeget így is megérted.'); $('jRes').style.color = 'var(--bad)'; lock = true; const pic = document.getElementById('jPic'); if (pic) pic.hidden = false; $('jNext').hidden = false; $('jNext').onclick = home; julFocus(); } }, 750);
     });
   }
   function home() {
@@ -2220,9 +2224,10 @@ function playJulianus() {
     let round = 0, caught = 0, pos = 0, dir = 1, raf = 0, zone = 0;
     const msg = st.trust >= 3 ? 'Testvérként fogadnak! Elmondják, hogy a közelben hatalmas tatár sereg gyülekezik. Sietned kell haza, hogy szólj a királynak.' : st.trust ? 'Kicsit gyanakodva, de befogadnak. Figyelmeztetnek, hogy keletről tatár sereg közeledik. Sietned kell haza.' : 'Nem értitek egymást eléggé, de a tatárokról szóló hírt így is megérted. Sietned kell haza.';
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('HAZAFELÉ, 1237')}</span><h2>${tr('Bújj el a felderítők elől!')}</h2>${stats()}
-      ${julPic('e04_mg_jul_felderitok')}<p>${tr(msg)}</p><p>${tr('Tatár felderítők járják a pusztát. Nyomd meg a Lapulj! gombot, amikor a jel a zöld sávban van. Háromszor kell sikerülnie.')}</p>
+      <p>${tr(msg)}</p><p>${tr('Tatár felderítők járják a pusztát. Nyomd meg a Lapulj! gombot, amikor a jel a zöld sávban van. Háromszor kell sikerülnie.')}</p>
       <div class="hide-bar"><div class="zone" id="hZone"></div><div class="mk" id="hMk"></div></div>
-      <div class="row"><button class="btn coral" type="button" id="hGo">${tr('Lapulj!')}</button></div><div class="jul-res" id="jRes">${trf('{0}. felderítő a háromból', 1)}</div></div>`, '', 'julianus');
+      <div class="row"><button class="btn coral" type="button" id="hGo">${tr('Lapulj!')}</button></div><div class="jul-res" id="jRes">${trf('{0}. felderítő a háromból', 1)}</div><div class="jul-reveal" id="jPic" hidden>${julPic('e04_mg_jul_felderitok')}</div><div class="row"><button class="btn coral" type="button" id="hNext" hidden>${tr('Tovább')}</button></div></div>`, '', 'julianus');
+    const julFocus2 = () => requestAnimationFrame(() => { const t = document.getElementById('hNext'); if (t) try { t.scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) {} });
     const newZone = () => { const w = 22 - round * 4; zone = 10 + Math.random() * (80 - w); $('hZone').style.left = zone + '%'; $('hZone').style.width = w + '%'; return w; };
     let zw = newZone();
     const tick = () => { if (!document.getElementById('hMk')) return; pos += dir * (1.1 + round * 0.45); if (pos > 100 || pos < 0) { dir *= -1; pos = Math.max(0, Math.min(100, pos)); } $('hMk').style.left = pos + '%'; raf = requestAnimationFrame(tick); };
@@ -2232,7 +2237,7 @@ function playJulianus() {
       round++; $('modalRoot').querySelector('.jul-stats').outerHTML = stats();
       $('jRes').textContent = tr(ok ? 'Észre sem vettek! ' : 'Észrevettek, egy nyíl súrolt. ') + (round < 3 ? trf('{0}. felderítő a háromból', round + 1) : '');
       $('jRes').style.color = ok ? 'var(--good)' : 'var(--bad)';
-      if (round >= 3 || st.ero <= 0) { cancelAnimationFrame(raf); $('hGo').disabled = true; setTimeout(() => st.ero <= 0 ? fail() : win(caught), 900); return; }
+      if (round >= 3 || st.ero <= 0) { cancelAnimationFrame(raf); $('hGo').disabled = true; const pic = document.getElementById('jPic'); if (pic) pic.hidden = false; $('hNext').hidden = false; $('hNext').onclick = () => st.ero <= 0 ? fail() : win(caught); julFocus2(); return; }
       zw = newZone();
     };
   }
@@ -2248,7 +2253,7 @@ function playJulianus() {
     miniEnd('AZ ÚT VÉGET ÉRT', tr(st.el <= 0 ? 'Elfogyott az elemózsia' : 'Elfogyott az erőd'), [tr('Julianus hazafordul, és otthon elmeséli, amit látott. Nem jutott el a végéig, de legalább tanult belőle.'), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`, tr('Holnap újra nekivághatsz.')],
       'Julianus első útján a négy barátból kettő hazafordult, Gellért barát meghalt. Julianus egyedül, nagy nélkülözések között jutott el a Volgáig. Az út tényleg ilyen nehéz volt.');
   }
-  screen(`<p>${tr('Esztergomból indulsz kelet felé, hogy megkeresd a keleten maradt magyarokat. Minden útszakasz egy elemózsiába kerül. Ha elfogy az elemózsia vagy az erőd, haza kell fordulnod.')}</p><div class="row"><button class="btn coral" type="button" id="jGo">${tr('Útnak indulok')}</button></div>`, 0, 0, 'e04_ill_julianus');
+  screen(`<p>${tr('Esztergomból indulsz kelet felé, hogy megkeresd a keleten maradt magyarokat. Minden útszakasz egy elemózsiába kerül. Ha elfogy az elemózsia vagy az erőd, haza kell fordulnod.')}</p><!--PIC--><div class="row"><button class="btn coral" type="button" id="jGo">${tr('Útnak indulok')}</button></div>`, 0, 0, 'e04_ill_julianus', true);
   $('jGo').onclick = travel;
   if (MG_DEV) {
     const d = document.createElement('div'); d.className = 'mg-dev';
