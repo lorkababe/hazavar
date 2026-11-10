@@ -2407,6 +2407,18 @@ const BL_CARDS = [
   { who: 'pap', ev: 1, t: 'A püspökök új templomot építenének Esztergomban. Adsz hozzá pénzt?', y: { egy: 12, kin: -10 }, n: { egy: -10 } },
   { who: 'bela', ev: 1, t: 'Béla herceg szerint a király túl bőkezű. Szerinte egy évig senki ne kapjon új birtokot. Hallgatsz rá?', y: { kir: 10, kin: 8, nem: -14 }, n: { nem: 6, kir: -4 } }
 ];
+// easter egg: a külföldi követ a saját nyelvén beszél, és senki nem fordít
+const BL_ENVOY = [
+  { lang: 'latinul', from: 'a pápai követ', t: 'Rex Andrea, sanctissimus papa iubet ut promissa tua serves et crucem iterum accipias!',
+    tr: 'András király, a szentatya megparancsolja, hogy tartsd meg az ígéreteidet, és vedd fel újra a keresztet!',
+    y: { egy: 12, kin: -14, kir: -4 }, n: { egy: -14, kir: 4 }, yt: 'Igent mondtál. Gratulálunk, épp megígérted a pápának, hogy újra keresztes hadjáratra mész. A kincstárnok sír.', nt: 'Nemet mondtál a pápának. A követ elsápadt, és nagyon gyorsan elment.' },
+  { lang: 'ófranciául', from: 'a francia követ', t: 'Sire rois, mes sire vos envoie cest present: un fromage de Champaigne qui mout put!',
+    tr: 'Király uram, az uram ezt az ajándékot küldi neked: egy champagne-i sajtot, ami nagyon büdös!',
+    y: { kir: 4, nem: -6 }, n: { kir: -4, kin: 2 }, yt: 'Igent mondtál, és elfogadtad a sajtot. Az egész trónterem befogta az orrát.', nt: 'Nemet mondtál. A követ megsértődött, és a sajtot a kincstárnok asztalán hagyta. Ott van azóta is.' },
+  { lang: 'görögül', from: 'a bizánci követ', t: 'Χαῖρε, ὦ βασιλεῦ! Ὁ αὐτοκράτωρ χρυσίον δανείσασθαι βούλεται.',
+    tr: 'Üdvözlégy, király! A császár aranyat szeretne kölcsönkérni tőled.',
+    y: { kin: -16, kir: 8 }, n: { kir: -2 }, yt: 'Igent mondtál, és kölcsönadtad a kincstár aranyát a bizánci császárnak. Hogy visszakapod-e, az jó kérdés.', nt: 'Nemet mondtál. A követ szomorúan bólintott, a kincstárnok viszont megölelt.' }
+];
 const BL_DAY = [
   { t: 'Ma esik az eső, mindenki morcos. Minden nemesi változás erősebb.', mod: { nem: 1.4 } },
   { t: 'Ma ünnep van, a kincstárnok bőkezű. A kincstári veszteségek kisebbek.', mod: { kin: 0.7 } },
@@ -2419,7 +2431,9 @@ function playBulla() {
   const rnd = mgRng('bulla'), day = BL_DAY[Math.floor(rnd() * BL_DAY.length)];
   const real = mgShuffle(BL_CARDS.filter(c => c.real), rnd).slice(0, 6), fake = mgShuffle(BL_CARDS.filter(c => c.real === 0), rnd).slice(0, 3), ev = mgShuffle(BL_CARDS.filter(c => c.ev), rnd).slice(0, 3);
   const NOBLES = ['bar', 'rav', 'kov', 'oreg'];
+  BL_WHO.kovet = { name: 'Külföldi követ', img: 'e04_mg_bulla_kovet', emo: '🧔' };
   const deck = mgShuffle(real.concat(fake, ev), rnd).map(c => c.who === 'nemes' ? Object.assign({}, c, { who: NOBLES[Math.floor(rnd() * NOBLES.length)] }) : c);
+  if (MG_DEV || rnd() < 0.55) { const e = BL_ENVOY[Math.floor(rnd() * BL_ENVOY.length)]; deck[2 + Math.floor(rnd() * (deck.length - 3))] = Object.assign({ who: 'kovet', envoy: 1 }, e); }
   const m = { kir: 50, nem: 50, egy: 50, kin: 50 }; let k = 0, goodReal = 0, fakeIn = 0, dead = null;
   Object.values(BL_WHO).forEach(w => mgPic(w.img)); mgPic('e04_mg_bulla_terem.jpg');
   const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 22 || v > 78 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%"></i></div></div>`; }).join('')}</div>`;
@@ -2438,12 +2452,12 @@ function playBulla() {
     if (k >= deck.length) return seal();
     const c = deck[k], w = BL_WHO[c.who], pic = mgPic(w.img);
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${trf('{0}. KÉRÉS A {1}-BÓL', k + 1, deck.length)}</span>${meters()}
-      <div class="bl-card"><div class="bl-who"><div class="face">${pic ? mgImg(w.img) : w.emo}</div><div>${tr(w.name)}</div></div><div class="txt"><span class="tag">${tr(c.ev ? 'ESEMÉNY' : 'KÖVETELÉS')}</span><br>${tr(c.t)}</div></div>
-      <div class="bl-opts"><button class="btn teal" type="button" id="blY">${tr(c.ev ? 'Igen' : 'Megpecsételem')}</button><button class="btn coral" type="button" id="blN">${tr(c.ev ? 'Nem' : 'Visszadobom')}</button></div>
+      <div class="bl-card"><div class="bl-who"><div class="face">${pic ? mgImg(w.img) : w.emo}</div><div>${tr(w.name)}</div></div><div class="txt"><span class="tag">${c.envoy ? tr('KÜLFÖLDI KÖVET') : tr(c.ev ? 'ESEMÉNY' : 'KÖVETELÉS')}</span><br>${c.envoy ? `<i style="font-size:18px">${c.t}</i><br><small style="color:var(--ink-soft)">${trf('A követ {0} beszél. Senki nem érti, de mindenki rád néz.', tr(c.lang))}</small>` : tr(c.t)}</div></div>
+      <div class="bl-opts"><button class="btn teal" type="button" id="blY">${tr(c.envoy ? 'Bólintok, hátha jó' : c.ev ? 'Igen' : 'Megpecsételem')}</button><button class="btn coral" type="button" id="blN">${tr(c.envoy ? 'Megrázom a fejem' : c.ev ? 'Nem' : 'Visszadobom')}</button></div>
       <div class="bl-res" id="blRes"></div><div class="row"><button class="btn" type="button" id="blNext" hidden>${tr('Következő')}</button></div></div>`, '', 'bulla');
     // ráviszed az egeret: pötty jelzi, mire lesz hatással (mint egy jó tanácsadó, aki nem mondja meg, mennyire)
     const hint = o => { $('modalRoot').querySelectorAll('.bl-m').forEach((el, n) => { const d = o && o[BL_M[n].id]; const dot = el.querySelector('.dot'); dot.classList.toggle('on', !!d); dot.classList.toggle('big', !!d && Math.abs(d) > 11); }); };
-    ['blY', 'blN'].forEach(id => { const b = $(id), o = eff(id === 'blY' ? c.y : c.n); b.onmouseenter = () => hint(o); b.onmouseleave = () => hint(null); b.onfocus = () => hint(o); });
+    ['blY', 'blN'].forEach(id => { const b = $(id), o = eff(id === 'blY' ? c.y : c.n); b.onmouseenter = () => hint(c.envoy ? null : o); b.onmouseleave = () => hint(null); b.onfocus = () => hint(c.envoy ? null : o); });
     const pick = yes => {
       $('blY').disabled = $('blN').disabled = true; const o = eff(yes ? c.y : c.n);
       Object.entries(o).forEach(([key, v]) => m[key] += v);
@@ -2452,11 +2466,12 @@ function playBulla() {
       else if (c.real && !yes) msg = tr('Pedig ez a valódi Aranybullában is benne van.');
       else if (c.real === 0 && yes) { fakeIn++; msg = tr(c.fun); }
       else if (c.real === 0) msg = tr('Jól tetted, ez nem került bele.') + ' ' + tr(c.fun);
+      else if (c.envoy) msg = `<b>${tr('Fordítás')}:</b> ${tr(c.tr)}<br>${tr(yes ? c.yt : c.nt)}`;
       else msg = tr(yes ? 'Rendben, legyen így.' : 'Rendben, maradjon minden a régiben.');
       const hit = BL_M.find(x => m[x.id] <= 0 || m[x.id] >= 100);
       if (hit) dead = hit.id + (m[hit.id] <= 0 ? '0' : '1');
       $('modalRoot').querySelector('.bl-meters').outerHTML = meters();
-      $('blRes').innerHTML = msg; $('blRes').style.color = (c.real && yes) || (c.real === 0 && !yes) ? 'var(--good)' : c.ev ? 'var(--ink)' : 'var(--bad)';
+      $('blRes').innerHTML = msg; $('blRes').style.color = (c.real && yes) || (c.real === 0 && !yes) ? 'var(--good)' : c.ev || c.envoy ? 'var(--ink)' : 'var(--bad)';
       $('blNext').hidden = false; k++; $('blNext').onclick = next;
       try { $('blNext').scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) {}
     };
