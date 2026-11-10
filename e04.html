@@ -1983,7 +1983,7 @@ function playMuhi() {
   Object.values(MG_KIND).forEach(k => mgPic(k.img)); mgPic('e04_mg_sajo_hid');
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('MUHI, 1241. ÁPRILIS')}</span><h2>${tr('Védd a Sajó hídját!')}</h2>
     <p>${tr('Koppints a tatár lovasokra, mielőtt átérnek. A páncélost háromszor kell eltalálni, a zászlóvivő lelassít mindenkit. A piros köpenyes futár a mieink közül való, őt ne bántsd, mert ha átér, hoz egy életet. Három lovas átjuthat, a negyediknél vége.')}</p>
-    <div class="mg-legend">${Object.values(MG_KIND).map(k => `<span><i style="background:${k.col}"></i>${tr(k.name)}</span>`).join('')}</div>
+    <div class="mg-legend">${Object.values(MG_KIND).map(k => `<span><img src="img/${k.img}.png?v=2611095" alt="" style="height:34px;width:auto" onerror="this.outerHTML='<i style=&quot;background:${k.col}&quot;></i>'">${tr(k.name)}</span>`).join('')}</div>
     <div id="mgWrap"><canvas id="mgCv"></canvas></div>
     <div class="mg-hud"><span id="mgScore">0 ${tr('pont')}</span><span id="mgCombo"></span><span id="mgLife">❤❤❤</span><span id="mgTime">45</span></div>
     <div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="mgGo">${tr('Kezdjük!')}</button></div></div>`, '', 'muhi');
@@ -1991,7 +1991,7 @@ function playMuhi() {
   let Wc = 0, Hc = 0, run = false, t0 = 0, last = 0, spawnT = 0, score = 0, life = 3, combo = 0, best = 0, slowT = 0, riders = [], fx = [], raf = 0, ended = false, hits = 0, friends = 0;
   const fit = () => { const r = cv2.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); Wc = r.width; Hc = r.height; cv2.width = Wc * dp; cv2.height = Hc * dp; g.setTransform(dp, 0, 0, dp, 0, 0); };
   fit();
-  const bTop = () => Hc * 0.2, bBot = () => Hc * 0.86, laneY = n => bTop() + (bBot() - bTop()) * (n + 0.62) / LANES, sz = () => Math.max(0.8, Math.min(1.35, Hc / 380));
+  const bTop = () => Hc * 0.2, bBot = () => Hc * 0.86, laneY = n => bTop() + (bBot() - bTop()) * (n + 0.62) / LANES, sz = () => Math.max(0.8, Math.min(1.35, Hc / 380)), laneH = () => (bBot() - bTop()) / LANES;
   function scene() {
     const bg = mgPic('e04_mg_sajo_hid');
     if (bg) { const s = Math.max(Wc / bg.naturalWidth, Hc / bg.naturalHeight); g.drawImage(bg, (Wc - bg.naturalWidth * s) / 2, (Hc - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s); return; }
@@ -2013,7 +2013,7 @@ function playMuhi() {
     const k = MG_KIND[r.kind], s = sz(); g.save(); g.translate(r.x, r.y + Math.sin(r.ph) * 2);
     if (r.fall) { g.rotate(r.fall * 0.9); g.globalAlpha = Math.max(0, 1 - r.fall / 1.4); }
     const pic = mgPic(k.img);
-    if (pic) { const h = 62 * s * (r.kind === 'nehez' ? 1.15 : 1), w = h * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, -w / 2, -h + 20 * s, w, h); }
+    if (pic) { const h = laneH() * 1.5 * (r.kind === 'nehez' ? 1.1 : 1), w = h * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, -w / 2, -h * 0.78, w, h); }
     else {
       g.scale(s * (r.kind === 'nehez' ? 1.15 : 1), s * (r.kind === 'nehez' ? 1.15 : 1));
       g.fillStyle = r.kind === 'futar' ? '#E8D8C0' : '#6B4A2E'; g.beginPath(); g.ellipse(0, 6, 17, 9, 0, 0, 7); g.fill();
@@ -2028,7 +2028,7 @@ function playMuhi() {
       if (r.kind === 'zaszlos') { g.fillStyle = '#3F2614'; g.fillRect(-12, -46, 3, 40); g.fillStyle = '#F2C14E'; g.beginPath(); g.moveTo(-9, -46); g.lineTo(10, -40); g.lineTo(-9, -34); g.closePath(); g.fill(); }
     }
     g.restore();
-    if (r.hp > 1 && !r.fall) for (let n = 0; n < r.hp; n++) { g.fillStyle = '#FFF1D8'; g.beginPath(); g.arc(r.x - 8 + n * 8, r.y - 50 * s, 3.2, 0, 7); g.fill(); }
+    if (r.hp > 1 && !r.fall) for (let n = 0; n < r.hp; n++) { g.fillStyle = '#FFF1D8'; g.beginPath(); g.arc(r.x - 8 + n * 8, r.y - laneH() * 1.25, 3.6, 0, 7); g.fill(); }
   }
   function pickKind(el) { const pool = Object.entries(MG_KIND).filter(([, k]) => !k.from || el >= k.from); let t = Math.random() * pool.reduce((a, [, k]) => a + k.w, 0); for (const [id, k] of pool) { t -= k.w; if (t <= 0) return id; } return 'konnyu'; }
   function frame(now) {
@@ -2055,7 +2055,7 @@ function playMuhi() {
   }
   cv2.addEventListener('pointerdown', e => {
     if (!run) return; const r0 = cv2.getBoundingClientRect(), x = e.clientX - r0.left, y = e.clientY - r0.top, s = sz();
-    let hit = null, bd = 36 * s; riders.forEach(r => { if (r.fall) return; const d = Math.hypot(r.x - x, r.y - 14 * s - y); if (d < bd) { bd = d; hit = r; } });
+    let hit = null, bd = Math.max(36 * s, laneH() * 0.75); riders.forEach(r => { if (r.fall) return; const d = Math.hypot(r.x - x, r.y - laneH() * 0.35 - y); if (d < bd) { bd = d; hit = r; } });
     if (!hit) { combo = 0; return; }
     const k = MG_KIND[hit.kind];
     if (k.friend) { hit.fall = 0.01; life--; combo = 0; fx.push({ x: hit.x, y: hit.y - 34, t: 0, txt: tr('Jaj, ő a mienk volt!'), c: '#FF8A6E' }); return; }
