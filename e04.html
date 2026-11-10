@@ -2032,7 +2032,7 @@ function playMuhi() {
   }
   function drawRider(r) {
     const k = MG_KIND[r.kind], s = sz(); g.save();
-    if (r.kind === 'gazlo') { g.beginPath(); g.rect(-9999, -9999, 99999, r.y - laneH() * 0.05 + 9999); g.clip(); }
+    if (r.kind === 'gazlo' && !mgPic(k.img)) { g.beginPath(); g.rect(-9999, -9999, 99999, r.y - laneH() * 0.05 + 9999); g.clip(); }
     g.translate(r.x, r.y + Math.sin(r.ph) * 2);
     if (r.fall) { g.rotate(r.fall * 0.9); g.globalAlpha = Math.max(0, 1 - r.fall / 1.4); }
     if (r.kind === 'acs' && r.life < 1) g.globalAlpha *= Math.max(0, r.life);
@@ -2056,7 +2056,7 @@ function playMuhi() {
       }
     }
     g.restore();
-    if (r.kind === 'gazlo') { g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2; g.beginPath(); g.ellipse(r.x, r.y - laneH() * 0.05, laneH() * 0.7, laneH() * 0.14, 0, 0, 7); g.stroke(); }
+    if (r.kind === 'gazlo' && !mgPic(k.img)) { g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2; g.beginPath(); g.ellipse(r.x, r.y - laneH() * 0.05, laneH() * 0.7, laneH() * 0.14, 0, 0, 7); g.stroke(); }
     if (r.hp > 1 && !r.fall) for (let n = 0; n < r.hp; n++) { g.fillStyle = '#FFF1D8'; g.beginPath(); g.arc(r.x - 8 + n * 8, r.y - laneH() * 1.25, 3.6, 0, 7); g.fill(); }
   }
   function pickKind(el) { const pool = Object.entries(MG_KIND).filter(([, k]) => !k.special && (!k.from || el >= k.from)); let t = Math.random() * pool.reduce((a, [, k]) => a + k.w, 0); for (const [id, k] of pool) { t -= k.w; if (t <= 0) return id; } return 'konnyu'; }
@@ -2128,8 +2128,8 @@ function playMuhi() {
 // ---------- 2. Julianus barát útja ----------
 // útijáték: elemózsia, erő és ezüst; kockadobás, egy szópárosító a Volgánál és egy bújócska hazafelé
 const JST = [ // a térkép képének 1600x900-as koordinátái
-  { id: 'esz', name: 'Esztergom', x: 250, y: 300 }, { id: 'kon', name: 'Konstantinápoly', x: 640, y: 700 }, { id: 'mat', name: 'Matrika', x: 1010, y: 470 },
-  { id: 'ala', name: 'Alánia', x: 1150, y: 640 }, { id: 'szt', name: 'A sztyeppe', x: 1250, y: 330 }, { id: 'vol', name: 'Magna Hungaria', x: 1440, y: 150 }
+  { id: 'esz', name: 'Esztergom', x: 287, y: 225 }, { id: 'kon', name: 'Konstantinápoly', x: 612, y: 720 }, { id: 'mat', name: 'Matrika', x: 1014, y: 530 },
+  { id: 'ala', name: 'Alánia', x: 1318, y: 680 }, { id: 'szt', name: 'A sztyeppe', x: 1235, y: 330 }, { id: 'vol', name: 'Magna Hungaria', x: 1435, y: 220 }
 ];
 const JEV = [
   { at: 1, img: 'e04_mg_jul_utonallok', text: 'Útonállók állják el az utat a hegyek között. Azt mondják, csak egy kis útivámot szednek. Nagyon nagy kést hoznak hozzá.', o: [
@@ -2156,7 +2156,7 @@ function playJulianus() {
   mgPic('e04_mg_julianus'); mgPic('e04_julianus'); mgPic('e04_mg_julianus_terkep.jpg'); JMEM.forEach(([id]) => mgPic('e04_mg_mem_' + id));
   const stats = () => `<div class="jul-stats"><span>🍞 ${tr('Elemózsia')} ${st.el}</span><span>❤ ${tr('Erő')} ${st.ero}</span><span>🪙 ${tr('Ezüst')} ${st.ez}</span></div>`;
   // jelölő: ha van egész alakos figura, az lépked; ha nincs, a meglévő portré kerek keretben
-  const mk = () => mgPic('e04_mg_julianus') ? `<image href="img/e04_mg_julianus.png?v=2611095" x="-55" y="-140" width="110" height="150"/>` : mgPic('e04_julianus') ? `<circle r="64" fill="#FFF4DF" stroke="#3A2410" stroke-width="7"/><image href="img/e04_julianus.png?v=2611095" x="-58" y="-58" width="116" height="116" clip-path="url(#julClip)"/>` : `<circle r="26" fill="#3A2410"/><text y="11" text-anchor="middle" font-size="30">🚶</text>`;
+  const mk = () => mgPic('e04_mg_julianus') ? `<ellipse cx="0" cy="6" rx="44" ry="12" fill="rgba(40,24,10,.35)"/><image href="img/e04_mg_julianus.png?v=2611095" x="-62" y="-170" width="124" height="178"/>` : mgPic('e04_julianus') ? `<circle r="64" fill="#FFF4DF" stroke="#3A2410" stroke-width="7"/><image href="img/e04_julianus.png?v=2611095" x="-58" y="-58" width="116" height="116" clip-path="url(#julClip)"/>` : `<circle r="26" fill="#3A2410"/><text y="11" text-anchor="middle" font-size="30">🚶</text>`;
   const map = (from, to) => `<svg class="jul-map" viewBox="0 0 1600 900" role="img" aria-label="${tr('Julianus útvonala')}">
     <defs><clipPath id="julClip"><circle r="58"/></clipPath></defs><rect width="1600" height="900" fill="#EAD3A4"/>${mgPic('e04_mg_julianus_terkep.jpg') ? `<image href="img/e04_mg_julianus_terkep.jpg?v=2611095" width="1600" height="900" preserveAspectRatio="xMidYMid slice"/>` : ''}
     <path d="${JST.map((p, n) => (n ? 'L' : 'M') + p.x + ' ' + p.y).join(' ')}" fill="none" stroke="#7A2E12" stroke-width="9" stroke-dasharray="22 18" stroke-linecap="round" opacity=".85"/>
