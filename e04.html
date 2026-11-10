@@ -1773,7 +1773,8 @@ function bindSpeed(b) {
 
 // ---------- a megváltozott alapterületű épületek helyre igazítása ----------
 function fitFix() {
-  if (S.fitV === 4) return; S.fitV = 4; Object.keys(S.roads).forEach(k => { if (BLOCKED.has(k)) delete S.roads[k]; }); let moved = 0;
+  // minden betöltéskor lefut: ha két épület alapterülete egymásba csúszott, a későbbit a legközelebbi szabad helyre teszi
+  Object.keys(S.roads).forEach(k => { if (BLOCKED.has(k)) delete S.roads[k]; }); S.fitV = 5; let moved = 0;
   S.buildings.forEach(b => {
     if (b.type === 'fo') return; const [w, h] = dimsB(b);
     const m = occ(); let clash = false, roadsUnder = [];
@@ -1782,8 +1783,8 @@ function fitFix() {
     let best = null; areaTiles().forEach(([i, j]) => { if (free(b.type, i, j, b, b.rot)) { const dd = Math.hypot(i - b.i, j - b.j); if (!best || dd < best[2]) best = [i, j, dd]; } });
     if (best) { b.i = best[0]; b.j = best[1]; moved++; }
   });
-  connCache = null; shadowCache = null; save();
-  if (moved) setTimeout(() => toast(trf('{0} épület alapterülete megváltozott, ezért kicsit odébb tettem őket.', moved)), 2500);
+  connCache = null; shadowCache = null; if (moved) save();
+  if (moved) setTimeout(() => toast(trf('{0} épület egymásba csúszott, ezért kicsit odébb tettem őket.', moved)), 2500);
 }
 (function () {
   const st = document.createElement('style');
