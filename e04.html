@@ -1676,17 +1676,24 @@ function showUpgrade(b) {
     ${lock ? `<p class="lwarn">${tech ? trf('Ehhez előbb {0} kell, nézz be a Kutatásba.', withArt(tech.name)) : ''}</p>` : ''}
     ${!spot ? `<p class="lwarn">${tr('Az új épület nagyobb, és nem fér el itt. Csinálj neki helyet, vagy tedd át a régit máshová.')}</p>` : ''}
     ${!wOk ? `<p class="lwarn">${trf('Nincs elég szabad ember, még {0} kellene.', needW)}</p>` : ''}
+    ${!lock && !canPay(cost) ? `<p class="lwarn">${trf('Hiányzik · {0}', missText(cost))}</p>` : ''}
     <div class="row"><span class="cost">${costHTML(cost)}</span><button class="btn coral" type="button" id="upGo" ${can ? '' : 'disabled'}>${tr('Átépítem')}</button></div></div>`, '', 'upgrade');
   $('upGo').onclick = () => {
     if (!canPay(cost) || !spot) return; pay(cost);
     if (S.gb && d.gb && S.gb[b.type]) { S.gb[t] = S.gb[b.type]; }
-    b.oldPop = d.pop || 0; b.type = t; b.i = spot.i; b.j = spot.j; b.rot = spot.rot; b.mode = undefined; b.upTo = t; b.until = S.gt + d.upT; b.dur = d.upT; b.t0 = b.until; b.doneNote = false;
+    b.oldPop = d.pop || 0; if (S.newTypes) delete S.newTypes[t]; b.type = t; b.i = spot.i; b.j = spot.j; b.rot = spot.rot; b.mode = undefined; b.upTo = t; b.until = S.gt + d.upT; b.dur = d.upT; b.t0 = b.until; b.doneNote = false;
     S.stats.upgraded = (S.stats.upgraded || 0) + 1; connCache = null; shadowCache = null; sfxCollect(); save(); closeModal(); checkQuest();
     toast(trf('Elkezdődött az átépítés. {0} múlva kész.', dur(d.upT / S.speed)));
   };
 }
 function feedTick() {
   S.buildings.forEach(b => { const d = DEF[b.type]; if (!d.input || b.fed !== false || !working(b)) return; const n = inputNeed(b); if (canPay(n)) { pay(n); b.paid = n; b.fed = true; b.t0 = S.gt; } else b.t0 = S.gt; });
+}
+function upBtnHTML(b) {
+  const d = DEF[b.type]; if (!d.up || off(b)) return ''; const nd = DEF[d.up];
+  if (unlocked(d.up)) return `<button class="btn coral" type="button" id="iUp">${trf('Átépítés · {0}', nd.name)}</button>`;
+  const t = nd.tech && TECH.find(x => x.id === nd.tech), tip = t ? trf('Hiányzik a kutatás · {0}', t.name) : tr('Még nem építhető át');
+  return `<span title="${tip}" style="display:inline-flex"><button class="btn ghost" type="button" disabled style="pointer-events:none;opacity:.55">${trf('Átépítés · {0}', nd.name)}</button></span>`;
 }
 function upgradeTick() {
   feedTick();
@@ -1798,10 +1805,10 @@ Object.entries(OBST).forEach(([k, o]) => {
 const EMPTY = new Image(); let emptyOk = false;
 EMPTY.onload = () => { emptyOk = true; clearSig = ''; }; EMPTY.src = 'img/e04_alapterkep_ures.jpg?v=' + (typeof IMGV !== 'undefined' ? IMGV : '1');
 const isCleared = k => !!(S.cleared && S.cleared[k]);
-let clearLayer = null, clearSig = '';
+let clearLayer = null, clearSig = '', clearMask = null, obstCache = {};
 function buildClearLayer() {
   const keys = Object.keys(S.cleared || {}).filter(k => OBST[k]); const sig = keys.join('|');
-  if (sig === clearSig && clearLayer) return clearLayer; clearSig = sig;
+  if (sig === clearSig && (clearLayer || !keys.length)) return clearLayer; clearSig = sig; obstCache = {}; clearMask = null;
   if (!keys.length) { clearLayer = null; return null; }
   const g0 = IMG.e04_fu; if (!g0 || !g0.naturalWidth) { clearSig = ''; return null; }
   const mk = () => { const c = document.createElement('canvas'); c.width = BGW; c.height = BGH; return c; };
@@ -1809,8 +1816,8 @@ function buildClearLayer() {
   try { pat.setTransform(new DOMMatrix().scale(0.6)); } catch (e) {}
   if (emptyOk) { tg.drawImage(EMPTY, 0, 0, BGW, BGH); }
   else keys.forEach(k => { const o = OBST[k], p = OBST_P[k].pp; tg.fillStyle = pat; tg.fill(p); tg.save(); tg.clip(p); tg.globalAlpha = 0.38; tg.fillStyle = `rgb(${o.c[0]},${o.c[1]},${o.c[2]})`; tg.fill(p); tg.restore(); });
-  const msk = mk(), mg = msk.getContext('2d'); mg.filter = emptyOk ? 'blur(5px)' : 'blur(8px)'; mg.fillStyle = '#000'; keys.forEach(k => mg.fill(OBST_P[k].pp));
-  tg.globalCompositeOperation = 'destination-in'; tg.drawImage(msk, 0, 0);
+  const msk = mk(), mg = msk.getContext('2d'); mg.filter = emptyOk ? 'blur(9px)' : 'blur(8px)'; mg.fillStyle = '#000'; keys.forEach(k => mg.fill(OBST_P[k].pp));
+  clearMask = msk; tg.globalCompositeOperation = 'destination-in'; tg.drawImage(msk, 0, 0);
   clearLayer = t; return t;
 }
 function drawClearLayer() { const l = buildClearLayer(); if (l) ctx.drawImage(l, 0, 0, BGW, BGH); }
@@ -1823,7 +1830,13 @@ function obstItems(items) {
 }
 function drawObst(b) {
   const o = OBST_P[b.obst], M = IMG.e04_alapterkep; if (!o || !M) return; const s = M.naturalWidth / BGW, [x, y, w, h] = o.bb;
-  ctx.save(); ctx.clip(o.sp); ctx.drawImage(M, x * s, y * s, w * s, h * s, x, y, w, h); ctx.restore();
+  let c = obstCache[b.obst];
+  if (!c) { c = document.createElement('canvas'); c.width = Math.ceil(w * s); c.height = Math.ceil(h * s); const g = c.getContext('2d');
+    g.scale(s, s); g.translate(-x, -y); g.save(); g.clip(o.sp); g.drawImage(M, x * s, y * s, w * s, h * s, x, y, w, h); g.restore();
+    // ami a már kitakarított helyre lógna, az nem rajzolódik vissza
+    if (clearMask) { g.globalCompositeOperation = 'destination-out'; g.drawImage(clearMask, 0, 0, BGW, BGH); }
+    obstCache[b.obst] = c; }
+  ctx.drawImage(c, x, y, w, h);
 }
 function inP(p, x, y) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); const r = ctx.isPointInPath(p, x, y); ctx.restore(); return r; }
 function obstAt(bx, by) {
@@ -2378,7 +2391,7 @@ function showInfo(b, refresh) {
     <div class="row">${b.ruined ? `<button class="btn teal" type="button" id="iRe">${tr('Újjáépítés')}</button>` : ''}
     ${false ? `<button class="btn coral" type="button" id="iMig">${tr('Továbbvonulás')} · ${moveCost().termeny} ${RES.termeny.name}</button>` : ''}
     ${chainInfoHTML(b.type)}${speedHTML(b)}
-    ${d.up && !off(b) ? `<button class="btn coral" type="button" id="iUp">${trf('Átépítés · {0}', DEF[d.up].name)}</button>` : ''}
+    ${upBtnHTML(b)}${'' ? `<button class="btn coral" type="button" id="iUp">${trf('Átépítés · {0}', DEF[d.up].name)}</button>` : ''}
     ${b.type !== 'fo' && !b.ruined ? `<button class="btn ghost" type="button" id="iMove">${tr('Áthelyezés')}</button><button class="btn ghost" type="button" id="iDel">${tr('Lebontás')}</button>` : ''}
     <button class="btn ghost" type="button" id="iClose">${tr('Bezárás')}</button></div>`;
   $('iClose').onclick = hideInfo;
