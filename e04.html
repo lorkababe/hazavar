@@ -1894,16 +1894,17 @@ buildRoadLayer = function (fast) {
 };
 
 // ---------- minijátékok: Kalandok ----------
-// naponta egyszer jár jutalom minden játékért, de gyakorolni bármikor lehet
+// minden kaland naponta egyszer játszható végig, és egyszer ad jutalmat
 const MINI = [
-  { id: 'muhi', name: 'Védd a Sajó hídját!', img: 'e04_ikon_kalakapont', sub: 'Ügyességi játék, 40 másodperc', rew: 'Pénz és Tudás' },
-  { id: 'julianus', name: 'Julianus barát útja', img: 'e03_ikon_idovonal', sub: 'Döntős kaland, 4 lépés', rew: 'Tudás és Korona' },
+  { id: 'muhi', name: 'Védd a Sajó hídját!', img: 'e04_ikon_kalakapont', sub: 'Ügyességi játék, 45 másodperc', rew: 'Pénz és Tudás' },
+  { id: 'julianus', name: 'Julianus barát útja', img: 'e03_ikon_idovonal', sub: 'Útijáték kockával, párosítóval és bújócskával', rew: 'Tudás és Korona' },
   { id: 'laszlo', name: 'László és a kun', soon: true, sub: 'Hamarosan' },
   { id: 'bulla', name: 'Az Aranybulla pecsétje', soon: true, sub: 'Hamarosan' },
   { id: 'gesta', name: 'A Gesta szerkesztője', soon: true, sub: 'Hamarosan' }
 ];
-function miniDay() { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {} }; return S.mini; }
+function miniDay() { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {}, paid: {} }; S.mini.paid = S.mini.paid || {}; return S.mini; }
 function miniFresh() { const m = miniDay(); return MINI.some(g => !g.soon && !m.done[g.id]); }
+function miniStart(id) { const m = miniDay(); if (m.done[id]) { toast('Ezt a kalandot ma már végigjátszottad. Holnap újra jöhet!'); showMini(); return false; } m.done[id] = true; save(); return true; }
 (function miniBtn() {
   if (document.getElementById('btnMini')) return;
   const b = document.createElement('button'); b.className = 'ibtn wood'; b.type = 'button'; b.id = 'btnMini'; b.setAttribute('aria-label', tr('Kalandok'));
@@ -1920,153 +1921,268 @@ function miniFresh() { const m = miniDay(); return MINI.some(g => !g.soon && !m.
   .mini-row.soon{opacity:.55}
   .mini-row small{display:block;color:var(--ink-soft);font-weight:700}
   #mgWrap{position:relative;margin-top:10px;border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 3px rgba(63,38,20,.5);touch-action:none}
-  #mgCv{display:block;width:100%;height:340px;cursor:crosshair}
-  .mg-hud{display:flex;justify-content:space-between;gap:10px;font-weight:900;font-size:17px;margin-top:8px}
-  .jul-opts{display:grid;gap:8px;margin-top:12px}
+  #mgCv{display:block;width:100%;height:min(460px,56vh);cursor:crosshair}
+  .mg-hud{display:flex;justify-content:space-between;gap:10px;font-weight:900;font-size:17px;margin-top:8px;flex-wrap:wrap}
+  .mg-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;font-size:14px;font-weight:700}
+  .mg-legend span{display:inline-flex;align-items:center;gap:6px}
+  .mg-legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .jul-stats{display:flex;gap:10px;flex-wrap:wrap;font-weight:900;font-size:17px;margin:8px 0}
+  .jul-stats span{background:rgba(255,244,223,.7);border-radius:12px;padding:4px 10px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
+  .jul-map{width:100%;max-width:560px;margin-left:auto!important;margin-right:auto!important;height:auto;display:block;margin:6px 0 4px;border-radius:14px;background:#EAD3A4;box-shadow:inset 0 0 0 2px rgba(138,90,43,.3)}
+  .jul-opts{display:grid;gap:8px;margin-top:10px}
   .jul-opts .btn{justify-content:flex-start;text-align:left;white-space:normal;min-height:48px;height:auto;padding:10px 14px}
-  .jul-step{font-weight:800;color:var(--ochre-dark);letter-spacing:.08em;font-size:12px}`;
+  .jul-opts .btn small{display:block;font-weight:700;opacity:.8}
+  .jul-dice{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:12px;background:#FFF8EA;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 0 0 3px #8A5A2B;font:900 30px Nunito,sans-serif;color:#3A2410;margin-right:10px;vertical-align:middle}
+  .jul-res{margin-top:10px;font-weight:800;min-height:1.4em}
+  .mem{width:100%;max-width:440px;margin-left:auto;margin-right:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .mem button{aspect-ratio:1;border:0;border-radius:14px;font:900 clamp(15px,3.6vw,22px) Nunito,sans-serif;cursor:pointer;background:#8A5A2B;color:#FFF1D8;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+  .mem button.up{background:#FFF8EA;color:#3A2410}
+  .mem button.ok{background:#CFE5B4;color:#2F6B2A}
+  .mem button .pic{font-size:clamp(26px,6vw,40px)}
+  .hide-bar{position:relative;height:34px;border-radius:17px;background:#C9472F;margin:14px 0 8px;overflow:hidden;box-shadow:inset 0 0 0 3px rgba(63,38,20,.5)}
+  .hide-bar .zone{position:absolute;top:0;bottom:0;background:#6FAE4A}
+  .hide-bar .mk{position:absolute;top:-4px;bottom:-4px;width:8px;margin-left:-4px;border-radius:4px;background:#FFF1D8;box-shadow:0 0 0 2px #3A2410}`;
   document.head.appendChild(st);
   setInterval(() => { try { const n = document.getElementById('bMini'); if (n && S) n.hidden = !miniFresh(); } catch (e) {} }, 2000);
 })();
-function miniGive(id, rew, why) {
-  const m = miniDay(); if (m.done[id]) return false; m.done[id] = true;
-  Object.entries(rew).forEach(([k, v]) => { if (k === 'korona') S.korona = (S.korona == null ? 25 : S.korona) + v; else S.res[k] = (S.res[k] || 0) + v; });
+function miniGive(id, rew) {
+  const m = miniDay(); if (m.paid[id]) return false; m.paid[id] = true;
+  Object.entries(rew).forEach(([k, v]) => { if (!v) return; if (k === 'korona') S.korona = (S.korona == null ? 25 : S.korona) + v; else S.res[k] = (S.res[k] || 0) + v; });
   save(); hud(); return true;
 }
 function miniRewText(rew) { return Object.entries(rew).filter(([, v]) => v > 0).map(([k, v]) => '+' + v + ' ' + tr(k === 'korona' ? 'Korona' : (RES[k] && RES[k].name) || k)).join(', '); }
 function showMini() {
   hideInfo(); closeDrawer(); const m = miniDay();
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr('Kalandok IV. Béla korából')}</h2>
-    <p>${tr('Minden kalandért naponta egyszer jár jutalom. Utána is játszhatsz, csak akkor már a dicsőségért.')}</p>
+    <p>${tr('Minden kalandot naponta egyszer lehet végigjátszani, és egyszer jár érte jutalom. Ha elindítod, a mai menet elkezdődik, úgyhogy csak akkor kezdj bele, ha van rá pár perced.')}</p>
     <div class="mini-list">${MINI.map(g => `<div class="mini-row ${g.soon ? 'soon' : ''}">${g.img ? `<img src="img/${g.img}.png?v=2611095" alt="">` : '<span style="width:52px"></span>'}
       <div class="grow"><b>${tr(g.name)}</b><small>${tr(g.sub)}${g.rew ? ' · ' + tr(g.rew) : ''}</small></div>
-      ${g.soon ? '' : `<button class="btn ${m.done[g.id] ? 'ghost' : 'coral'}" type="button" data-mg="${g.id}">${tr(m.done[g.id] ? 'Még egyszer' : 'Indulás')}</button>`}</div>`).join('')}</div></div>`, '', 'mini');
+      ${g.soon ? '' : m.done[g.id] ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" data-mg="${g.id}">${tr('Indulás')}</button>`}</div>`).join('')}</div></div>`, '', 'mini');
   $('modalRoot').querySelectorAll('[data-mg]').forEach(b => b.onclick = () => (b.dataset.mg === 'muhi' ? playMuhi : playJulianus)());
+}
+function miniEnd(eyebrow, title, lines, fact) {
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(eyebrow)}</span><h2>${title}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
+    <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr(fact)}</p></div>
+    <div class="row"><button class="btn coral" type="button" id="mgBack">${tr('Vissza a kalandokhoz')}</button></div></div>`, '', 'miniend');
+  $('mgBack').onclick = showMini;
 }
 
 // ---------- 1. Védd a Sajó hídját! ----------
-// a tatár lovasok balról jönnek át a hídon, koppints rájuk, és a vízbe borulnak
+// öt sávos széles híd, ötféle szereplő; a saját grafika ha megvan, betöltődik, addig rajzolt figura áll a helyén
+const MG_KIND = {
+  konnyu: { name: 'Könnyűlovas', img: 'e04_mg_konnyulovas', v: 115, hp: 1, pts: 10, col: '#B8884F', w: 6 },
+  nehez: { name: 'Páncélos', img: 'e04_mg_pancelos', v: 42, hp: 3, pts: 30, col: '#7A7F86', w: 2, from: 8 },
+  ijasz: { name: 'Íjász', img: 'e04_mg_ijasz', v: 70, hp: 1, pts: 15, col: '#8E5A9B', w: 3, from: 5, zig: true },
+  zaszlos: { name: 'Zászlóvivő', img: 'e04_mg_zaszlos', v: 80, hp: 1, pts: 40, col: '#F2C14E', w: 1, from: 12, slow: true },
+  futar: { name: 'Magyar futár', img: 'e04_mg_futar', v: 95, hp: 1, pts: 0, col: '#C9472F', w: 1.4, from: 6, friend: true }
+};
+const MG_PIC = {};
+function mgPic(name) { if (!(name in MG_PIC)) { const im = new Image(); im.onerror = () => { MG_PIC[name] = null; }; im.onload = () => { MG_PIC[name] = im; }; MG_PIC[name] = undefined; im.src = 'img/' + name + '.png?v=2611095'; } return MG_PIC[name] || null; }
 function playMuhi() {
+  if (!miniStart('muhi')) return;
+  Object.values(MG_KIND).forEach(k => mgPic(k.img)); mgPic('e04_mg_sajo_hid');
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('MUHI, 1241. ÁPRILIS')}</span><h2>${tr('Védd a Sajó hídját!')}</h2>
-    <p>${tr('Kálmán herceg és Ugrin érsek őrzi a hidat. Koppints a lovasokra, mielőtt átérnek. Három lovas átjuthat, a negyediknél vége.')}</p>
+    <p>${tr('Koppints a tatár lovasokra, mielőtt átérnek. A páncélost háromszor kell eltalálni, a zászlóvivő lelassít mindenkit. A piros köpenyes futár a mieink közül való, őt ne bántsd, mert ha átér, hoz egy életet. Három lovas átjuthat, a negyediknél vége.')}</p>
+    <div class="mg-legend">${Object.values(MG_KIND).map(k => `<span><i style="background:${k.col}"></i>${tr(k.name)}</span>`).join('')}</div>
     <div id="mgWrap"><canvas id="mgCv"></canvas></div>
-    <div class="mg-hud"><span id="mgScore">${tr('Vízbe borult')} 0</span><span id="mgLife">❤❤❤</span><span id="mgTime">40</span></div>
+    <div class="mg-hud"><span id="mgScore">0 ${tr('pont')}</span><span id="mgCombo"></span><span id="mgLife">❤❤❤</span><span id="mgTime">45</span></div>
     <div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="mgGo">${tr('Kezdjük!')}</button></div></div>`, '', 'muhi');
-  const cv2 = $('mgCv'), g = cv2.getContext('2d');
-  let Wc = 0, Hc = 0, run = false, t0 = 0, last = 0, spawnT = 0, score = 0, life = 3, riders = [], fx = [], raf = 0, ended = false;
+  const cv2 = $('mgCv'), g = cv2.getContext('2d'), LANES = 5, DUR = 45;
+  let Wc = 0, Hc = 0, run = false, t0 = 0, last = 0, spawnT = 0, score = 0, life = 3, combo = 0, best = 0, slowT = 0, riders = [], fx = [], raf = 0, ended = false, hits = 0, friends = 0;
   const fit = () => { const r = cv2.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); Wc = r.width; Hc = r.height; cv2.width = Wc * dp; cv2.height = Hc * dp; g.setTransform(dp, 0, 0, dp, 0, 0); };
   fit();
-  const by = () => Hc * 0.5; // a híd közepe
+  const bTop = () => Hc * 0.2, bBot = () => Hc * 0.86, laneY = n => bTop() + (bBot() - bTop()) * (n + 0.62) / LANES, sz = () => Math.max(0.8, Math.min(1.35, Hc / 380));
   function scene() {
-    // ég, part, folyó, híd
-    const sky = g.createLinearGradient(0, 0, 0, Hc); sky.addColorStop(0, '#F6D9A8'); sky.addColorStop(1, '#E8B978'); g.fillStyle = sky; g.fillRect(0, 0, Wc, Hc);
-    g.fillStyle = '#6F9A3E'; g.fillRect(0, 0, Wc, Hc * 0.3); g.fillRect(0, Hc * 0.7, Wc, Hc * 0.3);
-    const wv = g.createLinearGradient(0, Hc * 0.3, 0, Hc * 0.7); wv.addColorStop(0, '#4E8FB5'); wv.addColorStop(1, '#2F6E93'); g.fillStyle = wv; g.fillRect(0, Hc * 0.3, Wc, Hc * 0.4);
+    const bg = mgPic('e04_mg_sajo_hid');
+    if (bg) { const s = Math.max(Wc / bg.naturalWidth, Hc / bg.naturalHeight); g.drawImage(bg, (Wc - bg.naturalWidth * s) / 2, (Hc - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s); return; }
+    g.fillStyle = '#6F9A3E'; g.fillRect(0, 0, Wc, Hc);
+    const wv = g.createLinearGradient(0, Hc * 0.1, 0, Hc * 0.96); wv.addColorStop(0, '#4E8FB5'); wv.addColorStop(1, '#2F6E93'); g.fillStyle = wv; g.fillRect(0, Hc * 0.1, Wc, Hc * 0.86);
     g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2; const tt = performance.now() / 600;
-    for (let k = 0; k < 9; k++) { const y = Hc * 0.33 + k * Hc * 0.04, off = (tt * 30 + k * 47) % 80; g.beginPath(); for (let x = -80 + off; x < Wc; x += 80) { g.moveTo(x, y); g.quadraticCurveTo(x + 10, y - 4, x + 20, y); } g.stroke(); }
-    // híd: deszkák
-    g.fillStyle = '#8A5A2B'; g.fillRect(0, by() - 26, Wc, 52); g.strokeStyle = '#5E3A18'; g.lineWidth = 2;
-    for (let x = 0; x < Wc; x += 18) { g.beginPath(); g.moveTo(x, by() - 26); g.lineTo(x, by() + 26); g.stroke(); }
-    g.fillStyle = '#5E3A18'; g.fillRect(0, by() - 30, Wc, 5); g.fillRect(0, by() + 25, Wc, 5);
-    // a magyar tábor jobbra: sátrak
-    for (let k = 0; k < 3; k++) { const x = Wc - 40, y = Hc * 0.08 + k * 18; g.fillStyle = k % 2 ? '#C9472F' : '#FFF1D8'; g.beginPath(); g.moveTo(x - 22, y + 34); g.lineTo(x, y); g.lineTo(x + 22, y + 34); g.closePath(); g.fill(); }
-    g.fillStyle = '#C9472F'; g.fillRect(Wc - 14, by() - 60, 4, 34); g.fillStyle = '#FFF1D8'; g.fillRect(Wc - 10, by() - 60, 16, 8); g.fillStyle = '#2F6B2A'; g.fillRect(Wc - 10, by() - 52, 16, 6);
+    [Hc * 0.13, Hc * 0.16, Hc * 0.9, Hc * 0.93].forEach((y, k) => { const off = (tt * 30 + k * 47) % 80; g.beginPath(); for (let x = -80 + off; x < Wc; x += 80) { g.moveTo(x, y); g.quadraticCurveTo(x + 10, y - 4, x + 20, y); } g.stroke(); });
+    // széles fahíd, deszkák és sávok
+    g.fillStyle = '#8A5A2B'; g.fillRect(0, bTop(), Wc, bBot() - bTop());
+    g.strokeStyle = 'rgba(70,40,16,.55)'; g.lineWidth = 2; for (let x = 0; x < Wc; x += 22) { g.beginPath(); g.moveTo(x, bTop()); g.lineTo(x, bBot()); g.stroke(); }
+    g.strokeStyle = 'rgba(255,230,180,.12)'; for (let n = 1; n < LANES; n++) { const y = bTop() + (bBot() - bTop()) * n / LANES; g.beginPath(); g.moveTo(0, y); g.lineTo(Wc, y); g.stroke(); }
+    g.fillStyle = '#5E3A18'; g.fillRect(0, bTop() - 7, Wc, 8); g.fillRect(0, bBot() - 1, Wc, 8);
+    for (let x = 10; x < Wc; x += 60) { g.fillRect(x, bTop() - 16, 6, 16); g.fillRect(x, bBot(), 6, 14); }
+    // a magyar tábor a jobb parton
+    g.fillStyle = 'rgba(111,154,62,.95)'; g.fillRect(Wc - 46, bTop() - 7, 46, bBot() - bTop() + 14);
+    for (let k = 0; k < 4; k++) { const x = Wc - 24, y = bTop() + k * (bBot() - bTop()) / 4 + 6; g.fillStyle = k % 2 ? '#C9472F' : '#FFF1D8'; g.beginPath(); g.moveTo(x - 18, y + 30); g.lineTo(x, y); g.lineTo(x + 18, y + 30); g.closePath(); g.fill(); }
   }
   function drawRider(r) {
-    g.save(); g.translate(r.x, r.y + Math.sin(r.ph) * 2);
+    const k = MG_KIND[r.kind], s = sz(); g.save(); g.translate(r.x, r.y + Math.sin(r.ph) * 2);
     if (r.fall) { g.rotate(r.fall * 0.9); g.globalAlpha = Math.max(0, 1 - r.fall / 1.4); }
-    g.fillStyle = '#6B4A2E'; g.beginPath(); g.ellipse(0, 6, 17, 9, 0, 0, 7); g.fill(); // ló
-    g.fillRect(12, -4, 8, 10); g.beginPath(); g.ellipse(22, -6, 6, 4, -0.5, 0, 7); g.fill();
-    g.strokeStyle = '#4A3220'; g.lineWidth = 3; [-11, -5, 6, 12].forEach((lx, n) => { g.beginPath(); g.moveTo(lx, 12); g.lineTo(lx + Math.sin(r.ph + n) * 3, 22); g.stroke(); });
-    g.fillStyle = '#B8884F'; g.fillRect(-4, -14, 10, 14); // lovas
-    g.fillStyle = '#E8C9A0'; g.beginPath(); g.arc(1, -19, 5, 0, 7); g.fill();
-    g.fillStyle = '#3F2614'; g.beginPath(); g.moveTo(-6, -21); g.lineTo(1, -32); g.lineTo(8, -21); g.closePath(); g.fill(); // csúcsos sapka
-    g.strokeStyle = '#3F2614'; g.lineWidth = 2; g.beginPath(); g.arc(-8, -10, 7, -1.2, 1.2); g.stroke(); // íj
-    if (r.big) { g.fillStyle = '#F2C14E'; g.beginPath(); g.arc(1, -34, 3, 0, 7); g.fill(); }
+    const pic = mgPic(k.img);
+    if (pic) { const h = 62 * s * (r.kind === 'nehez' ? 1.15 : 1), w = h * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, -w / 2, -h + 20 * s, w, h); }
+    else {
+      g.scale(s * (r.kind === 'nehez' ? 1.15 : 1), s * (r.kind === 'nehez' ? 1.15 : 1));
+      g.fillStyle = r.kind === 'futar' ? '#E8D8C0' : '#6B4A2E'; g.beginPath(); g.ellipse(0, 6, 17, 9, 0, 0, 7); g.fill();
+      g.fillRect(12, -4, 8, 10); g.beginPath(); g.ellipse(22, -6, 6, 4, -0.5, 0, 7); g.fill();
+      g.strokeStyle = 'rgba(40,26,14,.8)'; g.lineWidth = 3; [-11, -5, 6, 12].forEach((lx, n) => { g.beginPath(); g.moveTo(lx, 12); g.lineTo(lx + Math.sin(r.ph + n) * 3, 22); g.stroke(); });
+      g.fillStyle = k.col; g.fillRect(-5, -15, 12, 15);
+      g.fillStyle = '#E8C9A0'; g.beginPath(); g.arc(1, -20, 5, 0, 7); g.fill();
+      if (r.kind === 'futar') { g.fillStyle = '#2F6B2A'; g.fillRect(-4, -27, 10, 4); g.fillStyle = '#FFF1D8'; g.fillRect(-4, -23, 10, 2); }
+      else if (r.kind === 'nehez') { g.fillStyle = '#5B6068'; g.beginPath(); g.arc(1, -21, 6.5, Math.PI, 0); g.fill(); g.fillRect(-1, -30, 4, 6); }
+      else { g.fillStyle = '#3F2614'; g.beginPath(); g.moveTo(-6, -22); g.lineTo(1, -33); g.lineTo(8, -22); g.closePath(); g.fill(); }
+      if (r.kind === 'ijasz') { g.strokeStyle = '#3F2614'; g.lineWidth = 2; g.beginPath(); g.arc(-9, -10, 8, -1.2, 1.2); g.stroke(); }
+      if (r.kind === 'zaszlos') { g.fillStyle = '#3F2614'; g.fillRect(-12, -46, 3, 40); g.fillStyle = '#F2C14E'; g.beginPath(); g.moveTo(-9, -46); g.lineTo(10, -40); g.lineTo(-9, -34); g.closePath(); g.fill(); }
+    }
     g.restore();
+    if (r.hp > 1 && !r.fall) for (let n = 0; n < r.hp; n++) { g.fillStyle = '#FFF1D8'; g.beginPath(); g.arc(r.x - 8 + n * 8, r.y - 50 * s, 3.2, 0, 7); g.fill(); }
   }
+  function pickKind(el) { const pool = Object.entries(MG_KIND).filter(([, k]) => !k.from || el >= k.from); let t = Math.random() * pool.reduce((a, [, k]) => a + k.w, 0); for (const [id, k] of pool) { t -= k.w; if (t <= 0) return id; } return 'konnyu'; }
   function frame(now) {
     if (!document.getElementById('mgCv')) { cancelAnimationFrame(raf); return; }
     const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; scene();
     if (run) {
-      const el = (now - t0) / 1000, left = Math.max(0, 40 - el);
-      spawnT -= dt; if (spawnT <= 0) { const lane = [-14, 0, 14][Math.floor(Math.random() * 3)]; const big = Math.random() < 0.12 && el > 10; riders.push({ x: -30, y: by() + lane, v: (55 + el * 3.2 + Math.random() * 25) * (big ? 0.7 : 1), ph: Math.random() * 6, hp: big ? 2 : 1, big }); spawnT = Math.max(0.42, 1.25 - el * 0.022) * (0.7 + Math.random() * 0.6); }
-      riders.forEach(r => { if (r.fall) { r.fall += dt * 2; r.y += dt * 90; return; } r.x += r.v * dt; r.ph += dt * 12; if (r.x > Wc - 30) { r.gone = true; life--; fx.push({ x: Wc - 50, y: r.y - 30, t: 0, txt: tr('Átjutott!'), c: '#C9472F' }); } });
+      const el = (now - t0) / 1000, left = Math.max(0, DUR - el), slow = slowT > 0 ? 0.45 : 1; slowT -= dt;
+      spawnT -= dt; if (spawnT <= 0) { const kind = pickKind(el), k = MG_KIND[kind], lane = Math.floor(Math.random() * LANES); riders.push({ kind, x: -30, y: laneY(lane), lane, ty: laneY(lane), v: k.v * (1 + el / 55) * (0.85 + Math.random() * 0.3), ph: Math.random() * 6, hp: k.hp, zt: 1 + Math.random() }); spawnT = Math.max(0.36, 1.15 - el * 0.018) * (0.7 + Math.random() * 0.6); }
+      riders.forEach(r => {
+        if (r.fall) { r.fall += dt * 2; r.y += dt * 90; return; }
+        const k = MG_KIND[r.kind]; r.x += r.v * dt * (k.friend ? 1 : slow); r.ph += dt * 12;
+        if (k.zig) { r.zt -= dt; if (r.zt <= 0) { r.lane = Math.max(0, Math.min(LANES - 1, r.lane + (Math.random() < 0.5 ? -1 : 1))); r.ty = laneY(r.lane); r.zt = 0.8 + Math.random(); } r.y += (r.ty - r.y) * Math.min(1, dt * 5); }
+        if (r.x > Wc - 40) { r.gone = true; if (k.friend) { friends++; if (life < 3) life++; score += 20; fx.push({ x: Wc - 70, y: r.y - 34, t: 0, txt: tr('Hírt hozott! +1 élet'), c: '#CFE5B4' }); } else { life--; combo = 0; fx.push({ x: Wc - 60, y: r.y - 34, t: 0, txt: tr('Átjutott!'), c: '#FF8A6E' }); } }
+      });
       riders = riders.filter(r => !r.gone && !(r.fall && r.fall > 1.4));
-      $('mgTime').textContent = Math.ceil(left); $('mgLife').textContent = '❤'.repeat(Math.max(0, life)) + '♡'.repeat(Math.max(0, 3 - life)); $('mgScore').textContent = tr('Vízbe borult') + ' ' + score;
+      $('mgTime').textContent = Math.ceil(left); $('mgLife').textContent = '❤'.repeat(Math.max(0, life)) + '♡'.repeat(Math.max(0, 3 - life)); $('mgScore').textContent = score + ' ' + tr('pont'); $('mgCombo').textContent = combo >= 3 ? trf('{0}x sorozat', combo) : '';
       if (life < 0 || left <= 0) finish(left <= 0 && life >= 0);
     }
     riders.forEach(drawRider);
+    if (slowT > 0) { g.fillStyle = 'rgba(242,193,78,.12)'; g.fillRect(0, 0, Wc, Hc); }
     fx.forEach(f => { f.t += dt; g.globalAlpha = Math.max(0, 1 - f.t); g.font = '900 18px Nunito, sans-serif'; g.textAlign = 'center'; g.lineWidth = 4; g.strokeStyle = '#3A2618'; g.strokeText(f.txt, f.x, f.y - f.t * 30); g.fillStyle = f.c; g.fillText(f.txt, f.x, f.y - f.t * 30); g.globalAlpha = 1; });
     fx = fx.filter(f => f.t < 1);
     raf = requestAnimationFrame(frame);
   }
   cv2.addEventListener('pointerdown', e => {
-    if (!run) return; const r0 = cv2.getBoundingClientRect(), x = e.clientX - r0.left, y = e.clientY - r0.top;
-    let best = null, bd = 34; riders.forEach(r => { if (r.fall) return; const d = Math.hypot(r.x - x, r.y - 6 - y); if (d < bd) { bd = d; best = r; } });
-    if (!best) return; best.hp--;
-    if (best.hp <= 0) { best.fall = 0.01; score++; fx.push({ x: best.x, y: best.y - 30, t: 0, txt: tr('Csobb!'), c: '#7FC4E8' }); try { sfxClick(); } catch (er) {} }
-    else fx.push({ x: best.x, y: best.y - 30, t: 0, txt: tr('Még egyet!'), c: '#F2C14E' });
+    if (!run) return; const r0 = cv2.getBoundingClientRect(), x = e.clientX - r0.left, y = e.clientY - r0.top, s = sz();
+    let hit = null, bd = 36 * s; riders.forEach(r => { if (r.fall) return; const d = Math.hypot(r.x - x, r.y - 14 * s - y); if (d < bd) { bd = d; hit = r; } });
+    if (!hit) { combo = 0; return; }
+    const k = MG_KIND[hit.kind];
+    if (k.friend) { hit.fall = 0.01; life--; combo = 0; fx.push({ x: hit.x, y: hit.y - 34, t: 0, txt: tr('Jaj, ő a mienk volt!'), c: '#FF8A6E' }); return; }
+    hit.hp--; if (hit.hp > 0) { fx.push({ x: hit.x, y: hit.y - 34, t: 0, txt: tr('Kong a páncél!'), c: '#F2C14E' }); return; }
+    hit.fall = 0.01; hits++; combo++; best = Math.max(best, combo); const pts = Math.round(k.pts * (1 + Math.min(combo, 10) * 0.1)); score += pts;
+    if (k.slow) slowT = 3;
+    fx.push({ x: hit.x, y: hit.y - 34, t: 0, txt: k.slow ? tr('Elesett a zászló! Lassulnak!') : '+' + pts, c: k.slow ? '#F2C14E' : '#7FC4E8' }); try { sfxClick(); } catch (er) {}
   });
   function finish(won) {
     if (ended) return; ended = true; run = false;
-    const rew = { penz: Math.min(600, score * 20), tudas: score >= 25 ? 2 : score >= 12 ? 1 : 0 };
+    const rew = { penz: Math.min(800, Math.round(score * 1.2)), tudas: score >= 900 ? 3 : score >= 450 ? 2 : score >= 150 ? 1 : 0 };
     const got = miniGive('muhi', rew);
-    const verdict = won ? (score >= 25 ? 'Kálmán herceg megveregeti a vállad. Ugrin érsek is, pedig ő ritkán veregeti.' : 'Tartott a híd. A tatárok dühösen néznek a túlpartról.') : 'Átjutottak a hídon. Most már érted, miért kellett volna a gázlót is figyelni.';
-    $('modalRoot').querySelector('.inner').innerHTML = `${X_BTN}<span class="eyebrow">${tr('A CSATA UTÁN')}</span><h2>${trf('{0} lovas a vízben', score)}</h2>
-      <p>${tr(verdict)}</p>
-      <p><b>${got ? tr('Jutalom') + ': ' + (miniRewText(rew) || tr('most semmi, de legközelebb')) : tr('A mai jutalmat már megkaptad. Ez most a dicsőségért ment.')}</b></p>
-      <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('1241. április 10-én éjjel a mongolok megpróbáltak átkelni a Sajó hídján. Kálmán herceg és Ugrin érsek visszaverte őket, a tábor pedig megnyugodott. Hajnalban a mongolok kőhajítókkal tisztították meg a hidat, egy másik csapatuk délebbre a gázlón kelt át, és bekerítették a magyar szekértábort. A csata vereséggel végződött, IV. Béla elmenekült.')}</p></div>
-      <div class="row"><button class="btn coral" type="button" id="mgAgain">${tr('Még egyszer')}</button><button class="btn ghost" type="button" id="mgBack">${tr('Vissza a kalandokhoz')}</button></div>`;
-    const c = $('modalRoot').querySelector('.close'); if (c) c.onclick = closeModal;
-    $('mgAgain').onclick = playMuhi; $('mgBack').onclick = showMini;
+    const verdict = won ? (score >= 900 ? 'Kálmán herceg megveregeti a vállad. Ugrin érsek is, pedig ő ritkán veregeti.' : 'Tartott a híd. A tatárok dühösen néznek a túlpartról.') : 'Átjutottak a hídon. Most már érted, miért kellett volna a gázlót is figyelni.';
+    miniEnd('A CSATA UTÁN', trf('{0} pont', score), [tr(verdict), trf('{0} lovas a vízben, a leghosszabb sorozat {1}, {2} futár ért át.', hits, best, friends), `<b>${got ? tr('Jutalom') + ': ' + (miniRewText(rew) || tr('most semmi')) : ''}</b>`, tr('Holnap újra megvédheted a hidat.')],
+      '1241. április 10-én éjjel a mongolok megpróbáltak átkelni a Sajó hídján. Kálmán herceg és Ugrin érsek visszaverte őket, a tábor pedig megnyugodott. Hajnalban a mongolok kőhajítókkal tisztították meg a hidat, egy másik csapatuk délebbre a gázlón kelt át, és bekerítették a magyar szekértábort. A csata vereséggel végződött, IV. Béla elmenekült.');
   }
   $('mgGo').onclick = () => { $('mgGo').hidden = true; run = true; t0 = performance.now(); spawnT = 0.3; };
   raf = requestAnimationFrame(frame);
 }
 
 // ---------- 2. Julianus barát útja ----------
-// négy döntés, mindegyiknél egy helyes, ami a valódi útvonalat követi
-const JUL = [
-  { q: 'Esztergom, 1235. Négy domonkos barát indul megkeresni a keleten maradt magyarokat, Magna Hungariát. Merre induljanak?', o: [
-    ['Kelet felé, Konstantinápolyon át, aztán hajóval tovább', 1, 'Pontosan így. Konstantinápolyon át hajóztak a Fekete-tenger túlsó partjára, Matrikába.'],
-    ['Nyugat felé, hátha a Föld gömbölyű', 0, 'Lehet, hogy az, de ezt Kolumbusz csak 257 év múlva próbálja ki. Fordulj vissza.'],
-    ['Maradjanak otthon, és írjanak levelet', 0, 'Kedves gondolat, de Magna Hungariának nincs postacíme.']] },
-  { q: 'A sztyeppén nagy a nyomor. Két társ hazafordul, Gellért barát megbetegszik és meghal. Julianus egyedül maradt. Mit tegyen?', o: [
-    ['Megy tovább egyedül, akár koldulva is', 1, 'Ezt tette. Egy muszlim pap szolgájaként utazott tovább, hogy életben maradjon.'],
-    ['Leül, és megvárja, hogy Magna Hungaria jöjjön érte', 0, 'Egy egész ország ritkán jön el valakiért. Indulás!'],
-    ['Hazaszalad a többiek után', 0, 'Érthető, de akkor ez a kaland itt véget ér, és senki nem tudja meg, mi van keleten.']] },
-  { q: 'A Volga mentén, 1236-ban Julianus emberekkel találkozik, akik magyarul beszélnek! Hogyan ismerik fel egymást?', o: [
-    ['Megértik egymás beszédét, és mesélnek a közös eredetről', 1, 'Így történt. Nagyon megörültek neki, és elmondták, hogy hallottak a nyugatra költözött testvéreikről.'],
-    ['Mindenki elénekli a kedvenc slágerét', 0, 'Szép lenne, de 1236-ban még nincs rádió. Beszélgetni kell.'],
-    ['Megmutatja nekik a személyijét', 0, 'Személyi igazolvány még sehol nincs a világon. A nyelv a legjobb igazolvány.']] },
-  { q: 'A keleti magyarok figyelmeztetik, hogy a közelben egy hatalmas tatár sereg gyülekezik, és nyugatra tart. Mit tegyen Julianus?', o: [
-    ['Siet haza, és figyelmezteti IV. Bélát', 1, 'Ezt tette. 1237-ben hazaért, és elmondta a királynak. Egy második útján már a tatár kán fenyegető levelét is hozta.'],
-    ['Marad, és megpróbálja lebeszélni a tatárokat', 0, 'Bátor, de a tatárok nem a beszélgetés kedvéért jöttek.'],
-    ['Nem szól senkinek, nehogy elrontsa a hangulatot', 0, 'A hangulat így is elromlik 1241-ben, csak akkor felkészületlenül. Szólni kell!']] }
+// útijáték: elemózsia, erő és ezüst; kockadobás, egy szópárosító a Volgánál és egy bújócska hazafelé
+const JST = [
+  { id: 'esz', name: 'Esztergom', x: 40, y: 92 }, { id: 'kon', name: 'Konstantinápoly', x: 150, y: 150 }, { id: 'mat', name: 'Matrika', x: 300, y: 112 },
+  { id: 'ala', name: 'Alánia', x: 380, y: 140 }, { id: 'szt', name: 'A sztyeppe', x: 470, y: 92 }, { id: 'vol', name: 'Magna Hungaria', x: 590, y: 48 }
 ];
-function playJulianus(step = 0, good = 0) {
-  if (step >= JUL.length) {
-    const rew = { tudas: good >= 4 ? 3 : good >= 2 ? 2 : 1, korona: good >= 4 ? 2 : 0 };
-    const got = miniGive('julianus', rew);
-    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('AZ ÚT VÉGE')}</span><h2>${trf('{0} jó döntés a négyből', good)}</h2>
-      <p>${tr(good >= 4 ? 'Julianus maga sem csinálta volna jobban. Mondjuk ő tényleg így csinálta.' : good >= 2 ? 'Hazaértél, igaz, kicsit kerülővel. A krónikás ezt nem írja le.' : 'Az út hosszabb lett a tervezettnél. De legalább sokat láttál.')}</p>
-      <p><b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : tr('A mai jutalmat már megkaptad. Ez most a tudásért ment.')}</b></p>
-      <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('Julianus domonkos szerzetes 1235-ben indult el, és 1236-ban a Volga mentén valóban magyarul beszélő népet talált. Hazatérve beszámolt a tatár veszélyről, ezt Riccardus barát jegyezte le. Második útján már nem jutott el hozzájuk, mert a mongolok közben elpusztították a vidéket.')}</p></div>
-      <div class="row"><button class="btn coral" type="button" id="jAgain">${tr('Újra az elejéről')}</button><button class="btn ghost" type="button" id="jBack">${tr('Vissza a kalandokhoz')}</button></div></div>`, '', 'julianus');
-    $('jAgain').onclick = () => playJulianus(); $('jBack').onclick = showMini; return;
+const JEV = [
+  { at: 1, text: 'Útonállók állják el az utat a hegyek között. Azt mondják, csak egy kis útivámot szednek. Nagyon nagy kést hoznak hozzá.', o: [
+    { t: 'Fizetek nekik', sub: '2 ezüst', cost: { ez: 2 }, ok: 'Elteszik az ezüstöt, és még jó utat is kívánnak. Udvarias útonállók.' },
+    { t: 'Elfutok a sűrűbe', sub: 'Kockadobás, 3 vagy több kell', dice: 3, win: 'Ügyes vagy, a bokrok közt eltűnsz.', lose: 'Megbotlasz egy gyökérben. Megúszod, de fáj.', pen: { ero: 1 } },
+    { t: 'Prédikálok nekik a jóságról', sub: 'Kockadobás, 5 vagy több kell', dice: 5, win: 'Elérzékenyülnek, és adnak egy kis kenyeret is!', gain: { el: 2 }, lose: 'Elalszanak a prédikáción, és megeszik a kenyered egy részét.', pen: { el: 1 } }] },
+  { at: 2, text: 'A Fekete-tengeren vihar kap el benneteket. A hajó recseg, a matrózok imádkoznak, a kapitány kiabál.', o: [
+    { t: 'Segítek evezni', sub: '1 erő, de hamarabb partot értek', cost: { ero: 1 }, gain: { el: 1 }, ok: 'Hamarabb partot értek, a hajós hálából ad egy kis aszalt halat.' },
+    { t: 'Lent maradok és imádkozom', sub: 'Kockadobás, 4 vagy több kell', dice: 4, win: 'A vihar elcsendesedik. Lehet, hogy az ima tette, lehet, hogy az időjárás.', lose: 'Tengeri betegség. Az elemózsia egy része a halaké lett.', pen: { el: 2 } }] },
+  { at: 3, text: 'Matrikában nagy piac van. Mindent lehet kapni, csak olcsón semmit.', o: [
+    { t: 'Kenyeret veszek', sub: '2 ezüst, +3 elemózsia', cost: { ez: 2 }, gain: { el: 3 }, ok: 'Megtömöd a tarisznyát. Most egy darabig nem éhezel.' },
+    { t: 'Alkudozom', sub: 'Kockadobás, 4 vagy több kell', dice: 4, win: 'Az árus feladja. Fél áron kapsz kenyeret és sajtot!', cost: { ez: 1 }, gain: { el: 4 }, lose: 'Az árus megsértődik, és elküld. Üres kézzel mész tovább.' },
+    { t: 'Nem költök, megyek tovább', sub: 'Az ezüst megmarad', ok: 'Az ezüst megmarad, a gyomrod korog.' }] },
+  { at: 4, text: 'A társaid nem bírják tovább. Ketten hazafordulnak, Gellért barát megbetegszik. Egyedül maradtál a nagy sztyeppén.', o: [
+    { t: 'Egy pap szolgájának állok, vele utazom', sub: 'Biztos út, de lassú', gain: { el: 2 }, ok: 'Így is történt! Julianus egy muszlim pap szolgájaként jutott tovább. A pap etet, cserébe te viszed a csomagját.' },
+    { t: 'Egyedül megyek tovább', sub: 'Kockadobás, 4 vagy több kell', dice: 4, win: 'Bátran nekivágsz, és rátalálsz egy karavánra.', lose: 'Eltévedsz a fűtengerben, napokig bolyongsz.', pen: { el: 2, ero: 1 } }] }
+];
+const JMEM = [['🐟', 'hal'], ['💧', 'víz'], ['✋', 'kéz'], ['👁️', 'szem'], ['🌳', 'fa'], ['🐎', 'ló']];
+function playJulianus() {
+  if (!miniStart('julianus')) return;
+  const st = { el: 6, ero: 3, ez: 4, pos: 0, log: [] };
+  const stats = () => `<div class="jul-stats"><span>🍞 ${tr('Elemózsia')} ${st.el}</span><span>❤ ${tr('Erő')} ${st.ero}</span><span>🪙 ${tr('Ezüst')} ${st.ez}</span></div>`;
+  const map = (from, to) => `<svg class="jul-map" viewBox="0 0 630 200" role="img" aria-label="${tr('Julianus útvonala')}">
+    <path d="${JST.map((p, n) => (n ? 'L' : 'M') + p.x + ' ' + p.y).join(' ')}" fill="none" stroke="#8A5A2B" stroke-width="4" stroke-dasharray="8 8"/>
+    ${JST.map((p, n) => `<circle cx="${p.x}" cy="${p.y}" r="${n === to ? 10 : 7}" fill="${n <= to ? '#C9472F' : '#FFF8EA'}" stroke="#3A2410" stroke-width="2"/><text x="${n === JST.length - 1 ? p.x + 12 : n === 0 ? p.x - 12 : p.x}" y="${p.y + (p.y > 120 ? 34 : -18)}" text-anchor="${n === JST.length - 1 ? 'end' : n === 0 ? 'start' : 'middle'}" font-family="Nunito,sans-serif" font-weight="900" font-size="22" fill="#3A2410">${tr(p.name)}</text>`).join('')}
+    <g id="julMk" transform="translate(${JST[from].x} ${JST[from].y})"><circle r="13" fill="#3A2410"/><text y="6" text-anchor="middle" font-size="16">🚶</text></g></svg>`;
+  const apply = (o, sign) => Object.entries(o || {}).forEach(([k, v]) => { st[k] = Math.max(0, st[k] + sign * v); });
+  function screen(html, from, to) {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('JULIANUS BARÁT ÚTJA, 1235')}</span><h2>${tr(JST[to].name)}</h2>${stats()}${map(from, to)}${html}</div>`, '', 'julianus');
+    if (from !== to) { const mk = document.getElementById('julMk'), a = JST[from], b = JST[to], t0 = performance.now(); const step = now => { const k = Math.min(1, (now - t0) / 700); if (!document.getElementById('julMk')) return; mk.setAttribute('transform', `translate(${a.x + (b.x - a.x) * k} ${a.y + (b.y - a.y) * k})`); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
   }
-  const s = JUL[step], opts = s.o.map((o, n) => [o, n]).sort(() => Math.random() - 0.5);
-  modal(`${X_BTN}<div class="inner"><span class="jul-step">${trf('{0}. ÁLLOMÁS A NÉGYBŐL', step + 1)}</span><h2>${tr('Julianus barát útja')}</h2>
-    <p>${tr(s.q)}</p><div class="jul-opts">${opts.map(([o, n]) => `<button class="btn ghost" type="button" data-jo="${n}">${tr(o[0])}</button>`).join('')}</div><p id="jAns" style="min-height:1.5em;font-weight:800"></p>
-    <div class="row"><button class="btn coral" type="button" id="jNext" hidden>${tr(step + 1 < JUL.length ? 'Tovább' : 'Az út vége')}</button></div></div>`, '', 'julianus');
-  let picked = false;
-  $('modalRoot').querySelectorAll('[data-jo]').forEach(b => b.onclick = () => {
-    if (picked) return; picked = true; const o = s.o[+b.dataset.jo];
-    b.classList.remove('ghost'); b.classList.add(o[1] ? 'teal' : 'coral');
-    $('jAns').textContent = tr(o[2]); $('jAns').style.color = o[1] ? 'var(--good)' : 'var(--bad)';
-    $('jNext').hidden = false; $('jNext').onclick = () => playJulianus(step + 1, good + o[1]);
-  });
+  function dead() { return st.ero <= 0 || st.el <= 0; }
+  function travel() {
+    const from = st.pos; st.pos++; st.el = Math.max(0, st.el - 1); // minden szakasz egy elemózsiába kerül
+    if (st.pos >= JST.length - 1) { volga(from); return; }
+    const ev = JEV.find(e => e.at === st.pos);
+    screen(`<p>${tr(ev.text)}</p><div class="jul-opts">${ev.o.map((o, n) => { const can = Object.entries(o.cost || {}).every(([k, v]) => st[k] >= v); return `<button class="btn ghost" type="button" data-jo="${n}" ${can ? '' : 'disabled'}>${tr(o.t)}<small>${tr(o.sub)}</small></button>`; }).join('')}</div><div class="jul-res" id="jRes"></div><div class="row"><button class="btn coral" type="button" id="jNext" hidden>${tr('Tovább')}</button></div>`, from, st.pos);
+    let used = false;
+    $('modalRoot').querySelectorAll('[data-jo]').forEach(b => b.onclick = () => {
+      if (used) return; used = true; const o = ev.o[+b.dataset.jo]; b.classList.remove('ghost'); b.classList.add('teal');
+      $('modalRoot').querySelectorAll('[data-jo]').forEach(x => x.disabled = true);
+      const done = (txt, good) => { $('jRes').innerHTML = txt; $('jRes').style.color = good ? 'var(--good)' : 'var(--bad)'; $('modalRoot').querySelector('.jul-stats').outerHTML = stats(); $('jNext').hidden = false; $('jNext').onclick = () => dead() ? fail() : travel(); };
+      if (!o.dice) { apply(o.cost, -1); apply(o.gain, 1); done(tr(o.ok), true); return; }
+      // kockadobás: pörög, aztán megáll
+      let n = 0; const res = $('jRes'); res.innerHTML = `<span class="jul-dice" id="jDie">1</span>`; const die = document.getElementById('jDie');
+      const spin = setInterval(() => { die.textContent = 1 + Math.floor(Math.random() * 6); if (++n > 12) { clearInterval(spin); const v = 1 + Math.floor(Math.random() * 6); die.textContent = v; const win = v >= o.dice;
+        if (win) { apply(o.cost, -1); apply(o.gain, 1); } else apply(o.pen, -1);
+        setTimeout(() => done(`<span class="jul-dice">${v}</span>${tr(win ? o.win : o.lose)}`, win), 250); } }, 70);
+    });
+  }
+  function volga(from) {
+    // szópárosító: a magyarul beszélő emberek tárgyakat mutatnak, te kimondod a nevüket
+    const cards = []; JMEM.forEach(([p, w], n) => { cards.push({ n, face: `<span class="pic">${p}</span>` }); cards.push({ n, face: tr(w) }); });
+    cards.sort(() => Math.random() - 0.5);
+    let open = [], found = 0, miss = 0, lock = false;
+    screen(`<p>${tr('A Volga mentén emberekkel találkozol, akik ismerősen beszélnek. Mutatnak valamit, és mondanak hozzá egy szót. Párosítsd a képet a szóval! Minden pár után jobban megbíznak benned. Nyolc tévedés után elfogy a türelmük.')}</p>
+      <div class="mem" id="mem">${cards.map((c, k) => `<button type="button" data-k="${k}" aria-label="${tr('Kártya')}">?</button>`).join('')}</div><div class="jul-res" id="jRes">${trf('Tévedés: {0} / 8', 0)}</div>`, from, JST.length - 1);
+    $('mem').querySelectorAll('button').forEach(b => b.onclick = () => {
+      const k = +b.dataset.k; if (lock || b.classList.contains('up') || b.classList.contains('ok')) return;
+      b.classList.add('up'); b.innerHTML = cards[k].face; open.push(k);
+      if (open.length < 2) return;
+      const [a, c] = open; open = [];
+      if (cards[a].n === cards[c].n) { [a, c].forEach(x => $('mem').querySelector(`[data-k="${x}"]`).classList.add('ok')); found++; if (found === JMEM.length) { st.trust = miss <= 2 ? 3 : miss <= 5 ? 2 : 1; setTimeout(home, 600); } return; }
+      miss++; $('jRes').textContent = trf('Tévedés: {0} / 8', miss); lock = true;
+      setTimeout(() => { [a, c].forEach(x => { const e = $('mem') && $('mem').querySelector(`[data-k="${x}"]`); if (e) { e.classList.remove('up'); e.textContent = '?'; } }); lock = false; if (miss >= 8) { st.trust = 0; home(); } }, 750);
+    });
+  }
+  function home() {
+    // hazafelé tatár felderítők: háromszor kell jókor lelapulni
+    let round = 0, caught = 0, pos = 0, dir = 1, raf = 0, zone = 0;
+    const msg = st.trust >= 3 ? 'Testvérként fogadnak! Elmondják, hogy a közelben hatalmas tatár sereg gyülekezik. Sietned kell haza, hogy szólj a királynak.' : st.trust ? 'Kicsit gyanakodva, de befogadnak. Figyelmeztetnek, hogy keletről tatár sereg közeledik. Sietned kell haza.' : 'Nem értitek egymást eléggé, de a tatárokról szóló hírt így is megérted. Sietned kell haza.';
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('HAZAFELÉ, 1237')}</span><h2>${tr('Bújj el a felderítők elől!')}</h2>${stats()}
+      <p>${tr(msg)}</p><p>${tr('Tatár felderítők járják a pusztát. Nyomd meg a Lapulj! gombot, amikor a jel a zöld sávban van. Háromszor kell sikerülnie.')}</p>
+      <div class="hide-bar"><div class="zone" id="hZone"></div><div class="mk" id="hMk"></div></div>
+      <div class="row"><button class="btn coral" type="button" id="hGo">${tr('Lapulj!')}</button></div><div class="jul-res" id="jRes">${trf('{0}. felderítő a háromból', 1)}</div></div>`, '', 'julianus');
+    const newZone = () => { const w = 22 - round * 4; zone = 10 + Math.random() * (80 - w); $('hZone').style.left = zone + '%'; $('hZone').style.width = w + '%'; return w; };
+    let zw = newZone();
+    const tick = () => { if (!document.getElementById('hMk')) return; pos += dir * (1.1 + round * 0.45); if (pos > 100 || pos < 0) { dir *= -1; pos = Math.max(0, Math.min(100, pos)); } $('hMk').style.left = pos + '%'; raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    $('hGo').onclick = () => {
+      const ok = pos >= zone && pos <= zone + zw; if (!ok) { caught++; st.ero = Math.max(0, st.ero - 1); }
+      round++; $('modalRoot').querySelector('.jul-stats').outerHTML = stats();
+      $('jRes').textContent = tr(ok ? 'Észre sem vettek! ' : 'Észrevettek, egy nyíl súrolt. ') + (round < 3 ? trf('{0}. felderítő a háromból', round + 1) : '');
+      $('jRes').style.color = ok ? 'var(--good)' : 'var(--bad)';
+      if (round >= 3 || st.ero <= 0) { cancelAnimationFrame(raf); $('hGo').disabled = true; setTimeout(() => st.ero <= 0 ? fail() : win(caught), 900); return; }
+      zw = newZone();
+    };
+  }
+  function win(caught) {
+    const pts = st.el + st.ero * 2 + st.ez + (st.trust || 0) * 2 - caught;
+    const rew = { tudas: pts >= 12 ? 4 : pts >= 7 ? 3 : 2, korona: pts >= 12 ? 3 : pts >= 7 ? 1 : 0 };
+    const got = miniGive('julianus', rew);
+    miniEnd('IV. BÉLA UDVARÁBAN', tr('Hazaértél a hírrel!'), [tr(pts >= 12 ? 'Béla király figyelmesen végighallgat, és rögtön összehívja a tanácsot. Julianus maga sem csinálta volna jobban.' : 'Fáradtan, de hazaértél. A király meghallgat, bár közben kétszer ásít.'), trf('Maradt {0} elemózsia, {1} erő és {2} ezüst.', st.el, st.ero, st.ez), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`],
+      'Julianus domonkos szerzetes 1235-ben indult el, és 1236-ban a Volga mentén valóban magyarul beszélő népet talált. Hazatérve beszámolt a tatár veszélyről, ezt Riccardus barát jegyezte le. Második útján már nem jutott el hozzájuk, mert a mongolok közben elpusztították a vidéket, de hazahozta Batu kán fenyegető levelét IV. Bélának.');
+  }
+  function fail() {
+    const rew = { tudas: 1 }; const got = miniGive('julianus', rew);
+    miniEnd('AZ ÚT VÉGET ÉRT', tr(st.el <= 0 ? 'Elfogyott az elemózsia' : 'Elfogyott az erőd'), [tr('Julianus hazafordul, és otthon elmeséli, amit látott. Nem jutott el a végéig, de legalább tanult belőle.'), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`, tr('Holnap újra nekivághatsz.')],
+      'Julianus első útján a négy barátból kettő hazafordult, Gellért barát meghalt. Julianus egyedül, nagy nélkülözések között jutott el a Volgáig. Az út tényleg ilyen nehéz volt.');
+  }
+  screen(`<p>${tr('Esztergomból indulsz kelet felé, hogy megkeresd a keleten maradt magyarokat. Minden útszakasz egy elemózsiába kerül. Ha elfogy az elemózsia vagy az erőd, haza kell fordulnod.')}</p><div class="row"><button class="btn coral" type="button" id="jGo">${tr('Útnak indulok')}</button></div>`, 0, 0);
+  $('jGo').onclick = travel;
 }
 
 // ---------- logika ciklus ----------
