@@ -1897,11 +1897,11 @@ buildRoadLayer = function (fast) {
 // ---------- minijátékok: Kalandok ----------
 // minden kaland naponta egyszer játszható végig, és egyszer ad jutalmat
 const MINI = [
-  { id: 'muhi', name: 'Védd a Sajó hídját!', img: 'e04_ikon_kalakapont', sub: 'Ügyességi játék, 45 másodperc', rew: 'Pénz és Tudás' },
+  { id: 'muhi', name: 'Védd a Sajó hídját!', img: 'e04_ikon_kalakapont', sub: 'Ügyességi játék, három szint', rew: 'Pénz és Tudás' },
   { id: 'julianus', name: 'Julianus barát útja', img: 'e03_ikon_idovonal', sub: 'Útijáték kockával, párosítóval és bújócskával', rew: 'Tudás és Korona' },
-  { id: 'laszlo', name: 'László és a kun', soon: true, sub: 'Hamarosan' },
-  { id: 'bulla', name: 'Az Aranybulla pecsétje', soon: true, sub: 'Hamarosan' },
-  { id: 'gesta', name: 'A Gesta szerkesztője', soon: true, sub: 'Hamarosan' }
+  { id: 'bulla', name: 'Az Aranybulla pecsétje', img: 'e04_mg_bulla_pecset', sub: 'Döntős kártyajáték, a végén pecsételés', rew: 'Pénz és Hangulat' },
+  { id: 'laszlo', name: 'László és a kun', img: 'e04_mg_laszlo_lovon', sub: 'Lovas üldözés és birkózás', rew: 'Pénz és Tudás' },
+  { id: 'gesta', name: 'A Gesta szerkesztője', img: 'e04_mg_gesta_anonymus', sub: 'Tény vagy monda, aztán időrend', rew: 'Tudás és Korona' }
 ];
 const MG_DEV = !/github\.io$/.test(location.hostname);
 function miniDay() { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {}, paid: {} }; S.mini.paid = S.mini.paid || {}; return S.mini; }
@@ -1972,10 +1972,10 @@ function showMini() {
   try { ['e04_julianus', 'e04_mg_julianus', 'e04_mg_julianus_terkep.jpg', 'e04_mg_sajo_hid.jpg'].forEach(mgPic); Object.values(MG_KIND).forEach(k => mgPic(k.img)); } catch (e) {}
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr('Kalandok IV. Béla korából')}</h2>
     <p>${tr('Minden kalandot naponta egyszer lehet végigjátszani, és egyszer jár érte jutalom. Ha elindítod, a mai menet elkezdődik, úgyhogy csak akkor kezdj bele, ha van rá pár perced.')}</p>
-    ${MG_DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : ''}<div class="mini-list">${MINI.map(g => `<div class="mini-row ${g.soon ? 'soon' : ''}">${g.img ? `<img src="img/${g.img}.png?v=2611095" alt="">` : '<span style="width:52px"></span>'}
+    ${MG_DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : ''}<div class="mini-list">${MINI.map(g => `<div class="mini-row ${g.soon ? 'soon' : ''}">${g.img ? `<img src="img/${g.img}.png?v=2611095" alt="" onerror="this.style.visibility='hidden'">` : '<span style="width:52px"></span>'}
       <div class="grow"><b>${tr(g.name)}</b><small>${tr(g.sub)}${g.rew ? ' · ' + tr(g.rew) : ''}</small></div>
       ${g.soon ? '' : m.done[g.id] && !MG_DEV ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" data-mg="${g.id}">${tr('Indulás')}</button>`}</div>`).join('')}</div></div>`, '', 'mini');
-  $('modalRoot').querySelectorAll('[data-mg]').forEach(b => b.onclick = () => (b.dataset.mg === 'muhi' ? playMuhi : playJulianus)());
+  $('modalRoot').querySelectorAll('[data-mg]').forEach(b => b.onclick = () => ({ muhi: playMuhi, julianus: playJulianus, bulla: playBulla, laszlo: playLaszlo, gesta: playGesta })[b.dataset.mg]());
 }
 function miniEnd(eyebrow, title, lines, fact) {
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(eyebrow)}</span><h2>${title}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
@@ -2280,6 +2280,490 @@ function playJulianus() {
     $('jjHome').onclick = () => { st.trust = 2; home(); };
     $('jjRich').onclick = () => { st.el = 20; st.ero = 9; st.ez = 20; $('modalRoot').querySelector('.jul-stats').outerHTML = stats(); };
   }
+}
+
+// ---------- további kalandok: Aranybulla, László és a kun, Gesta ----------
+// napi mag: minden nap más kártyák, más pálya, más csavar; teszt módban minden indítás más
+function mgRng(id) {
+  let h = 2166136261; const str = today() + '|' + id + (MG_DEV ? '|' + Math.random() : '');
+  for (let k = 0; k < str.length; k++) { h ^= str.charCodeAt(k); h = Math.imul(h, 16777619); }
+  return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const mgShuffle = (arr, rnd) => { const a = arr.slice(); for (let k = a.length - 1; k > 0; k--) { const r = Math.floor(rnd() * (k + 1)); [a[k], a[r]] = [a[r], a[k]]; } return a; };
+const mgImg = (name, cls, alt) => `<img class="${cls || ''}" src="img/${/\.\w+$/.test(name) ? name : name + '.png'}?v=2611095" alt="${alt || ''}" onerror="this.remove()">`;
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `
+  .bl-meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+  .bl-m{background:rgba(255,244,223,.7);border-radius:14px;padding:6px 8px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25);text-align:center;font-weight:900;font-size:13px;position:relative}
+  .bl-m .ic{font-size:22px;display:block}
+  .bl-m .bar{height:8px;border-radius:4px;background:rgba(63,38,20,.18);margin-top:4px;overflow:hidden}
+  .bl-m .bar i{display:block;height:100%;background:#2F8A3A;transition:width .4s}
+  .bl-m.warn .bar i{background:#C9472F}
+  .bl-m .dot{position:absolute;top:4px;right:6px;width:10px;height:10px;border-radius:50%;background:#3A2410;opacity:0;transition:opacity .2s,transform .2s}
+  .bl-m .dot.big{transform:scale(1.5)}
+  .bl-m .dot.on{opacity:.75}
+  .bl-card{display:flex;gap:14px;align-items:center;background:#FFF4DF;border-radius:18px;padding:14px;box-shadow:0 4px 0 rgba(90,55,25,.2),inset 0 0 0 3px #C9A46A;margin-top:8px;min-height:150px;animation:blIn .35s ease-out}
+  @keyframes blIn{from{opacity:0;transform:translateY(14px) rotate(-1deg)}to{opacity:1;transform:none}}
+  .bl-card .bl-who{flex:none;width:110px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-weight:900;font-size:13px;line-height:1.2}
+  .bl-card .bl-who .face{width:100px;height:100px;display:flex;align-items:center;justify-content:center;font-size:64px}
+  .bl-card .bl-who .face img{width:100%;height:100%;object-fit:contain}
+  .bl-card .txt{font-weight:700;font-size:16px;min-width:0}
+  .bl-card .tag{display:inline-block;font-size:11px;font-weight:900;letter-spacing:.06em;color:#8A5A2B;margin-bottom:4px}
+  .bl-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .bl-opts .btn{min-height:52px;white-space:normal;height:auto;min-width:0;padding:8px 10px}
+  .bl-res{margin-top:10px;font-weight:800;min-height:1.4em}
+  .bl-seal{position:relative;width:min(280px,70vw);aspect-ratio:1;margin:12px auto;border-radius:50%;background:radial-gradient(circle,#F6E7C8 0,#E8D3A8 70%);box-shadow:inset 0 0 0 4px #C9A46A}
+  .bl-seal .wax{position:absolute;left:50%;top:50%;border-radius:50%;background:radial-gradient(circle at 35% 35%,#E0574A,#9E2A1F);transform:translate(-50%,-50%);width:0;height:0;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  .bl-seal .zone{position:absolute;left:50%;top:50%;border-radius:50%;border:4px dashed #2F8A3A;transform:translate(-50%,-50%)}
+  .bl-seal .ring{position:absolute;left:50%;top:50%;border-radius:50%;border:5px solid #F2C14E;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #3A2410}
+  .bl-seal .stamp{position:absolute;inset:18%;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 clamp(26px,8vw,46px) Grandstander,Nunito,sans-serif;color:#FFE3C8;text-shadow:0 2px 0 #6B1A12;opacity:0;transition:opacity .3s}
+  .ls-wrap{position:relative;margin-top:10px;border-radius:16px;overflow:hidden;box-shadow:inset 0 0 0 3px rgba(63,38,20,.5);touch-action:none}
+  #lsCv{display:block;width:100%;height:min(380px,48vh)}
+  .ls-ctl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .ls-ctl .btn{min-height:58px;font-size:18px}
+  .ls-tug{position:relative;height:44px;border-radius:22px;background:linear-gradient(90deg,#C9472F 0,#E8B978 50%,#2F8A3A 100%);margin:14px 0;box-shadow:inset 0 0 0 3px rgba(63,38,20,.5)}
+  .ls-tug .mk{position:absolute;top:-8px;bottom:-8px;width:20px;margin-left:-10px;border-radius:10px;background:#FFF4DF;box-shadow:0 0 0 3px #3A2410}
+  .ls-tug span{position:absolute;top:50%;transform:translateY(-50%);font-weight:900;color:#fff;font-size:13px;text-shadow:0 1px 0 #3A2410}
+  .ls-ring{position:relative;width:min(240px,64vw);aspect-ratio:1;margin:10px auto;cursor:pointer}
+  .ls-ring .tg{position:absolute;inset:32%;border-radius:50%;background:rgba(47,138,58,.25);border:4px solid #2F8A3A}
+  .ls-ring .rg{position:absolute;left:50%;top:50%;border-radius:50%;border:5px solid #F2C14E;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #3A2410}
+  .ls-ring .pic{position:absolute;inset:34%;display:flex;align-items:center;justify-content:center;font-size:40px}
+  .gs-stage{position:relative;height:min(330px,44vh);margin-top:10px;border-radius:16px;overflow:hidden;background:linear-gradient(#F3E2BC,#E2C796);box-shadow:inset 0 0 0 3px rgba(138,90,43,.45)}
+  .gs-stage .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+  .gs-card{position:absolute;left:50%;width:min(360px,78%);transform:translateX(-50%);background:#FFF8EA;border-radius:14px;padding:12px 14px;font-weight:800;font-size:16px;text-align:center;box-shadow:0 4px 0 rgba(90,55,25,.25),inset 0 0 0 2px #C9A46A;touch-action:none;cursor:grab;user-select:none}
+  .gs-card.out{transition:transform .35s,opacity .35s;opacity:0}
+  .gs-bins{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:8px}
+  .gs-bin{width:42%;height:70px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:900;font-size:18px;color:#3A2410;background:rgba(255,244,223,.85);box-shadow:inset 0 0 0 3px #8A5A2B;transition:transform .15s,background .15s}
+  .gs-bin img{height:56px;width:auto}
+  .gs-bin.hot{transform:scale(1.06);background:#CFE5B4}
+  .gs-timer{position:absolute;left:8px;right:8px;top:8px;height:8px;border-radius:4px;background:rgba(63,38,20,.2);overflow:hidden}
+  .gs-timer i{display:block;height:100%;background:#C9472F}
+  .gs-anon{display:flex;gap:10px;align-items:center;margin-top:8px;min-height:56px}
+  .gs-anon img{width:56px;height:56px;object-fit:contain;flex:none}
+  .gs-anon .bub{background:#FFF4DF;border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.3)}
+  .gs-order{display:grid;gap:8px;margin-top:10px}
+  .gs-order .btn{justify-content:flex-start;text-align:left;white-space:normal;height:auto;min-height:46px;padding:8px 14px}
+  .gs-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+  .gs-slots div{min-height:62px;border-radius:10px;border:2px dashed #8A5A2B;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;text-align:center;padding:4px;background:rgba(255,244,223,.5)}
+  .gs-slots div.ok{border-style:solid;background:#CFE5B4}
+  .mg-day{display:inline-block;background:#3F6FA8;color:#fff;border-radius:10px;padding:4px 10px;font-weight:900;font-size:13px;margin:4px 0}
+  @keyframes mgShake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .shake{animation:mgShake .3s}
+  @media (max-width:520px){.bl-card{flex-direction:column;text-align:center}.bl-card .bl-who{width:auto;flex-direction:row;gap:10px;font-size:15px}.bl-card .bl-who .face{width:64px;height:64px;font-size:46px}.bl-meters{grid-template-columns:repeat(2,1fr)}.gs-slots{grid-template-columns:repeat(3,1fr)}}`;
+  document.head.appendChild(st);
+})();
+
+// ================= 1. AZ ARANYBULLA PECSÉTJE =================
+// négy mérő: király, nemesek, egyház, kincstár; ha bármelyik kiürül vagy túlcsordul, vége
+const BL_M = [{ id: 'kir', name: 'Király', ic: '👑' }, { id: 'nem', name: 'Nemesek', ic: '🛡️' }, { id: 'egy', name: 'Egyház', ic: '⛪' }, { id: 'kin', name: 'Kincstár', ic: '💰' }];
+const BL_WHO = {
+  bar: { name: 'Bősz Bertalan báró', img: 'e04_mg_bulla_bar', emo: '😠' }, rav: { name: 'Ravasz Rezső', img: 'e04_mg_bulla_ravasz', emo: '🦊' },
+  kov: { name: 'Kövér Kozma', img: 'e04_mg_bulla_kover', emo: '🍗' }, oreg: { name: 'Öreg Orbán', img: 'e04_mg_bulla_oreg', emo: '👴' },
+  pap: { name: 'Az érsek', img: 'e04_mg_bulla_ersek', emo: '✝️' }, bela: { name: 'Béla herceg', img: 'e04_mg_bulla_bela', emo: '🤴' },
+  kin: { name: 'A kincstárnok', img: 'e04_mg_bulla_kincstarnok', emo: '🧮' }
+};
+// real: valódi pont az Aranybullából; ezeket érdemes elfogadni, a kamukat inkább nem
+const BL_CARDS = [
+  { who: 'bar', real: 1, t: 'Minden évben Szent István napján Székesfehérváron tartsanak törvénynapot, ahol bárki elmondhatja a panaszát.', y: { kir: -8, nem: 12, egy: 4 }, n: { kir: 6, nem: -14 } },
+  { who: 'oreg', real: 1, t: 'Nemest senki ne fogjon el és ne büntessen meg, amíg előbb törvényesen el nem ítélték.', y: { kir: -10, nem: 14 }, n: { kir: 6, nem: -16 } },
+  { who: 'kov', real: 1, t: 'A nemesek birtokáról ne szedjenek pénzadót. Elég, ha karddal szolgálunk.', y: { nem: 14, kin: -14 }, n: { nem: -12, kin: 8 } },
+  { who: 'bar', real: 1, t: 'Ha a király külföldre visz hadat, a nemesek csak a király pénzén menjenek vele.', y: { nem: 12, kin: -10, kir: -4 }, n: { nem: -12, kir: 6 } },
+  { who: 'rav', real: 1, t: 'Egész vármegyét senki ne kapjon örökbe. A király ne ossza szét az országot!', y: { kir: 8, nem: 6, kin: 6 }, n: { kir: -6, nem: -8 } },
+  { who: 'kin', real: 1, t: 'Az új dénár egy egész évig maradjon érvényes, ne cseréljék le minden tavasszal.', y: { nem: 10, kin: -12 }, n: { kin: 10, nem: -10 } },
+  { who: 'oreg', real: 1, t: 'Ha egy nemes fiú nélkül hal meg, a lánya kapja meg a birtok negyedét.', y: { nem: 8, egy: 4, kir: -4 }, n: { nem: -8 } },
+  { who: 'rav', real: 1, t: 'Senki ne viseljen két tisztséget egyszerre, kivéve a nádort és a bánt.', y: { kir: 6, nem: 6 }, n: { nem: -8, kir: 4 } },
+  { who: 'pap', real: 1, t: 'Ha a király megszegi a bullát, a püspökök és a nemesek ellenállhassanak neki, és ezért ne vádolják őket hűtlenséggel.', y: { kir: -16, nem: 14, egy: 10 }, n: { kir: 8, egy: -12, nem: -12 } },
+  { who: 'kov', real: 1, t: 'A királyi emberek ne szálljanak meg ingyen a szegényebb nemesek házában.', y: { nem: 10, kin: -6 }, n: { nem: -10, kin: 4 } },
+  { who: 'kov', real: 0, t: 'Minden nemesnek járjon vasárnaponként egy ingyen lángos a királyi konyháról.', y: { nem: 8, kin: -16 }, n: { kir: 4, kin: 2 }, fun: 'A lángos 1222-ben még fel sem volt találva. Kozma nagyon csalódott.' },
+  { who: 'rav', real: 0, t: 'A király ne énekeljen a lakomán. Mindenkinek fáj a füle.', y: { nem: 10, kir: -12 }, n: { kir: 6, nem: -6 }, fun: 'II. András hangjáról sajnos nincs korabeli feljegyzés. Talán nem véletlenül.' },
+  { who: 'bar', real: 0, t: 'Minden báró kapjon egy saját sárkányt a vára őrzésére.', y: { nem: 6, kin: -18 }, n: { kir: 4 }, fun: 'Sárkány nem volt raktáron. A kincstárnok elájult az árától.' },
+  { who: 'kov', real: 0, t: 'A hétfő legyen pihenőnap. És a kedd is. Szerdán majd meglátjuk.', y: { nem: 10, kin: -12, egy: -6 }, n: { kir: 4, egy: 4 }, fun: 'Ha ez bekerül, az ország csütörtökönként működne. Jó döntés volt.' },
+  { who: 'rav', real: 0, t: 'A vitás ügyekben a király macskája döntsön. Ő legalább pártatlan.', y: { kir: -14, nem: 4 }, n: { kir: 6, egy: 2 }, fun: 'A macska egyébként tényleg pártatlan, mindenkit egyformán megkarmolt.' },
+  { who: 'kin', ev: 1, t: 'Felség, a szentföldi keresztes hadjárat kiürítette a kincstárt. Vessünk ki új adót a városokra?', y: { kin: 18, nem: -8, kir: 4 }, n: { kin: -10, nem: 4 } },
+  { who: 'pap', ev: 1, t: 'A pápa levelet küldött. Azt kéri, hogy az egyház birtokait is védje a bulla.', y: { egy: 14, kir: -6, kin: -4 }, n: { egy: -14, kir: 4 } },
+  { who: 'bela', ev: 1, t: 'Fiad, Béla herceg a nemesek pártjára állt. Adj neki nagyobb szerepet az udvarban?', y: { nem: 10, kir: -10 }, n: { kir: 6, nem: -10 } },
+  { who: 'kin', ev: 1, t: 'Egy kereskedő aranyat kínál, ha egy évig vámmentesen jöhet be az országba.', y: { kin: 16, nem: -6, kir: -4 }, n: { kin: -4, kir: 4 } },
+  { who: 'pap', ev: 1, t: 'Az érsek szerint nagy ünnepséget kellene tartani a bulla aláírására. Drága lesz, de szép.', y: { egy: 10, nem: 6, kin: -14 }, n: { egy: -8, kin: 4 } },
+  { who: 'oreg', ev: 1, t: 'A szegényebb királyi szolgák panaszkodnak. Ők is ugyanazokat a jogokat kérik, mint a gazdag bárók.', y: { nem: 8, kir: 6, kin: -6 }, n: { nem: -6, kir: -4 } },
+  { who: 'bela', ev: 1, t: 'Béla herceg szerint vissza kellene venni a túl sok elajándékozott királyi birtokot.', y: { kir: 14, kin: 10, nem: -16 }, n: { nem: 6, kir: -6 } }
+];
+const BL_DAY = [
+  { t: 'Ma esik az eső, mindenki morcos. Minden nemesi változás erősebb.', mod: { nem: 1.4 } },
+  { t: 'Ma ünnep van, a kincstárnok bőkezű. A kincstári veszteségek kisebbek.', mod: { kin: 0.7 } },
+  { t: 'Ma az érsek is a teremben ül. Az egyházi változások erősebbek.', mod: { egy: 1.5 } },
+  { t: 'A király ma rossz lábbal kelt fel. A királyi hatalom gyorsabban változik.', mod: { kir: 1.4 } },
+  { t: 'Nyugodt nap. Semmi különös, csak egy kicsit sok a bárók.', mod: {} }
+];
+function playBulla() {
+  if (!miniStart('bulla')) return;
+  const rnd = mgRng('bulla'), day = BL_DAY[Math.floor(rnd() * BL_DAY.length)];
+  const real = mgShuffle(BL_CARDS.filter(c => c.real), rnd).slice(0, 6), fake = mgShuffle(BL_CARDS.filter(c => c.real === 0), rnd).slice(0, 3), ev = mgShuffle(BL_CARDS.filter(c => c.ev), rnd).slice(0, 3);
+  const deck = mgShuffle(real.concat(fake, ev), rnd);
+  const m = { kir: 50, nem: 50, egy: 50, kin: 50 }; let k = 0, goodReal = 0, fakeIn = 0, dead = null;
+  Object.values(BL_WHO).forEach(w => mgPic(w.img)); mgPic('e04_mg_bulla_terem.jpg');
+  const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 22 || v > 78 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%"></i></div></div>`; }).join('')}</div>`;
+  const eff = o => { const r = {}; Object.entries(o).forEach(([key, v]) => r[key] = Math.round(v * (day.mod[key] || 1))); return r; };
+  function intro() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('FEHÉRVÁR, 1222')}</span><h2>${tr('Az Aranybulla pecsétje')}</h2>
+      ${mgImg('e04_mg_bulla_terem.jpg', 'jul-pic')}
+      <p>${tr('II. András király vagy. A nemesek elégedetlenek, és egy nagy oklevelet követelnek a jogaikról. Sorra jönnek a kérésekkel, te pedig eldöntöd, mit pecsételsz meg.')}</p>
+      <p>${tr('Négy dologra figyelj: a király hatalmára, a nemesek kedvére, az egyházra és a kincstárra. Ha bármelyik kiürül, vagy túl nagy lesz, vége a játéknak. A valódi Aranybulla pontjai jó pontot érnek, a kamu kéréseket viszont jobb visszadobni!')}</p>
+      <span class="mg-day">${tr('A mai nap')}: ${tr(day.t)}</span>
+      <div class="row" style="margin-top:12px"><button class="btn coral" type="button" id="blGo">${tr('Kezdődjön a tanács!')}</button></div></div>`, '', 'bulla');
+    $('blGo').onclick = next;
+  }
+  function next() {
+    if (dead) return over();
+    if (k >= deck.length) return seal();
+    const c = deck[k], w = BL_WHO[c.who], pic = mgPic(w.img);
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${trf('{0}. KÉRÉS A {1}-BÓL', k + 1, deck.length)}</span>${meters()}
+      <div class="bl-card"><div class="bl-who"><div class="face">${pic ? mgImg(w.img) : w.emo}</div><div>${tr(w.name)}</div></div><div class="txt"><span class="tag">${tr(c.ev ? 'ESEMÉNY' : 'KÖVETELÉS')}</span><br>${tr(c.t)}</div></div>
+      <div class="bl-opts"><button class="btn teal" type="button" id="blY">${tr(c.ev ? 'Igen' : 'Megpecsételem')}</button><button class="btn coral" type="button" id="blN">${tr(c.ev ? 'Nem' : 'Visszadobom')}</button></div>
+      <div class="bl-res" id="blRes"></div><div class="row"><button class="btn" type="button" id="blNext" hidden>${tr('Következő')}</button></div></div>`, '', 'bulla');
+    // ráviszed az egeret: pötty jelzi, mire lesz hatással (mint egy jó tanácsadó, aki nem mondja meg, mennyire)
+    const hint = o => { $('modalRoot').querySelectorAll('.bl-m').forEach((el, n) => { const d = o && o[BL_M[n].id]; const dot = el.querySelector('.dot'); dot.classList.toggle('on', !!d); dot.classList.toggle('big', !!d && Math.abs(d) > 11); }); };
+    ['blY', 'blN'].forEach(id => { const b = $(id), o = eff(id === 'blY' ? c.y : c.n); b.onmouseenter = () => hint(o); b.onmouseleave = () => hint(null); b.onfocus = () => hint(o); });
+    const pick = yes => {
+      $('blY').disabled = $('blN').disabled = true; const o = eff(yes ? c.y : c.n);
+      Object.entries(o).forEach(([key, v]) => m[key] += v);
+      let msg = '';
+      if (c.real && yes) { goodReal++; msg = tr('Ez tényleg benne van az Aranybullában!'); }
+      else if (c.real && !yes) msg = tr('Pedig ez a valódi Aranybullában is benne van.');
+      else if (c.real === 0 && yes) { fakeIn++; msg = tr(c.fun); }
+      else if (c.real === 0) msg = tr('Jól tetted, ez nem került bele.') + ' ' + tr(c.fun);
+      else msg = tr(yes ? 'Rendben, legyen így.' : 'Rendben, maradjon minden a régiben.');
+      const hit = BL_M.find(x => m[x.id] <= 0 || m[x.id] >= 100);
+      if (hit) dead = hit.id + (m[hit.id] <= 0 ? '0' : '1');
+      $('modalRoot').querySelector('.bl-meters').outerHTML = meters();
+      $('blRes').innerHTML = msg; $('blRes').style.color = (c.real && yes) || (c.real === 0 && !yes) ? 'var(--good)' : c.ev ? 'var(--ink)' : 'var(--bad)';
+      $('blNext').hidden = false; k++; $('blNext').onclick = next;
+      try { $('blNext').scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) {}
+    };
+    $('blY').onclick = () => pick(true); $('blN').onclick = () => pick(false);
+  }
+  const DEAD = {
+    kir0: 'A király hatalma elfogyott. A bárók most már azt is megszabják, mit vacsorázz.', kir1: 'A király túl erős lett. A nemesek fellázadtak, és Béla herceg mögé álltak.',
+    nem0: 'A nemesek dühösen elvonultak. Fehérváron csak te maradtál és a macska.', nem1: 'A nemesek annyit kaptak, hogy már a koronát is kérik.',
+    egy0: 'Az egyház megsértődött. A pápa egy nagyon csúnya levelet írt.', egy1: 'Az egyháznak annyi birtoka lett, hogy a püspök már királyt akar játszani.',
+    kin0: 'Kiürült a kincstár. A kincstárnok elszökött a maradék dénárokkal.', kin1: 'Annyi pénz gyűlt össze, hogy mindenki a kincstárra pályázik. Kitört a veszekedés.'
+  };
+  function over() {
+    const rew = { penz: 80 + k * 20, hang: 0 }; const got = miniGive('bulla', rew);
+    miniEnd('VÉGE A TANÁCSNAK', tr('Felborult az egyensúly'), [tr(DEAD[dead]), trf('{0} kérésig jutottál, ebből {1} valódi bullapontot pecsételtél meg.', k, goodReal), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`, tr('Holnap új kérésekkel jönnek a bárók.')], BL_FACT);
+  }
+  function seal() {
+    // két lépés: viaszcsepegtetés nyomva tartással, aztán a pecsét lenyomása időzítve
+    let fill = 0, pour = false, phase = 1, ring = 1, raf = 0, waxQ = 0, pressQ = 0, last = 0; const zone = [0.62, 0.78];
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('AZ OKLEVÉL KÉSZ')}</span><h2>${tr('Most jön a pecsét!')}</h2>${meters()}
+      <p id="blSealTxt">${tr('Tartsd nyomva a gombot, és csepegtesd a viaszt. Akkor engedd el, amikor a viaszfolt eléri a zöld kört!')}</p>
+      <div class="bl-seal" id="blSeal"><div class="zone" style="width:${zone[1] * 100}%;height:${zone[1] * 100}%"></div><div class="zone" style="width:${zone[0] * 100}%;height:${zone[0] * 100}%;border-color:rgba(47,138,58,.45)"></div><div class="wax" id="blWax"></div><div class="ring" id="blRing" hidden></div><div class="stamp" id="blStamp">${mgPic('e04_mg_bulla_pecset') ? mgImg('e04_mg_bulla_pecset', '', '') : 'A II'}</div></div>
+      <div class="row"><button class="btn coral" type="button" id="blAct">${tr('Csepegtetés (tartsd nyomva)')}</button></div><div class="bl-res" id="blRes"></div></div>`, '', 'bulla');
+    const wax = $('blWax'), btn = $('blAct');
+    const down = e => { e.preventDefault(); if (phase === 1) pour = true; else if (phase === 2) press(); };
+    const up = () => { if (phase === 1 && pour) { pour = false; phase = 1.5; waxQ = fill >= zone[0] && fill <= zone[1] ? 2 : Math.abs(fill - (zone[0] + zone[1]) / 2) < 0.16 ? 1 : 0;
+      $('blRes').textContent = tr(waxQ === 2 ? 'Pont jó mennyiség!' : waxQ ? 'Majdnem jó, egy kicsit ' + (fill > zone[1] ? 'sok' : 'kevés') + '.' : fill > zone[1] ? 'Hoppá, lefolyt az asztalra.' : 'Ez nagyon kevés viasz lett.');
+      setTimeout(() => { phase = 2; ring = 1.25; $('blRing').hidden = false; $('blSealTxt').textContent = tr('Most nyomd rá a pecsétet! Akkor koppints, amikor a sárga kör eléri a viaszfoltot.'); btn.textContent = tr('Pecsét rá!'); }, 900); } };
+    btn.addEventListener('pointerdown', down); btn.addEventListener('pointerup', up); btn.addEventListener('pointerleave', up);
+    document.addEventListener('keydown', function kd(e) { if (!document.getElementById('blAct')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'Space' && !e.repeat) down(e); });
+    document.addEventListener('keyup', function ku(e) { if (!document.getElementById('blAct')) { document.removeEventListener('keyup', ku); return; } if (e.code === 'Space') up(); });
+    function press() {
+      phase = 3; const target = Math.max(0.3, fill), d = Math.abs(ring - target); pressQ = d < 0.05 ? 2 : d < 0.13 ? 1 : 0; cancelAnimationFrame(raf);
+      $('blRing').hidden = true; $('blStamp').style.opacity = 1; btn.disabled = true;
+      const stars = waxQ + pressQ; $('blRes').textContent = tr(['Elcsúszott a pecsét. Azért érvényes, csak csúnya.', 'Kicsit ferde, de a nemesek nem panaszkodnak.', 'Szép pecsét!', 'Nagyon szép pecsét!', 'Tökéletes pecsét! A krónikás is megdicsérte.'][stars]);
+      setTimeout(() => win(stars), 1400);
+    }
+    const loop = now => { if (!document.getElementById('blWax')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      if (phase === 1 && pour) fill = Math.min(1, fill + dt * 0.42);
+      wax.style.width = wax.style.height = fill * 100 + '%';
+      if (phase === 2) { ring -= dt * 0.55; if (ring < 0.15) ring = 1.25; $('blRing').style.width = $('blRing').style.height = ring * 100 + '%'; }
+      raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+  }
+  function win(stars) {
+    const bal = BL_M.reduce((a, x) => a + Math.max(0, 25 - Math.abs(50 - m[x.id]) / 2), 0); // minél kiegyensúlyozottabb, annál jobb
+    const pts = Math.round(bal * 4 + goodReal * 40 + stars * 50 - fakeIn * 30);
+    const rew = { penz: Math.min(900, 200 + pts), hang: stars >= 3 ? 3 : stars >= 1 ? 2 : 1 }; const got = miniGive('bulla', rew);
+    miniEnd('AZ ARANYBULLA KIHIRDETVE', trf('{0} pont', pts), [tr(goodReal >= 5 ? 'A nemesek ujjonganak, a valódi Aranybulla szinte szóról szóra a tiéd lett.' : 'Kihirdetted a bullát. Nem egészen olyan lett, mint a valódi, de működik.'), trf('{0} valódi pontot pecsételtél meg, {1} kamu kérés csúszott be.', goodReal, fakeIn), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`], BL_FACT);
+  }
+  intro();
+}
+const BL_FACT = 'II. András 1222-ben adta ki az Aranybullát, mert a kisebb nemesek és a királyi szolgák elégedetlenek voltak. Nevét az aranyból készült függőpecsétről kapta. Hét példányban készült el, ezeket többek között a pápa, az esztergomi és a kalocsai érsek, valamint a nádor kapta meg. A leghíresebb része az ellenállási záradék, amely megengedte, hogy a nemesek ellenálljanak a királynak, ha az megszegi az ígéreteit.';
+
+// ================= 2. LÁSZLÓ ÉS A KUN =================
+const LS_DAY = [
+  { name: 'Nyári mező', sky: ['#9FD0EC', '#F6E2B0'], ground: '#7FA84A', far: '#8DB36A', mix: { ko: 3, bokor: 2, ag: 2, nyil: 2 }, txt: 'Nyár van, gyors a mező.' },
+  { name: 'Őszi erdőszél', sky: ['#E8B98A', '#F6DDB8'], ground: '#9C7A3C', far: '#B5793A', mix: { ko: 2, bokor: 2, ag: 4, nyil: 2 }, txt: 'Ősz van, sok a lelógó ág. Hajolj le időben!' },
+  { name: 'Ködös reggel', sky: ['#C9D2D6', '#ECE7DA'], ground: '#6F8F5A', far: '#9FAFA4', mix: { ko: 3, bokor: 3, ag: 2, nyil: 1 }, txt: 'Köd van, az akadályok későn látszanak.', fog: true },
+  { name: 'Patakos völgy', sky: ['#A8D5E8', '#EEF3D9'], ground: '#6F9A3E', far: '#7FB0B0', mix: { ko: 2, bokor: 2, ag: 1, nyil: 2, patak: 3 }, txt: 'Patakok szelik át a völgyet, ezeket nagyot ugorva lehet átvenni.' },
+  { name: 'Íjász kun', sky: ['#F0C8A0', '#F7E6C4'], ground: '#8EA54E', far: '#B79B5C', mix: { ko: 2, bokor: 2, ag: 1, nyil: 5 }, txt: 'Ma ügyes íjász a kun. Sok nyíl jön, hajolj le!' }
+];
+function playLaszlo() {
+  if (!miniStart('laszlo')) return;
+  const rnd = mgRng('laszlo'), D = LS_DAY[Math.floor(rnd() * LS_DAY.length)];
+  ['e04_mg_laszlo_lovon', 'e04_mg_laszlo_kun', 'e04_mg_laszlo_lany', 'e04_mg_laszlo_ko', 'e04_mg_laszlo_bokor', 'e04_mg_laszlo_ag', 'e04_mg_laszlo_nyil', 'e04_mg_laszlo_hatter.jpg', 'e04_mg_laszlo_birkozas.jpg'].forEach(mgPic);
+  let hits = 0, tLeft = 0, tugQ = 0, girlQ = 0;
+  function intro() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KERLÉS, 1068')}</span><h2>${tr('László és a kun')}</h2>
+      ${mgImg('e04_mg_laszlo_birkozas.jpg', 'jul-pic')}
+      <p>${tr('Egy kun harcos elrabolt egy magyar lányt, és lóháton menekül. László herceg utána ered! Ugord át az akadályokat, hajolj le az ágak és a nyilak elől, és érd utol a kunt. Ha utolérted, jön a birkózás.')}</p>
+      <span class="mg-day">${tr('Mai pálya')}: ${tr(D.name)}. ${tr(D.txt)}</span>
+      <p style="font-size:14px;font-weight:700">${tr('Gépen a Szóköz vagy a felfelé nyíl ugrik, a lefelé nyíl lehajol. Telefonon a két nagy gombbal.')}</p>
+      <div class="row" style="margin-top:8px"><button class="btn coral" type="button" id="lsGo">${tr('Utána!')}</button></div></div>`, '', 'laszlo');
+    $('lsGo').onclick = chase;
+  }
+  function chase() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('AZ ÜLDÖZÉS')}</span><h2>${tr('Érd utol a kunt!')}</h2>
+      <div class="ls-wrap"><canvas id="lsCv"></canvas></div>
+      <div class="mg-hud"><span id="lsGap"></span><span id="lsHit">${tr('Botlás')} 0</span><span id="lsTime">45</span></div>
+      <div class="ls-ctl"><button class="btn teal" type="button" id="lsJ">⬆ ${tr('Ugrás')}</button><button class="btn" type="button" id="lsD">⬇ ${tr('Lehajol')}</button></div>
+      ${MG_DEV ? `<div class="mg-dev">${tr('Teszt:')} <button class="btn ghost" type="button" id="lsSkip">${tr('Utolértem')}</button><button class="btn ghost" type="button" id="lsSlow">${tr('Lassítás')}</button></div>` : ''}</div>`, '', 'laszlo');
+    const cv = $('lsCv'), g = cv.getContext('2d'); let W = 0, H = 0;
+    const fit = () => { const r = cv.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dp; cv.height = H * dp; g.setTransform(dp, 0, 0, dp, 0, 0); }; fit();
+    const GY = () => H * 0.8, LX = () => W * 0.2, unit = () => H / 380;
+    let gap = 72, t = 0, last = 0, y = 0, vy = 0, duck = 0, obs = [], spawn = 1.2, scroll = 0, flash = 0, done = false, raf = 0, spd = 1, ph = 0, kunPh = 0, arrowT = 3, fx = [];
+    const DUR = 45, pool = []; Object.entries(D.mix).forEach(([k2, w]) => { for (let n = 0; n < w; n++) pool.push(k2); });
+    const jump = () => { if (y === 0 && !duck) vy = -H * 2.25; };
+    const doDuck = () => { if (y === 0) duck = 0.7; };
+    $('lsJ').onpointerdown = e => { e.preventDefault(); jump(); }; $('lsD').onpointerdown = e => { e.preventDefault(); doDuck(); };
+    cv.onpointerdown = e => { const r = cv.getBoundingClientRect(); (e.clientY - r.top > r.height * 0.6 ? doDuck : jump)(); };
+    const kd = e => { if (!document.getElementById('lsCv')) { document.removeEventListener('keydown', kd); return; } if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); jump(); } if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); doDuck(); } };
+    document.addEventListener('keydown', kd);
+    if (MG_DEV) { $('lsSkip').onclick = () => { gap = 0; }; $('lsSlow').onclick = () => { spd = spd === 1 ? 0.5 : 1; $('lsSlow').classList.toggle('on', spd < 1); }; }
+    const KIND = {
+      ko: { w: 34, h: 28, low: true, img: 'e04_mg_laszlo_ko', col: '#8D8478' }, bokor: { w: 58, h: 34, low: true, img: 'e04_mg_laszlo_bokor', col: '#4E7A32' },
+      patak: { w: 92, h: 8, low: true, water: true, col: '#4E8FB5' }, ag: { w: 70, h: 26, high: true, img: 'e04_mg_laszlo_ag', col: '#6B4A2E' }, nyil: { w: 40, h: 8, high: true, arrow: true, img: 'e04_mg_laszlo_nyil', col: '#3A2410' }
+    };
+    function horse(x, yy, s, coat, rider, cape, hat, gallop, bob) {
+      g.save(); g.translate(x, yy + bob); g.scale(s, s);
+      g.fillStyle = coat; g.beginPath(); g.ellipse(0, -30, 34, 15, 0, 0, 7); g.fill();
+      g.beginPath(); g.moveTo(24, -38); g.lineTo(42, -62); g.lineTo(52, -58); g.lineTo(36, -30); g.closePath(); g.fill();
+      g.beginPath(); g.ellipse(50, -60, 11, 7, -0.4, 0, 7); g.fill();
+      g.strokeStyle = coat; g.lineWidth = 6; g.lineCap = 'round';
+      [[-24, 1], [-14, -1], [16, 1], [26, -1]].forEach(([lx, sgn]) => { const a = Math.sin(gallop + sgn) * 0.7; g.beginPath(); g.moveTo(lx, -20); g.lineTo(lx + Math.sin(a) * 16, -2 + Math.cos(a) * 2); g.stroke(); });
+      g.strokeStyle = '#3A2410'; g.lineWidth = 4; g.beginPath(); g.moveTo(-34, -34); g.quadraticCurveTo(-50, -26 + Math.sin(gallop) * 4, -46, -12); g.stroke();
+      if (rider) { g.fillStyle = cape; g.beginPath(); g.moveTo(-8, -40); g.lineTo(-30 - Math.sin(gallop) * 4, -50); g.lineTo(-6, -70); g.closePath(); g.fill();
+        g.fillStyle = rider; g.fillRect(-8, -72, 18, 30); g.fillStyle = '#E8C9A0'; g.beginPath(); g.arc(2, -80, 8, 0, 7); g.fill();
+        g.fillStyle = hat; if (hat === '#F2C14E') { g.fillRect(-6, -92, 16, 6); g.fillRect(-6, -98, 3, 6); g.fillRect(1, -98, 3, 6); g.fillRect(7, -98, 3, 6); } else { g.beginPath(); g.moveTo(-8, -84); g.lineTo(2, -100); g.lineTo(12, -84); g.closePath(); g.fill(); } }
+      g.restore();
+    }
+    function bgDraw(dt) {
+      scroll += dt * W * 0.55 * spd;
+      const bg = mgPic('e04_mg_laszlo_hatter.jpg');
+      if (bg) { const s = H / bg.naturalHeight, w = bg.naturalWidth * s; let x0 = -(scroll * 0.6 % w); for (let x = x0; x < W; x += w) g.drawImage(bg, x, 0, w + 1, H); }
+      else {
+        const sk = g.createLinearGradient(0, 0, 0, GY()); sk.addColorStop(0, D.sky[0]); sk.addColorStop(1, D.sky[1]); g.fillStyle = sk; g.fillRect(0, 0, W, H);
+        g.fillStyle = D.far; for (let k2 = -1; k2 < 6; k2++) { const x = k2 * 260 - (scroll * 0.25 % 260); g.beginPath(); g.ellipse(x + 130, GY() - 10, 170, 70, 0, Math.PI, 0); g.fill(); }
+        g.fillStyle = D.ground; g.fillRect(0, GY() - 6, W, H - GY() + 6);
+        g.fillStyle = 'rgba(0,0,0,.08)'; for (let k2 = -1; k2 < W / 40 + 2; k2++) { const x = k2 * 40 - (scroll % 40); g.fillRect(x, GY() + 10, 18, 3); }
+      }
+    }
+    function obstacle(o) {
+      const K = KIND[o.k], u = unit(), w = K.w * u, h = K.h * u, x = o.x, base = GY();
+      const pic = K.img && mgPic(K.img);
+      if (K.water) { g.fillStyle = K.col; g.beginPath(); g.ellipse(x + w / 2, base + 4 * u, w / 2, 9 * u, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 2; g.beginPath(); g.ellipse(x + w / 2, base + 4 * u, w / 3, 4 * u, 0, 0, 7); g.stroke(); return; }
+      const yTop = K.high ? base - (K.arrow ? 74 : 92) * u : base - h;
+      if (pic) { const ph2 = K.high ? h * 2.2 : h * 1.6, pw = ph2 * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, x + w / 2 - pw / 2, K.high ? yTop - ph2 * 0.4 : base - ph2, pw, ph2); return; }
+      g.fillStyle = K.col;
+      if (o.k === 'ko') { g.beginPath(); g.ellipse(x + w / 2, base - h / 2, w / 2, h / 2, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.ellipse(x + w / 2 - 5, base - h / 2 - 5, w / 5, h / 6, 0, 0, 7); g.fill(); }
+      else if (o.k === 'bokor') { [0, 0.35, 0.7].forEach(f => { g.beginPath(); g.arc(x + w * (0.15 + f), base - h * 0.45, h * 0.55, 0, 7); g.fill(); }); }
+      else if (o.k === 'ag') { g.fillRect(x - 30 * u, yTop - 40 * u, 14 * u, 40 * u); g.fillRect(x - 30 * u, yTop, w + 30 * u, 8 * u); g.fillStyle = '#4E7A32'; [0.3, 0.6, 0.9].forEach(f => { g.beginPath(); g.arc(x + w * f, yTop + 10 * u, 12 * u, 0, 7); g.fill(); }); }
+      else if (o.k === 'nyil') { g.strokeStyle = K.col; g.lineWidth = 3; g.beginPath(); g.moveTo(x, yTop); g.lineTo(x + w, yTop); g.stroke(); g.fillStyle = '#7A7F86'; g.beginPath(); g.moveTo(x - 8 * u, yTop); g.lineTo(x + 2, yTop - 5 * u); g.lineTo(x + 2, yTop + 5 * u); g.closePath(); g.fill(); g.fillStyle = '#C9472F'; g.fillRect(x + w - 8 * u, yTop - 5 * u, 8 * u, 10 * u); }
+    }
+    function frame(now) {
+      if (!document.getElementById('lsCv')) { cancelAnimationFrame(raf); return; }
+      const dt0 = Math.min(0.05, (now - (last || now)) / 1000), dt = dt0 * spd; last = now; t += dt0; ph += dt * 14; kunPh += dt * 13;
+      bgDraw(dt);
+      if (!done) {
+        vy += H * 6.2 * dt; y = Math.min(0, y + vy * dt); if (y === 0) vy = 0; duck = Math.max(0, duck - dt);
+        gap = Math.max(0, gap - dt * (5.2 + (D.fog ? 0.4 : 0)));
+        spawn -= dt; if (spawn <= 0) { const k2 = pool[Math.floor(rnd() * pool.length)]; if (k2 !== 'nyil') obs.push({ k: k2, x: W + 20 }); spawn = (1.05 + rnd() * 0.9) * Math.max(0.7, 1 - t / 120); }
+        arrowT -= dt; if (arrowT <= 0) { if (D.mix.nyil) obs.push({ k: 'nyil', x: LX() + 80 + gap * (W * 0.52 / 100), fast: true }); arrowT = (5.5 - D.mix.nyil * 0.6) * (0.7 + rnd() * 0.6); }
+        const u = unit(), lx = LX();
+        obs.forEach(o => { const K = KIND[o.k]; o.x -= (W * 0.55 + (o.fast ? W * 0.35 : 0)) * dt; const w = K.w * u;
+          if (!o.hit && !o.past && o.x < lx + 36 * u && o.x + w > lx - 30 * u) {
+            const air = y < -H * 0.09, low = duck > 0;
+            const ok = K.high ? low : (K.water ? y < -H * 0.16 : air);
+            if (!ok) { o.hit = true; hits++; gap = Math.min(100, gap + (K.arrow ? 9 : 13)); flash = 0.4; fx.push({ x: lx, y: GY() - 130 * u, t: 0, txt: tr(K.arrow ? 'Talált a nyíl!' : K.high ? 'Bumm, az ág!' : 'Megbotlott a ló!'), c: '#FF8A6E' }); }
+          }
+          if (o.x + w < lx - 30 * u && !o.past) { o.past = true; if (!o.hit) fx.push({ x: lx + 20, y: GY() - 120 * u, t: 0, txt: tr(K.high ? 'Ügyes!' : 'Hopp!'), c: '#CFE5B4' }); }
+        });
+        obs = obs.filter(o => o.x > -200);
+        const left = Math.max(0, DUR - t); $('lsTime').textContent = Math.ceil(left); $('lsHit').textContent = tr('Botlás') + ' ' + hits;
+        $('lsGap').textContent = gap < 15 ? tr('Mindjárt utoléred!') : gap < 45 ? tr('Közeledsz!') : tr('Messze van még');
+        if (gap <= 0) { done = true; tLeft = left; setTimeout(() => { cancelAnimationFrame(raf); wrestle(); }, 700); }
+        else if (left <= 0 || gap >= 100) { done = true; setTimeout(() => { cancelAnimationFrame(raf); escaped(); }, 600); }
+      }
+      // rajz: akadályok, kun, László
+      obs.forEach(obstacle);
+      const u = unit(), lx = LX(), kx = lx + 70 * u + gap * (W * 0.52 / 100);
+      const kpic = mgPic('e04_mg_laszlo_kun'), lpic = mgPic('e04_mg_laszlo_lovon');
+      const drawPic = (pic, x, yy, hh, bob) => { const w = hh * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, x - w / 2, yy - hh + bob, w, hh); };
+      if (kpic) drawPic(kpic, kx, GY() + 4 * u, 120 * u, Math.sin(kunPh) * 3 * u); else { horse(kx, GY(), u * 0.95, '#4A3220', '#8E5A9B', '#C9472F', '#3F2614', kunPh, Math.sin(kunPh) * 3 * u); g.fillStyle = '#F6D9A8'; g.beginPath(); g.arc(kx - 18 * u, GY() - 84 * u, 7 * u, 0, 7); g.fill(); }
+      if (flash > 0) { flash -= dt0; g.globalAlpha = 0.5 + Math.sin(now / 40) * 0.5; }
+      const duckK = duck > 0 ? 0.78 : 1;
+      if (lpic) { g.save(); g.translate(lx, GY() + y); g.scale(1, duckK); drawPic(lpic, 0, 4 * u, 128 * u, Math.sin(ph) * 3 * u); g.restore(); }
+      else { g.save(); g.translate(0, GY() + y); g.scale(1, duckK); horse(lx, 0, u, '#F2EDE4', '#FFF4DF', '#C9472F', '#F2C14E', y < 0 ? 0.6 : ph, Math.sin(ph) * 3 * u); g.restore(); }
+      g.globalAlpha = 1;
+      if (D.fog) { const fg = g.createLinearGradient(W * 0.5, 0, W, 0); fg.addColorStop(0, 'rgba(236,231,218,0)'); fg.addColorStop(1, 'rgba(236,231,218,.85)'); g.fillStyle = fg; g.fillRect(0, 0, W, H); }
+      // távolságcsík
+      g.fillStyle = 'rgba(40,24,10,.45)'; g.fillRect(12, 12, W * 0.32, 10); g.fillStyle = '#F2C14E'; g.fillRect(12, 12, W * 0.32 * (1 - gap / 100), 10);
+      fx.forEach(f => { f.t += dt0; g.globalAlpha = Math.max(0, 1 - f.t); g.font = '900 18px Nunito, sans-serif'; g.textAlign = 'center'; g.lineWidth = 4; g.strokeStyle = '#3A2618'; g.strokeText(f.txt, f.x, f.y - f.t * 30); g.fillStyle = f.c; g.fillText(f.txt, f.x, f.y - f.t * 30); g.globalAlpha = 1; });
+      fx = fx.filter(f => f.t < 1);
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  function escaped() {
+    const rew = { penz: 60 + Math.max(0, 6 - hits) * 10 }; const got = miniGive('laszlo', rew);
+    miniEnd('ELMENEKÜLT', tr('A kun egérutat nyert'), [tr('Most elmenekült, de László nem adja fel. Holnap újra utána eredhetsz!'), trf('{0} botlás volt az úton.', hits), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`], LS_FACT);
+  }
+  function wrestle() {
+    // kötélhúzás: felváltva kell nyomni a két gombot, a kun közben visszahúz
+    let p = 50, last = 0, lastKey = '', raf = 0, t = 0, over = false;
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A BIRKÓZÁS')}</span><h2>${tr('Utolérted! Birkózz meg vele!')}</h2>
+      ${mgImg('e04_mg_laszlo_birkozas.jpg', 'jul-pic')}
+      <p>${tr('Nyomd felváltva a bal és a jobb gombot, minél gyorsabban! Gépen a bal és a jobb nyíl is jó. Told a jelet a zöld oldalra, mielőtt a kun visszahúzza.')}</p>
+      <div class="ls-tug"><span style="left:12px">${tr('Kun')}</span><span style="right:12px">${tr('László')}</span><div class="mk" id="lsMk" style="left:50%"></div></div>
+      <div class="ls-ctl"><button class="btn teal" type="button" id="lsL">◀ ${tr('Bal')}</button><button class="btn teal" type="button" id="lsR">${tr('Jobb')} ▶</button></div><div class="bl-res" id="lsRes"></div></div>`, '', 'laszlo');
+    const push = side => { if (over) return; if (side !== lastKey) { p += 2.9; lastKey = side; } else p += 0.4; };
+    $('lsL').onpointerdown = e => { e.preventDefault(); push('L'); }; $('lsR').onpointerdown = e => { e.preventDefault(); push('R'); };
+    const kd = e => { if (!document.getElementById('lsMk')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); push('L'); } if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); push('R'); } };
+    document.addEventListener('keydown', kd);
+    const loop = now => { if (!document.getElementById('lsMk')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
+      if (!over) { p -= dt * (10 + Math.sin(t * 2.3) * 5 + t * 0.6); p = Math.max(0, Math.min(100, p)); $('lsMk').style.left = p + '%';
+        if (p >= 100) { over = true; tugQ = t < 6 ? 2 : 1; $('lsRes').textContent = tr('Lefogtad! De a kun még nem adja meg magát...'); $('lsRes').style.color = 'var(--good)'; setTimeout(girl, 1200); }
+        else if (p <= 0 || t > 16) { over = true; tugQ = 0; $('lsRes').textContent = tr('Kicsúszott a kezedből! Szerencsére itt a lány...'); $('lsRes').style.color = 'var(--bad)'; setTimeout(girl, 1200); } }
+      raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+  }
+  function girl() {
+    // a lány a döntő pillanatban segít: akkor koppints, amikor a sárga kör ráér a zöldre
+    let r = 1, last = 0, raf = 0, done = false, tries = 2;
+    const gp = mgPic('e04_mg_laszlo_lany');
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A DÖNTŐ PILLANAT')}</span><h2>${tr('A lány segít!')}</h2>
+      <p>${tr('A legenda szerint az elrabolt lány maga is segített Lászlónak. Koppints a körre, amikor a sárga gyűrű ráér a zöld körre, és a lány megrántja a kun övét!')}</p>
+      <div class="ls-ring" id="lsRing"><div class="tg"></div><div class="pic">${gp ? mgImg('e04_mg_laszlo_lany', '', '').replace('<img ', '<img style="width:100%;height:100%;object-fit:contain" ') : '👧'}</div><div class="rg" id="lsRg"></div></div>
+      <div class="bl-res" id="lsRes">${trf('{0} próbálkozás', tries)}</div></div>`, '', 'laszlo');
+    const tap = () => { if (done) return; const d = Math.abs(r - 0.36); if (d < 0.07) { done = true; girlQ = d < 0.035 ? 2 : 1; $('lsRes').textContent = tr(girlQ === 2 ? 'Tökéletes! A kun hanyatt esik, a lány szabad!' : 'Sikerült! A kun megbotlik, László győzött!'); $('lsRes').style.color = 'var(--good)'; setTimeout(win, 1300); }
+      else { tries--; $('modalRoot').querySelector('.ls-ring').classList.add('shake'); setTimeout(() => { const e = $('modalRoot').querySelector('.ls-ring'); if (e) e.classList.remove('shake'); }, 300); if (tries <= 0) { done = true; girlQ = 0; $('lsRes').textContent = tr('Nem sikerült a pillanat, de László így is legyőzte a kunt, csak nehezebben.'); setTimeout(win, 1500); } else $('lsRes').textContent = trf('Nem jó pillanat! Még {0} próbálkozás.', tries); } };
+    $('lsRing').onpointerdown = e => { e.preventDefault(); tap(); };
+    const kd = e => { if (!document.getElementById('lsRing')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'Space') { e.preventDefault(); tap(); } };
+    document.addEventListener('keydown', kd);
+    const loop = now => { if (!document.getElementById('lsRg')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; if (!done) { r -= dt * 0.7; if (r < 0.12) r = 1; } $('lsRg').style.width = $('lsRg').style.height = r * 100 + '%'; raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+  }
+  function win() {
+    const pts = Math.round(tLeft * 8 + Math.max(0, 8 - hits) * 25 + tugQ * 60 + girlQ * 60);
+    const rew = { penz: Math.min(900, 250 + pts), tudas: girlQ + (tugQ ? 1 : 0) }; const got = miniGive('laszlo', rew);
+    miniEnd('LÁSZLÓ GYŐZÖTT', trf('{0} pont', pts), [tr(pts > 600 ? 'A krónikás már írja is a legendát. Ezt még templomfalakra is felfestik!' : 'Megmentetted a lányt. László büszke rád.'), trf('{0} botlás, {1} másodperc maradt az üldözésből.', hits, Math.round(tLeft)), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`], LS_FACT);
+  }
+  intro();
+}
+const LS_FACT = '1068-ban kun és besenyő csapatok törtek be az országba, Salamon király, Géza és László herceg pedig Kerlésnél legyőzte őket. A legenda szerint László üldözőbe vett egy kunt, aki egy magyar lányt rabolt el, és a lány segítségével győzte le. Ezt a jelenetet a Szent László-legenda néven sok középkori templom falára felfestették, főleg Erdélyben és a Felvidéken.';
+
+// ================= 3. A GESTA SZERKESZTŐJE =================
+const GS_CARDS = [
+  { t: 'A honfoglalás 895 körül kezdődött.', f: 1, y: 895, o: 'Kezdődik a honfoglalás' }, { t: 'A pannonhalmi apátságot 996-ban alapították.', f: 1, y: 996, o: 'Megalapítják a pannonhalmi apátságot' },
+  { t: 'Istvánt 1000-ben királlyá koronázták.', f: 1, y: 1000, o: 'Istvánt királlyá koronázzák' }, { t: 'Gellért püspök 1046-ban egy lázadásban halt meg.', f: 1, y: 1046, o: 'Gellért püspök halála' },
+  { t: 'Kerlésnél 1068-ban legyőzték a betörő kunokat.', f: 1, y: 1068, o: 'A kerlési csata' }, { t: 'Istvánt, Imrét és Gellértet 1083-ban szentté avatták.', f: 1, y: 1083, o: 'Istvánt, Imrét és Gellértet szentté avatják' },
+  { t: 'II. András 1217-ben keresztes hadjáratra indult.', f: 1, y: 1217, o: 'II. András keresztes hadjárata' }, { t: 'II. András 1222-ben kiadta az Aranybullát.', f: 1, y: 1222, o: 'Kiadják az Aranybullát' },
+  { t: 'Julianus barát 1236-ban rátalált a keleti magyarokra.', f: 1, y: 1236, o: 'Julianus rátalál a keleti magyarokra' }, { t: 'A muhi csata 1241-ben volt.', f: 1, y: 1241, o: 'A muhi csata' },
+  { t: 'A 955-ös augsburgi csatában a magyar sereg vereséget szenvedett.', f: 1, y: 955, o: 'Vereség Augsburgnál' },
+  { t: 'Anonymus egy Béla nevű király jegyzője volt.', f: 1 }, { t: 'A Gesta Hungarorumot latin nyelven írták.', f: 1 }, { t: 'Álmos Árpád apja volt.', f: 1 },
+  { t: 'Árpád egy fehér lóért cserébe kapta meg az egész országot.', f: 0, a: 'Egy lóért egy országot? Hát, jó vásár volt. De ez csak monda.' },
+  { t: 'Emese álmában egy turulmadár jelent meg, és megjövendölte, hogy fiából nagy királyok származnak.', f: 0, a: 'Gyönyörű álom, nagyon szeretem. De mondának számít.' },
+  { t: 'Hunor és Magor egy csodaszarvast követve találtak új hazát.', f: 0, a: 'Szarvast követni szép dolog, de a térképészek inkább térképet használnak.' },
+  { t: 'Lehel a kürtjével agyonütötte a német vezért.', f: 0, a: 'A kürtöt ma is mutogatják Jászberényben. Hogy mire használták, az monda.' },
+  { t: 'Botond a buzogányával betörte Bizánc kapuját.', f: 0, a: 'Akkora lyukat ütött rajta, hogy egy gyerek is átfért. Állítólag.' },
+  { t: 'Szent László imájára a kunok szórta aranypénzek kővé váltak.', f: 0, a: 'Ha ez igaz lenne, ma minden kő arany volna. Monda, de szép.' },
+  { t: 'Álmos vezér Attila hun király leszármazottja volt.', f: 0, a: 'Ezt én magam írtam bele. Jól hangzik, ugye? Csak éppen nem bizonyítható.' },
+  { t: 'Szent László lovának patkónyoma ma is látszik egy sziklán.', f: 0, a: 'Több sziklán is látszik. Ez a ló nagyon sokat utazott.' },
+  { t: 'Vajk, a későbbi István, egy sárkányt is legyőzött ifjúkorában.', f: 0, a: 'Ezt még én sem mertem leírni. Ezt valaki most találta ki!' }
+];
+const GS_DAY = [
+  { t: 'Ma jó kedvében van Anonymus. Minden helyes válasz dupla pontot ér egy sorozat után.', combo: 2 },
+  { t: 'Ma siet a scriptorium, gyorsabban hullanak a lapok.', fast: 1.25 },
+  { t: 'Ma nyugodt a nap, kicsit lassabban hullanak a lapok.', fast: 0.85 },
+  { t: 'A mai lapok között van egy aranyozott is. Ha azt jól teszed a helyére, sok pontot ér!', gold: 1 }
+];
+function playGesta() {
+  if (!miniStart('gesta')) return;
+  const rnd = mgRng('gesta'), D = GS_DAY[Math.floor(rnd() * GS_DAY.length)];
+  ['e04_mg_gesta_anonymus', 'e04_mg_gesta_teny', 'e04_mg_gesta_monda', 'e04_mg_gesta_scriptorium.jpg', 'e04_mg_gesta_kodex.jpg'].forEach(mgPic);
+  const facts = mgShuffle(GS_CARDS.filter(c => c.f), rnd), legends = mgShuffle(GS_CARDS.filter(c => !c.f), rnd);
+  const deck = mgShuffle(facts.slice(0, 5).concat(legends.slice(0, 5)), rnd); if (D.gold) deck[Math.floor(rnd() * deck.length)].gold = 1;
+  let score = 0, streak = 0, right = 0, k = 0, hearts = 3;
+  const anon = txt => `<div class="gs-anon">${mgPic('e04_mg_gesta_anonymus') ? mgImg('e04_mg_gesta_anonymus') : '<span style="font-size:44px">✍️</span>'}<div class="bub" id="gsBub">${txt}</div></div>`;
+  function intro() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('ESZTERGOM, 1200 KÖRÜL')}</span><h2>${tr('A Gesta szerkesztője')}</h2>
+      ${mgImg('e04_mg_gesta_scriptorium.jpg', 'jul-pic')}
+      ${anon(tr('Üdvözöllek a scriptoriumban! Én vagyok Anonymus, a névtelen jegyző. A magyarok történetét írom, de a lapjaim összekeveredtek. Segíts szétválogatni, mi a tény és mi a monda!'))}
+      <p>${tr('Húzd a lapot a jó ládába, vagy nyomd meg a gombot. Gépen a bal nyíl a Tény, a jobb nyíl a Monda. Minél gyorsabban válaszolsz jól, annál több pont jár. A végén a tényeket időrendbe kell tenned.')}</p>
+      <span class="mg-day">${tr('A mai nap')}: ${tr(D.t)}</span>
+      <div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="gsGo">${tr('Kezdjük a válogatást!')}</button></div></div>`, '', 'gesta');
+    $('gsGo').onclick = sort;
+  }
+  function sort() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('TÉNY VAGY MONDA?')}</span><h2>${tr('Válogasd szét a lapokat!')}</h2>
+      <div class="mg-hud"><span id="gsSc">0 ${tr('pont')}</span><span id="gsSt"></span><span id="gsK">1 / ${deck.length}</span></div>
+      <div class="gs-stage" id="gsStage">${mgPic('e04_mg_gesta_kodex.jpg') ? mgImg('e04_mg_gesta_kodex.jpg', 'bg') : ''}<div class="gs-timer"><i id="gsT"></i></div>
+        <div class="gs-bins"><div class="gs-bin" id="gsB0">${mgPic('e04_mg_gesta_teny') ? mgImg('e04_mg_gesta_teny') : '📜'} ${tr('Tény')}</div><div class="gs-bin" id="gsB1">${tr('Monda')} ${mgPic('e04_mg_gesta_monda') ? mgImg('e04_mg_gesta_monda') : '🐉'}</div></div></div>
+      <div class="ls-ctl"><button class="btn teal" type="button" id="gsF">◀ ${tr('Tény')}</button><button class="btn coral" type="button" id="gsL">${tr('Monda')} ▶</button></div>
+      ${anon(tr('Na, lássuk, mennyire figyeltél az órán!'))}</div>`, '', 'gesta');
+    const stage = $('gsStage'); let card = null, cy = 0, tMax = 0, tl = 0, raf = 0, last = 0, busy = false, drag = null;
+    function show() {
+      if (k >= deck.length) { cancelAnimationFrame(raf); setTimeout(order, 700); return; }
+      const c = deck[k]; busy = false; $('gsK').textContent = (k + 1) + ' / ' + deck.length;
+      card = document.createElement('div'); card.className = 'gs-card'; card.innerHTML = (c.gold ? '<span style="color:#B8860B">✦ ' + tr('Aranyozott lap') + ' ✦</span><br>' : '') + tr(c.t); if (c.gold) card.style.boxShadow = '0 4px 0 rgba(90,55,25,.25),inset 0 0 0 3px #E2B23A';
+      stage.appendChild(card); cy = 18; tMax = tl = Math.max(3.4, 7 - k * 0.32) / (D.fast || 1);
+      card.onpointerdown = e => { drag = { x0: e.clientX, dx: 0 }; card.setPointerCapture(e.pointerId); };
+      card.onpointermove = e => { if (!drag) return; drag.dx = e.clientX - drag.x0; card.style.transform = `translateX(calc(-50% + ${drag.dx}px)) rotate(${drag.dx / 20}deg)`; $('gsB0').classList.toggle('hot', drag.dx < -40); $('gsB1').classList.toggle('hot', drag.dx > 40); };
+      card.onpointerup = () => { if (!drag) return; const dx = drag.dx; drag = null; $('gsB0').classList.remove('hot'); $('gsB1').classList.remove('hot'); if (dx < -60) answer(1); else if (dx > 60) answer(0); else card.style.transform = 'translateX(-50%)'; };
+    }
+    function answer(saysFact, timeout) {
+      if (busy || !card) return; busy = true; const c = deck[k], ok = !timeout && (saysFact === 1) === !!c.f;
+      if (ok) { streak++; right++; const base = Math.round(10 + 20 * (tl / tMax)), mult = (D.combo && streak >= 3 ? 2 : 1) * (1 + Math.min(streak, 6) * 0.15) * (c.gold ? 3 : 1); score += Math.round(base * mult); }
+      else streak = 0;
+      $('gsSc').textContent = score + ' ' + tr('pont'); $('gsSt').textContent = streak >= 2 ? trf('{0}x sorozat', streak) : '';
+      $('gsBub').textContent = timeout ? tr('Elaludtál a pulton? A lap leesett a földre!') : ok ? (c.f ? tr(['Pontosan, ez tény!', 'Így van, ezt a krónikák is írják.', 'Igen, ez megtörtént.'][k % 3]) : tr(c.a)) : (c.f ? tr('Nem, nem! Ez tényleg megtörtént, nézd meg bármelyik krónikában.') : tr('Hohó, ez bizony monda. ') + tr(c.a));
+      const el = card; el.classList.add('out'); el.style.transform = `translateX(calc(-50% + ${saysFact ? -260 : 260}px)) rotate(${saysFact ? -18 : 18}deg)`;
+      if (!ok) { stage.classList.add('shake'); setTimeout(() => stage.classList.remove('shake'), 300); }
+      setTimeout(() => el.remove(), 380); card = null; k++; setTimeout(show, 650);
+    }
+    $('gsF').onclick = () => answer(1); $('gsL').onclick = () => answer(0);
+    const kd = e => { if (!document.getElementById('gsStage')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'ArrowLeft') { e.preventDefault(); answer(1); } if (e.code === 'ArrowRight') { e.preventDefault(); answer(0); } };
+    document.addEventListener('keydown', kd);
+    const loop = now => { if (!document.getElementById('gsStage')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      if (card && !busy) { tl -= dt; const H = stage.clientHeight; cy = 18 + (H - 190) * (1 - tl / tMax); if (!drag) card.style.top = cy + 'px'; $('gsT').style.width = Math.max(0, tl / tMax * 100) + '%'; if (tl <= 0) answer(deck[k].f ? 0 : 1, true); }
+      raf = requestAnimationFrame(loop); };
+    show(); raf = requestAnimationFrame(loop);
+  }
+  function order() {
+    // időrend: a válogatásban szereplő évszámos tények, kiegészítve, hogy öt legyen
+    let dated = deck.filter(c => c.f && c.y); const extra = mgShuffle(GS_CARDS.filter(c => c.f && c.y && !dated.includes(c)), rnd); dated = dated.concat(extra).slice(0, 5);
+    const sorted = dated.slice().sort((a, b) => a.y - b.y), shown = mgShuffle(dated, rnd); let pos = 0;
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('IDŐREND')}</span><h2>${tr('Rakd sorba a tényeket!')}</h2>
+      ${anon(tr('Most a tényeket kell időrendbe tenni a kódexben. Kattints rájuk a legkorábbitól a legkésőbbiig!'))}
+      <div class="mg-hud"><span id="gsSc">${score} ${tr('pont')}</span><span id="gsH">${'❤'.repeat(hearts)}</span></div>
+      <div class="gs-slots">${sorted.map((_, n) => `<div id="gsS${n}">${n + 1}.</div>`).join('')}</div>
+      <div class="gs-order">${shown.map((c, n) => `<button class="btn ghost" type="button" data-go="${n}">${tr(c.o)}</button>`).join('')}</div></div>`, '', 'gesta');
+    $('modalRoot').querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+      const c = shown[+b.dataset.go];
+      if (c === sorted[pos]) { const s = $('gsS' + pos); s.classList.add('ok'); s.textContent = c.y + ''; b.disabled = true; b.classList.remove('ghost'); b.classList.add('teal'); score += 30; pos++; $('gsSc').textContent = score + ' ' + tr('pont');
+        $('gsBub').textContent = trf('Igen, ez {0}-ben történt.', c.y); if (pos >= sorted.length) setTimeout(() => end(true), 900); }
+      else { hearts--; b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); $('gsH').textContent = '❤'.repeat(Math.max(0, hearts)) + '♡'.repeat(3 - Math.max(0, hearts)); $('gsBub').textContent = tr('Nem, ez később történt. Gondold át még egyszer!');
+        if (hearts <= 0) setTimeout(() => end(false), 900); }
+    });
+  }
+  function end(ok) {
+    const q = right >= 9 && ok && hearts === 3 ? 3 : right >= 7 && ok ? 2 : right >= 5 ? 1 : 0;
+    const rew = { tudas: 1 + q, korona: q >= 3 ? 2 : q >= 2 ? 1 : 0 }; const got = miniGive('gesta', rew);
+    const ini = ['Egyszerű fekete kezdőbetűt kapott a kódex.', 'Piros kezdőbetűt kapott a kódex.', 'Kék-piros, indás kezdőbetűt kapott a kódex.', 'Aranyozott, festett iniciálé díszíti a kódexet. Anonymus elérzékenyült!'][q];
+    miniEnd('A KÓDEX KÉSZ', trf('{0} pont', score), [trf('{0} lapot válogattál jól a {1}-ből.', right, deck.length) + ' ' + tr(ok ? 'Az időrend is összeállt.' : 'Az időrend sajnos összekuszálódott.'), tr(ini), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`],
+      'A Gesta Hungarorum, vagyis a magyarok cselekedetei, a legrégebbi fennmaradt magyar történeti mű. 1200 körül írta latinul egy névtelen jegyző, aki csak P. mesterként nevezte meg magát, ezért hívjuk Anonymusnak. A műben azt állítja, hogy nem a parasztok csacska meséire hagyatkozik, mégis rengeteg mondát és saját kitalálást írt bele. A szobra ma a budapesti Városligetben áll, és a hagyomány szerint aki megérinti a tollát, jól fog írni.');
+  }
+  intro();
 }
 
 // ---------- logika ciklus ----------
