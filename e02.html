@@ -665,7 +665,7 @@ function computeConn() {
   const fo = S.buildings.find(b => b.type === 'fo'); const k = 3; const seen = new Set(); const q = [];
   if (!fo) { connCache = seen; return; }
   for (let a = -1; a <= k; a++) for (let c = -1; c <= k; c++) {
-    const edge = (a === -1 || a === k) !== (c === -1 || c === k);
+    const edge = (a === -1 || a === k) || (c === -1 || c === k); /* a sarkon érintkező út is csatlakozik */
     if (!edge) continue; const kk = key(fo.i + a, fo.j + c);
     if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([fo.i + a, fo.j + c]); }
   }
@@ -676,7 +676,7 @@ function connected(b) {
   if (!connCache) computeConn();
   const [w, h] = dimsB(b);
   for (let a = -1; a <= w; a++) for (let c = -1; c <= h; c++) {
-    const edge = (a === -1 || a === w) !== (c === -1 || c === h); if (!edge) continue;
+    const edge = (a === -1 || a === w) || (c === -1 || c === h); if (!edge) continue;
     const i = b.i + a, j = b.j + c; if (connCache.has(key(i, j))) return true;
   }
   return false;
