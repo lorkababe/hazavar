@@ -2657,7 +2657,7 @@ function playLaszlo() {
       if (kpic) drawPic(kpic, kx, GY() + 4 * u, 120 * u, Math.sin(kunPh) * 3 * u); else { horse(kx, GY(), u * 0.95, '#4A3220', '#8E5A9B', '#C9472F', '#3F2614', kunPh, Math.sin(kunPh) * 3 * u); g.fillStyle = '#F6D9A8'; g.beginPath(); g.arc(kx - 18 * u, GY() - 84 * u, 7 * u, 0, 7); g.fill(); }
       if (flash > 0) { flash -= dt0; g.globalAlpha = 0.5 + Math.sin(now / 40) * 0.5; }
       const duckK = duck > 0 ? 0.78 : 1;
-      if (lpic) { g.save(); g.translate(lx, GY() + y); if (!dpic) g.scale(1, duckK); drawPic(lpic, 0, 4 * u, 128 * u, jpic ? 0 : Math.sin(ph) * 3 * u); g.restore(); }
+      if (lpic) { g.save(); g.translate(lx, GY() + y); if (!dpic) g.scale(1, duckK); drawPic(lpic, 0, 4 * u, 128 * u * (dpic ? 0.95 : 1), jpic ? 0 : Math.sin(ph) * 3 * u); g.restore(); }
       else { g.save(); g.translate(0, GY() + y); g.scale(1, duckK); horse(lx, 0, u, '#F2EDE4', '#FFF4DF', '#C9472F', '#F2C14E', y < 0 ? 0.6 : ph, Math.sin(ph) * 3 * u); g.restore(); }
       g.globalAlpha = 1;
       if (D.fog) { const fg = g.createLinearGradient(W * 0.5, 0, W, 0); fg.addColorStop(0, 'rgba(236,231,218,0)'); fg.addColorStop(1, 'rgba(236,231,218,.85)'); g.fillStyle = fg; g.fillRect(0, 0, W, H); }
