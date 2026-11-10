@@ -1774,7 +1774,7 @@ function bindSpeed(b) {
 // ---------- a megváltozott alapterületű épületek helyre igazítása ----------
 function fitFix() {
   // minden betöltéskor lefut: ha két épület alapterülete egymásba csúszott, a későbbit a legközelebbi szabad helyre teszi
-  Object.keys(S.roads).forEach(k => { if (BLOCKED.has(k)) delete S.roads[k]; }); S.fitV = 5; let moved = 0;
+  Object.keys(S.roads).forEach(k => { if (BLOCKED.has(k) && !(S.cleared && S.cleared[k])) delete S.roads[k]; }); S.fitV = 5; let moved = 0; /* a kitakarított mezőn megmarad az út */
   S.buildings.forEach(b => {
     if (b.type === 'fo') return; const [w, h] = dimsB(b);
     const m = occ(); let clash = false, roadsUnder = [];
