@@ -1804,7 +1804,7 @@ Object.entries(OBST).forEach(([k, o]) => {
 });
 // ha van üres (tárgyak nélküli) változata a háttérnek, az eltakarított helyen azt mutatjuk
 const EMPTY = new Image(); let emptyOk = false;
-EMPTY.onload = () => { emptyOk = true; clearSig = ''; }; EMPTY.src = 'img/e04_alapterkep_ures.jpg?v=' + (typeof IMGV !== 'undefined' ? IMGV : '1');
+EMPTY.onload = () => { emptyOk = true; clearSig = ''; obstCache = {}; }; EMPTY.src = 'img/e04_alapterkep_ures.jpg?v=' + (typeof IMGV !== 'undefined' ? IMGV : '1');
 const isCleared = k => !!(S.cleared && S.cleared[k]);
 let clearLayer = null, clearSig = '', clearMask = null, obstCache = {};
 function buildClearLayer() {
@@ -1836,6 +1836,16 @@ function drawObst(b) {
     g.scale(s, s); g.translate(-x, -y); g.save(); g.clip(o.sp); g.drawImage(M, x * s, y * s, w * s, h * s, x, y, w, h); g.restore();
     // ami a már kitakarított helyre lógna, az nem rajzolódik vissza
     if (clearMask) { g.globalCompositeOperation = 'destination-out'; g.drawImage(clearMask, 0, 0, BGW, BGH); }
+    // csak a tényleges fa és kő maradjon: ahol a kép ugyanolyan, mint az üres háttér (fű), ott átlátszó, így nem takarja el az épületeket
+    if (emptyOk) try {
+      const e = document.createElement('canvas'); e.width = c.width; e.height = c.height; const eg = e.getContext('2d');
+      eg.drawImage(EMPTY, x * EMPTY.naturalWidth / BGW, y * EMPTY.naturalHeight / BGH, w * EMPTY.naturalWidth / BGW, h * EMPTY.naturalHeight / BGH, 0, 0, c.width, c.height);
+      const A = g.getImageData(0, 0, c.width, c.height), B = eg.getImageData(0, 0, c.width, c.height).data, a = A.data;
+      for (let n = 0; n < a.length; n += 4) { if (!a[n + 3]) continue; const d = Math.abs(a[n] - B[n]) + Math.abs(a[n + 1] - B[n + 1]) + Math.abs(a[n + 2] - B[n + 2]); const k = Math.max(0, Math.min(1, (d - 40) / 70)); a[n + 3] = Math.round(a[n + 3] * k); }
+      g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'copy'; g.putImageData(A, 0, 0);
+      // kis elmosás a peremen, hogy ne legyen recés
+      const sm = document.createElement('canvas'); sm.width = c.width; sm.height = c.height; const sg = sm.getContext('2d'); sg.filter = 'blur(0.6px)'; sg.drawImage(c, 0, 0); g.globalCompositeOperation = 'copy'; g.drawImage(sm, 0, 0);
+    } catch (er) {}
     obstCache[b.obst] = c; }
   ctx.drawImage(c, x, y, w, h);
 }
@@ -2300,7 +2310,7 @@ const mgImg = (name, cls, alt) => `<img class="${cls || ''}" src="img/${/\.\w+$/
   .bl-m .bar{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,rgba(201,71,47,.28),rgba(242,193,78,.25) 25%,rgba(47,138,58,.22) 42%,rgba(47,138,58,.22) 58%,rgba(242,193,78,.25) 75%,rgba(201,71,47,.28));margin-top:4px;overflow:hidden}
   .bl-m .bar::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(63,38,20,.45)}
   .bl-m .bar i{display:block;height:100%;border-radius:5px;transition:width .4s,background .4s}
-  .bl-m .lbl{font-size:11px;font-weight:800;color:var(--ink-soft);margin-top:2px}
+  .bl-m .lbl{font-size:12px;line-height:1.2;min-height:2.4em;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink-soft);margin-top:2px}
   .bl-m.warn{box-shadow:inset 0 0 0 2px #C9472F;animation:mgShake .4s}
   .bl-m.warn .lbl{color:#C9472F}
   .bl-m .dot{position:absolute;top:4px;right:6px;width:10px;height:10px;border-radius:50%;background:#3A2410;opacity:0;transition:opacity .2s,transform .2s}
@@ -2357,7 +2367,8 @@ const mgImg = (name, cls, alt) => `<img class="${cls || ''}" src="img/${/\.\w+$/
   .gs-order .btn{justify-content:flex-start;text-align:left;white-space:normal;height:auto;min-height:46px;padding:8px 14px}
   .gs-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
   .gs-slots div{min-height:62px;border-radius:10px;border:2px dashed #8A5A2B;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;text-align:center;padding:4px;background:rgba(255,244,223,.5)}
-  .gs-slots div.ok{border-style:solid;background:#CFE5B4}
+  .gs-slots div.ok{border-style:solid;background:#CFE5B4;flex-direction:column;gap:2px;line-height:1.2}
+  .gs-slots div.ok b{font-size:16px;color:#2F6B2A}
   .mg-day{display:inline-block;background:#3F6FA8;color:#fff;border-radius:10px;padding:4px 10px;font-weight:900;font-size:13px;margin:4px 0}
   @keyframes mgShake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
   .shake{animation:mgShake .3s}
@@ -2368,6 +2379,13 @@ const mgImg = (name, cls, alt) => `<img class="${cls || ''}" src="img/${/\.\w+$/
 // ================= 1. AZ ARANYBULLA PECSÉTJE =================
 // négy mérő: király, nemesek, egyház, kincstár; ha bármelyik kiürül vagy túlcsordul, vége
 const BL_M = [{ id: 'kir', name: 'Király', ic: '👑' }, { id: 'nem', name: 'Nemesek', ic: '🛡️' }, { id: 'egy', name: 'Egyház', ic: '⛪' }, { id: 'kin', name: 'Kincstár', ic: '💰' }];
+// mérőnként beszédes állapot: nagyon kevés, kevés, jó, sok, nagyon sok
+const BL_LBL = {
+  kir: ['A király hatalma omlik!', 'Gyenge a király', 'Erős, de nem zsarnok', 'Kezd zsarnok lenni', 'Zsarnok! Lázadás jön!'],
+  nem: ['Lázadni készülnek!', 'Morognak a nemesek', 'A nemesek elégedettek', 'Túl sokat kapnak', 'A koronát akarják!'],
+  egy: ['Az egyház sértődött!', 'Elégedetlen a püspök', 'Az egyház elégedett', 'Túl nagy a hatalma', 'Királyt akar játszani!'],
+  kin: ['Mindjárt üres!', 'Fogy a pénz', 'Van elég pénz', 'Sok a pénz, irigykednek', 'Mindenki erre pályázik!']
+};
 const BL_WHO = {
   bar: { name: 'Bősz Bertalan báró', img: 'e04_mg_bulla_bar', emo: '😠' }, rav: { name: 'Ravasz Rezső', img: 'e04_mg_bulla_ravasz', emo: '🦊' },
   kov: { name: 'Kövér Kozma', img: 'e04_mg_bulla_kover', emo: '🍗' }, oreg: { name: 'Öreg Orbán', img: 'e04_mg_bulla_oreg', emo: '👴' },
@@ -2448,13 +2466,14 @@ function playBulla() {
   const m = { kir: 50, nem: 50, egy: 50, kin: 50 }; let k = 0, goodReal = 0, fakeIn = 0, dead = null;
   Object.values(BL_WHO).forEach(w => mgPic(w.img)); mgPic('e04_mg_bulla_terem.jpg');
   const mCol = v => { const d = Math.min(1, Math.abs(v - 50) / 50); return `hsl(${Math.round(125 - 125 * Math.pow(d, 1.15))},${62 + d * 10}%,${40 + (d > .5 ? 2 : 0)}%)`; };
-  const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 15 || v > 85 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${mCol(v)}"></i></div><div class="lbl">${v < 15 ? tr('Veszélyesen kevés!') : v > 85 ? tr('Veszélyesen sok!') : v < 32 ? tr('Kevés') : v > 68 ? tr('Sok') : tr('Rendben')}</div></div>`; }).join('')}</div>`;
+  const meters = (hint) => `<div class="bl-meters">${BL_M.map(x => { const v = m[x.id], d = hint && hint[x.id]; return `<div class="bl-m ${v < 15 || v > 85 ? 'warn' : ''}"><span class="dot ${d ? 'on' : ''} ${d && Math.abs(d) > 11 ? 'big' : ''}"></span><span class="ic">${x.ic}</span>${tr(x.name)}<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${mCol(v)}"></i></div><div class="lbl">${tr(BL_LBL[x.id][v < 15 ? 0 : v < 32 ? 1 : v > 85 ? 4 : v > 68 ? 3 : 2])}</div></div>`; }).join('')}</div>`;
   const eff = o => { const r = {}; Object.entries(o).forEach(([key, v]) => r[key] = Math.round(v * (day.mod[key] || 1))); return r; };
   function intro() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('FEHÉRVÁR, 1222')}</span><h2>${tr('Az Aranybulla pecsétje')}</h2>
       ${mgImg('e04_mg_bulla_terem.jpg', 'jul-pic')}
       <p>${tr('II. András király vagy. A nemesek elégedetlenek, és egy nagy oklevelet követelnek a jogaikról. Sorra jönnek a kérésekkel, te pedig eldöntöd, mit pecsételsz meg.')}</p>
       <p>${tr('Négy dologra figyelj: a király hatalmára, a nemesek kedvére, az egyházra és a kincstárra. Ha bármelyik kiürül, vagy túl nagy lesz, vége a játéknak. A valódi Aranybulla pontjai jó pontot érnek, a kamu kéréseket viszont jobb visszadobni!')}</p>
+      <p style="font-weight:800">${tr('A mérőknél a közép a jó: zöld, ha egyensúlyban van, és pirosodik, ahogy bármelyik irányba elszalad. Ha valami túl kevés, az ugyanolyan baj, mint ha túl sok.')}</p>
       <span class="mg-day">${tr('A mai nap')}: ${tr(day.t)}</span>
       <div class="row" style="margin-top:12px"><button class="btn coral" type="button" id="blGo">${tr('Kezdődjön a tanács!')}</button></div></div>`, '', 'bulla');
     $('blGo').onclick = next;
@@ -2465,7 +2484,7 @@ function playBulla() {
     const c = deck[k], w = BL_WHO[c.who], pic = mgPic(w.img);
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${trf('{0}. KÉRÉS A {1}-BÓL', k + 1, deck.length)}</span>${meters()}
       <div class="bl-card"><div class="bl-who"><div class="face">${pic ? mgImg(w.img) : w.emo}</div><div>${tr(w.name)}</div></div><div class="txt"><span class="tag">${c.envoy ? tr('KÜLFÖLDI KÖVET') : tr(c.ev ? 'ESEMÉNY' : 'KÖVETELÉS')}</span><br>${c.envoy ? `<i style="font-size:18px">${c.t}</i><br><small style="color:var(--ink-soft)">${trf('A követ {0} beszél. Senki nem érti, de mindenki rád néz.', tr(c.lang))}</small>` : tr(c.t)}</div></div>
-      <div class="bl-opts"><button class="btn teal" type="button" id="blY">${tr(c.envoy ? 'Bólintok, hátha jó' : c.ev ? 'Igen' : 'Megpecsételem')}</button><button class="btn coral" type="button" id="blN">${tr(c.envoy ? 'Megrázom a fejem' : c.ev ? 'Nem' : 'Visszadobom')}</button></div>
+      <div class="bl-opts"><button class="btn coral" type="button" id="blN">✘ ${tr(c.envoy ? 'Megrázom a fejem' : c.ev ? 'Nem' : 'Visszadobom')}</button><button class="btn teal" type="button" id="blY">✔ ${tr(c.envoy ? 'Bólintok, hátha jó' : c.ev ? 'Igen' : 'Megpecsételem')}</button></div>
       <div class="bl-res" id="blRes"></div><div class="row"><button class="btn" type="button" id="blNext" hidden>${tr('Következő')}</button></div></div>`, '', 'bulla');
     // ráviszed az egeret: pötty jelzi, mire lesz hatással (mint egy jó tanácsadó, aki nem mondja meg, mennyire)
     const hint = o => { $('modalRoot').querySelectorAll('.bl-m').forEach((el, n) => { const d = o && o[BL_M[n].id]; const dot = el.querySelector('.dot'); dot.classList.toggle('on', !!d); dot.classList.toggle('big', !!d && Math.abs(d) > 11); }); };
@@ -2839,7 +2858,7 @@ function playGesta() {
       <div class="gs-order">${shown.map((c, n) => `<button class="btn ghost" type="button" data-go="${n}">${tr(c.o)}</button>`).join('')}</div></div>`, '', 'gesta');
     const place = (b, slot) => {
       const c = shown[+b.dataset.go]; if (slot < 0 || filled[slot]) return;
-      if (c === sorted[slot]) { filled[slot] = true; const s2 = $('gsS' + slot); s2.classList.add('ok'); s2.innerHTML = `<b>${c.y}</b><br>${tr(c.o)}`; b.disabled = true; b.hidden = true; score += 30; $('gsSc').textContent = score + ' ' + tr('pont');
+      if (c === sorted[slot]) { filled[slot] = true; const s2 = $('gsS' + slot); s2.classList.add('ok'); s2.innerHTML = `<b>${c.y}</b><span>${tr(c.o)}</span>`; b.disabled = true; b.hidden = true; score += 30; $('gsSc').textContent = score + ' ' + tr('pont');
         $('gsBub').textContent = trf('Igen, ez {0}-ben történt.', c.y); if (filled.every(Boolean)) setTimeout(() => end(true), 1100); }
       else { hearts--; b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 300); $('gsH').textContent = '❤'.repeat(Math.max(0, hearts)) + '♡'.repeat(3 - Math.max(0, hearts));
         const later = sorted.indexOf(c) > slot; $('gsBub').textContent = tr(later ? 'Nem, ez később történt. Gondold át még egyszer!' : 'Nem, ez korábban történt. Gondold át még egyszer!');
