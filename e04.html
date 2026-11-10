@@ -2536,7 +2536,7 @@ const LS_DAY = [
 function playLaszlo() {
   if (!miniStart('laszlo')) return;
   const rnd = mgRng('laszlo'), D = LS_DAY[Math.floor(rnd() * LS_DAY.length)];
-  ['e04_mg_laszlo_lovon', 'e04_mg_laszlo_kun', 'e04_mg_laszlo_lany', 'e04_mg_laszlo_ko', 'e04_mg_laszlo_bokor', 'e04_mg_laszlo_ag', 'e04_mg_laszlo_nyil', 'e04_mg_laszlo_hatter.jpg', 'e04_mg_laszlo_birkozas.jpg'].forEach(mgPic);
+  ['e04_mg_laszlo_lovon', 'e04_mg_laszlo_ugras', 'e04_mg_laszlo_hajol', 'e04_mg_laszlo_kun', 'e04_mg_laszlo_lany', 'e04_mg_laszlo_ko', 'e04_mg_laszlo_bokor', 'e04_mg_laszlo_ag', 'e04_mg_laszlo_nyil', 'e04_mg_laszlo_hatter.jpg', 'e04_mg_laszlo_birkozas.jpg'].forEach(mgPic);
   let hits = 0, tLeft = 0, tugQ = 0, girlQ = 0;
   function intro() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KERLÉS, 1068')}</span><h2>${tr('László és a kun')}</h2>
@@ -2570,7 +2570,7 @@ function playLaszlo() {
     if (MG_DEV) { $('lsSkip').onclick = () => { gap = 0; }; $('lsSlow').onclick = () => { spd = spd === 1 ? 0.5 : 1; $('lsSlow').classList.toggle('on', spd < 1); }; }
     const KIND = {
       ko: { w: 34, h: 28, low: true, img: 'e04_mg_laszlo_ko', col: '#8D8478' }, bokor: { w: 58, h: 34, low: true, img: 'e04_mg_laszlo_bokor', col: '#4E7A32' },
-      patak: { w: 92, h: 8, low: true, water: true, col: '#4E8FB5' }, ag: { w: 70, h: 26, high: true, img: 'e04_mg_laszlo_ag', col: '#6B4A2E' }, nyil: { w: 40, h: 8, high: true, arrow: true, img: 'e04_mg_laszlo_nyil', col: '#3A2410' }
+      patak: { w: 92, h: 8, low: true, water: true, col: '#4E8FB5' }, ag: { w: 70, h: 26, high: true, img: 'e04_mg_laszlo_ag', col: '#6B4A2E' }, nyil: { w: 96, h: 14, high: true, arrow: true, img: 'e04_mg_laszlo_nyil', col: '#3A2410' }
     };
     function horse(x, yy, s, coat, rider, cape, hat, gallop, bob) {
       g.save(); g.translate(x, yy + bob); g.scale(s, s);
@@ -2601,6 +2601,10 @@ function playLaszlo() {
       const pic = K.img && mgPic(K.img);
       if (K.water) { g.fillStyle = K.col; g.beginPath(); g.ellipse(x + w / 2, base + 4 * u, w / 2, 9 * u, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 2; g.beginPath(); g.ellipse(x + w / 2, base + 4 * u, w / 3, 4 * u, 0, 0, 7); g.stroke(); return; }
       const yTop = K.high ? base - (K.arrow ? 74 : 92) * u : base - h;
+      if (K.arrow) { // jól látható nyíl: sötét kontúr, fehér suhanáscsík
+        g.save(); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 3 * u; g.setLineDash([10 * u, 8 * u]); g.beginPath(); g.moveTo(x + w + 6 * u, yTop); g.lineTo(x + w + 70 * u, yTop); g.stroke(); g.restore();
+        if (pic) { const pw = w * 1.45, ph3 = Math.max(pw * pic.naturalHeight / pic.naturalWidth, 24 * u); g.save(); g.shadowColor = 'rgba(255,230,120,.95)'; g.shadowBlur = 12 * u; g.drawImage(pic, x - pw * 0.1, yTop - ph3 / 2, pw, ph3); g.restore(); return; }
+      }
       if (pic) { const ph2 = K.high ? h * 2.2 : h * 1.6, pw = ph2 * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, x + w / 2 - pw / 2, K.high ? yTop - ph2 * 0.4 : base - ph2, pw, ph2); return; }
       g.fillStyle = K.col;
       if (o.k === 'ko') { g.beginPath(); g.ellipse(x + w / 2, base - h / 2, w / 2, h / 2, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.ellipse(x + w / 2 - 5, base - h / 2 - 5, w / 5, h / 6, 0, 0, 7); g.fill(); }
@@ -2634,13 +2638,14 @@ function playLaszlo() {
       }
       // rajz: akadályok, kun, László
       obs.forEach(obstacle);
+      obs.forEach(o => { if (o.k === 'nyil' && !o.past && o.x > LX() + 60) { const u2 = unit(); g.fillStyle = '#C9472F'; g.beginPath(); g.arc(LX() + 70 * u2, GY() - 150 * u2, 13 * u2, 0, 7); g.fill(); g.fillStyle = '#FFF'; g.font = `900 ${Math.round(18 * u2)}px Nunito, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', LX() + 70 * u2, GY() - 149 * u2); g.textBaseline = 'alphabetic'; } });
       const u = unit(), lx = LX(), kx = lx + 70 * u + gap * (W * 0.52 / 100);
-      const kpic = mgPic('e04_mg_laszlo_kun'), lpic = mgPic('e04_mg_laszlo_lovon');
+      const kpic = mgPic('e04_mg_laszlo_kun'), jpic = y < -2 && mgPic('e04_mg_laszlo_ugras'), dpic = duck > 0 && mgPic('e04_mg_laszlo_hajol'), lpic = jpic || dpic || mgPic('e04_mg_laszlo_lovon');
       const drawPic = (pic, x, yy, hh, bob) => { const w = hh * pic.naturalWidth / pic.naturalHeight; g.drawImage(pic, x - w / 2, yy - hh + bob, w, hh); };
       if (kpic) drawPic(kpic, kx, GY() + 4 * u, 120 * u, Math.sin(kunPh) * 3 * u); else { horse(kx, GY(), u * 0.95, '#4A3220', '#8E5A9B', '#C9472F', '#3F2614', kunPh, Math.sin(kunPh) * 3 * u); g.fillStyle = '#F6D9A8'; g.beginPath(); g.arc(kx - 18 * u, GY() - 84 * u, 7 * u, 0, 7); g.fill(); }
       if (flash > 0) { flash -= dt0; g.globalAlpha = 0.5 + Math.sin(now / 40) * 0.5; }
       const duckK = duck > 0 ? 0.78 : 1;
-      if (lpic) { g.save(); g.translate(lx, GY() + y); g.scale(1, duckK); drawPic(lpic, 0, 4 * u, 128 * u, Math.sin(ph) * 3 * u); g.restore(); }
+      if (lpic) { g.save(); g.translate(lx, GY() + y); if (!dpic) g.scale(1, duckK); drawPic(lpic, 0, 4 * u, 128 * u, jpic ? 0 : Math.sin(ph) * 3 * u); g.restore(); }
       else { g.save(); g.translate(0, GY() + y); g.scale(1, duckK); horse(lx, 0, u, '#F2EDE4', '#FFF4DF', '#C9472F', '#F2C14E', y < 0 ? 0.6 : ph, Math.sin(ph) * 3 * u); g.restore(); }
       g.globalAlpha = 1;
       if (D.fog) { const fg = g.createLinearGradient(W * 0.5, 0, W, 0); fg.addColorStop(0, 'rgba(236,231,218,0)'); fg.addColorStop(1, 'rgba(236,231,218,.85)'); g.fillStyle = fg; g.fillRect(0, 0, W, H); }
@@ -2650,6 +2655,7 @@ function playLaszlo() {
       fx = fx.filter(f => f.t < 1);
       raf = requestAnimationFrame(frame);
     }
+    if (window.__T) window.__lsArrow = () => obs.push({ k: 'nyil', x: LX() + 80 + gap * (W * 0.52 / 100), fast: true });
     raf = requestAnimationFrame(frame);
   }
   function escaped() {
@@ -2658,20 +2664,22 @@ function playLaszlo() {
   }
   function wrestle() {
     // kötélhúzás: felváltva kell nyomni a két gombot, a kun közben visszahúz
-    let p = 50, last = 0, lastKey = '', raf = 0, t = 0, over = false;
+    let p = 50, last = 0, lastKey = '', raf = 0, t = 0, over = false, go = false;
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A BIRKÓZÁS')}</span><h2>${tr('Utolérted! Birkózz meg vele!')}</h2>
       ${mgImg('e04_mg_laszlo_birkozas.jpg', 'jul-pic')}
       <p>${tr('Nyomd felváltva a bal és a jobb gombot, minél gyorsabban! Gépen a bal és a jobb egérgomb, vagy a bal és a jobb nyíl is jó. Told a jelet a zöld oldalra, mielőtt a kun visszahúzza.')}</p>
       <div class="ls-tug"><span style="left:12px">${tr('Kun')}</span><span style="right:12px">${tr('László')}</span><div class="mk" id="lsMk" style="left:50%"></div></div>
-      <div class="ls-ctl"><button class="btn teal" type="button" id="lsL">◀ ${tr('Bal')}</button><button class="btn teal" type="button" id="lsR">${tr('Jobb')} ▶</button></div><div class="bl-res" id="lsRes"></div></div>`, '', 'laszlo');
-    const push = side => { if (over) return; if (side !== lastKey) { p += 2.9; lastKey = side; } else p += 0.4; };
+      <div class="ls-ctl"><button class="btn teal" type="button" id="lsL">◀ ${tr('Bal')}</button><button class="btn teal" type="button" id="lsR">${tr('Jobb')} ▶</button></div><div class="row" style="margin-top:10px"><button class="btn coral" type="button" id="lsStart">${tr('Készen állok!')}</button></div><div class="bl-res" id="lsRes" style="font-size:22px;text-align:center"></div></div>`, '', 'laszlo');
+    $('lsStart').onclick = e => { e.stopPropagation(); $('lsStart').hidden = true; let n = 3; const tick = () => { if (!document.getElementById('lsRes')) return; if (n > 0) { $('lsRes').textContent = n + '...'; n--; setTimeout(tick, 700); } else { $('lsRes').textContent = tr('Rajta!'); go = true; last = 0; setTimeout(() => { const r = document.getElementById('lsRes'); if (r && !over) r.textContent = ''; }, 700); } }; tick(); };
+    const push = side => { if (over || !go) return; if (side !== lastKey) { p += 2.9; lastKey = side; } else p += 0.4; };
     $('lsL').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); push('L'); }; $('lsR').onpointerdown = e => { e.preventDefault(); e.stopPropagation(); push('R'); };
     const md = e => { if (!document.getElementById('lsMk')) { document.removeEventListener('mousedown', md, true); return; } if (e.target.closest('button')) return; if (e.button === 0) { e.preventDefault(); push('L'); } else if (e.button === 2) { e.preventDefault(); push('R'); } };
     document.addEventListener('mousedown', md, true);
     const kd = e => { if (!document.getElementById('lsMk')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); push('L'); } if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); push('R'); } };
     document.addEventListener('keydown', kd);
-    const loop = now => { if (!document.getElementById('lsMk')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
-      if (!over) { p -= dt * (10 + Math.sin(t * 2.3) * 5 + t * 0.6); p = Math.max(0, Math.min(100, p)); $('lsMk').style.left = p + '%';
+    const loop = now => { if (!document.getElementById('lsMk')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      if (!go) { raf = requestAnimationFrame(loop); return; }
+      t += dt; if (!over) { p -= dt * (9 + Math.sin(t * 2.3) * 4 + t * 0.5); p = Math.max(0, Math.min(100, p)); $('lsMk').style.left = p + '%';
         if (p >= 100) { over = true; tugQ = t < 6 ? 2 : 1; $('lsRes').textContent = tr('Lefogtad! De a kun még nem adja meg magát...'); $('lsRes').style.color = 'var(--good)'; setTimeout(girl, 1200); }
         else if (p <= 0 || t > 16) { over = true; tugQ = 0; $('lsRes').textContent = tr('Kicsúszott a kezedből! Szerencsére itt a lány...'); $('lsRes').style.color = 'var(--bad)'; setTimeout(girl, 1200); } }
       raf = requestAnimationFrame(loop); };
@@ -2679,18 +2687,19 @@ function playLaszlo() {
   }
   function girl() {
     // a lány a döntő pillanatban segít: akkor koppints, amikor a sárga kör ráér a zöldre
-    let r = 1, last = 0, raf = 0, done = false, tries = 2;
+    let r = 1, last = 0, raf = 0, done = false, tries = 2, go = false;
     const gp = mgPic('e04_mg_laszlo_lany');
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A DÖNTŐ PILLANAT')}</span><h2>${tr('A lány segít!')}</h2>
       <p>${tr('A legenda szerint az elrabolt lány maga is segített Lászlónak. Koppints a körre, amikor a sárga gyűrű ráér a zöld körre, és a lány megrántja a kun övét!')}</p>
       <div class="ls-ring" id="lsRing"><div class="tg"></div><div class="pic">${gp ? mgImg('e04_mg_laszlo_lany', '', '').replace('<img ', '<img style="width:100%;height:100%;object-fit:contain" ') : '👧'}</div><div class="rg" id="lsRg"></div></div>
-      <div class="bl-res" id="lsRes">${trf('{0} próbálkozás', tries)}</div></div>`, '', 'laszlo');
-    const tap = () => { if (done) return; const d = Math.abs(r - 0.36); if (d < 0.07) { done = true; girlQ = d < 0.035 ? 2 : 1; $('lsRes').textContent = tr(girlQ === 2 ? 'Tökéletes! A kun hanyatt esik, a lány szabad!' : 'Sikerült! A kun megbotlik, László győzött!'); $('lsRes').style.color = 'var(--good)'; setTimeout(win, 1300); }
+      <div class="row" style="justify-content:center"><button class="btn coral" type="button" id="lsGo2">${tr('Készen állok!')}</button></div><div class="bl-res" id="lsRes">${trf('{0} próbálkozás', tries)}</div></div>`, '', 'laszlo');
+    $('lsGo2').onclick = e => { e.stopPropagation(); $('lsGo2').hidden = true; go = true; r = 1; };
+    const tap = () => { if (done || !go) return; const d = Math.abs(r - 0.36); if (d < 0.07) { done = true; girlQ = d < 0.035 ? 2 : 1; $('lsRes').textContent = tr(girlQ === 2 ? 'Tökéletes! A kun hanyatt esik, a lány szabad!' : 'Sikerült! A kun megbotlik, László győzött!'); $('lsRes').style.color = 'var(--good)'; setTimeout(win, 1300); }
       else { tries--; $('modalRoot').querySelector('.ls-ring').classList.add('shake'); setTimeout(() => { const e = $('modalRoot').querySelector('.ls-ring'); if (e) e.classList.remove('shake'); }, 300); if (tries <= 0) { done = true; girlQ = 0; $('lsRes').textContent = tr('Nem sikerült a pillanat, de László így is legyőzte a kunt, csak nehezebben.'); setTimeout(win, 1500); } else $('lsRes').textContent = trf('Nem jó pillanat! Még {0} próbálkozás.', tries); } };
     $('lsRing').onpointerdown = e => { e.preventDefault(); tap(); };
     const kd = e => { if (!document.getElementById('lsRing')) { document.removeEventListener('keydown', kd); return; } if (e.code === 'Space' || e.code === 'Enter') { e.preventDefault(); tap(); } };
     document.addEventListener('keydown', kd);
-    const loop = now => { if (!document.getElementById('lsRg')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; if (!done) { r -= dt * 0.7; if (r < 0.12) r = 1; } $('lsRg').style.width = $('lsRg').style.height = r * 100 + '%'; raf = requestAnimationFrame(loop); };
+    const loop = now => { if (!document.getElementById('lsRg')) return; const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; if (!done && go) { r -= dt * 0.7; if (r < 0.12) r = 1; } $('lsRg').style.width = $('lsRg').style.height = r * 100 + '%'; raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
   }
   function win() {
