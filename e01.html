@@ -912,7 +912,7 @@ function swear(id) {
 function dur(sec) { sec = Math.max(0, sec); if (sec < 3600) return mmss(sec); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60); return trf('{0} óra {1} perc', h, m); }
 function chiefPortrait(id, mood, big) {
   const c = chiefOf(id); const suf = mood === 'joined' ? '_orul' : mood === 'angry' ? '_merges' : '';
-  return `<span class="pt${mood === 'angry' ? ' angry' : ''}" style="--c:${c.c}${big ? ';width:96px;height:116px;flex:none' : ''}">${c.name[0]}<img src="img/vezer_${id}${suf}.png" alt="" onerror="if(this.dataset.f){this.remove()}else{this.dataset.f=1;this.src='img/vezer_${id}.png'}"></span>`;
+  return `<span class="pt${mood === 'angry' ? ' angry' : ''}" style="--c:${c.c}${big ? ';width:96px;height:116px;flex:none' : ''}"><img src="img/vezer_${id}${suf}.png" alt="" onerror="if(this.dataset.f){this.remove()}else{this.dataset.f=1;this.src='img/vezer_${id}.png'}"></span>`;
 }
 const pendingChiefs = () => CHIEFS.filter(c => !(S.chiefs || {})[c.id]).length;
 const envoyCost = () => ({ penz: 60 + 40 * (S.envoys || 0), kovako: 1 });
@@ -2366,9 +2366,10 @@ function raidLoot(type) {
   const L = { penz: amt(rnd(40, 110)) };
   const pool = Object.keys(RES).filter(k => !['penz', 'tudas', 'hirnev'].includes(k));
   const prod = type && DEF[type] && DEF[type].prod ? Object.keys(DEF[type].prod).find(k => pool.includes(k)) : null;
-  const size = k => k === 'termeny' ? amt(rnd(30, 90)) : k === 'fa' ? rnd(8, 20) : k === 'kovako' ? rnd(1, 2) : RES[k] && RES[k].raw ? rnd(4, 10) : rnd(2, 6);
+  const size = k => k === 'termeny' ? amt(rnd(30, 90)) : k === 'fa' ? rnd(12, 28) : k === 'kovako' ? rnd(1, 2) : RES[k] && RES[k].raw ? rnd(8, 18) : RES[k] && RES[k].good ? rnd(4, 10) : rnd(2, 6);
   const picks = []; if (prod) picks.push(prod);
-  const extra = rnd(1, 3); for (let t = 0; t < 12 && picks.length < extra + (prod ? 1 : 0); t++) { const k = pick(pool); if (!picks.includes(k)) picks.push(k); }
+  const goods = pool.filter(k => RES[k] && RES[k].good); if (goods.length) { const g1 = pick(goods); if (!picks.includes(g1)) picks.push(g1); }
+  const extra = rnd(2, 3); for (let t = 0; t < 12 && picks.length < extra + (prod ? 1 : 0); t++) { const k = pick(pool); if (!picks.includes(k)) picks.push(k); }
   picks.forEach(k => { L[k] = (L[k] || 0) + size(k); });
   if (Math.random() < 0.15) L.tudas = rnd(1, 2);
   return L;
