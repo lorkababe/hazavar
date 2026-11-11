@@ -2619,11 +2619,12 @@ function playLaszlo() {
   if (!miniStart('laszlo')) return;
   const rnd = mgRng('laszlo'), D = LS_DAY[Math.floor(rnd() * LS_DAY.length)];
   ['e04_mg_laszlo_lovon', 'e04_mg_laszlo_kun_lo', 'e04_mg_laszlo_kun_jaj', 'e04_mg_laszlo_ugras', 'e04_mg_laszlo_hajol', 'e04_mg_laszlo_kun', 'e04_mg_laszlo_lany', 'e04_mg_laszlo_ko', 'e04_mg_laszlo_bokor', 'e04_mg_laszlo_ag', 'e04_mg_laszlo_nyil', 'e04_mg_laszlo_hatter.jpg', 'e04_mg_laszlo_birkozas.jpg'].forEach(mgPic);
-  let hits = 0, tLeft = 0, tugQ = 0, girlQ = 0;
+  let hits = 0, tLeft = 0, tugQ = 0, girlQ = 0, whyEsc = 'time';
   function intro() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KERLÉS, 1068')}</span><h2>${tr('László és a kun')}</h2>
       ${mgImg('e04_mg_laszlo_birkozas.jpg', 'jul-pic')}
       <p>${tr('Egy kun harcos elrabolt egy magyar lányt, és lóháton menekül. László herceg utána ered! Ugord át az akadályokat, hajolj le az ágak és a nyilak elől, és érd utol a kunt. Ha utolérted, jön a birkózás.')}</p>
+      <p style="font-weight:800">${tr('A lovad öt botlást bír ki. Minden botlásnál a kun is egérutat nyer. Ha elfogy a lovad ereje, vagy lejár az idő, a kun meglóg.')}</p>
       <span class="mg-day">${tr('Mai pálya')}: ${tr(D.name)}. ${tr(D.txt)}</span>
       <p style="font-size:14px;font-weight:700">${tr('Gépen a bal egérgomb, a Szóköz vagy a felfelé nyíl ugrik, a jobb egérgomb vagy a lefelé nyíl lehajol. Telefonon a két nagy gombbal, vagy a pálya felső és alsó részére koppintva.')}</p>
       <div class="row" style="margin-top:8px"><button class="btn coral" type="button" id="lsGo">${tr('Utána!')}</button></div></div>`, '', 'laszlo');
@@ -2632,14 +2633,17 @@ function playLaszlo() {
   function chase() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('AZ ÜLDÖZÉS')}</span><h2>${tr('Érd utol a kunt!')}</h2>
       <div class="ls-wrap"><canvas id="lsCv"></canvas></div>
-      <div class="mg-hud"><span id="lsGap"></span><span id="lsHit">${tr('Botlás')} 0</span><span id="lsTime">45</span></div>
+      <div class="mg-hud"><span id="lsGap"></span><span id="lsHit"></span><span id="lsTime">45</span></div>
       <div class="ls-ctl"><button class="btn teal" type="button" id="lsJ">⬆ ${tr('Ugrás')}</button><button class="btn" type="button" id="lsD">⬇ ${tr('Lehajol')}</button></div>
       ${MG_DEV ? `<div class="mg-dev">${tr('Teszt:')} <button class="btn ghost" type="button" id="lsSkip">${tr('Utolértem')}</button><button class="btn ghost" type="button" id="lsSlow">${tr('Lassítás')}</button></div>` : ''}</div>`, '', 'laszlo');
     const cv = $('lsCv'), g = cv.getContext('2d'); let W = 0, H = 0;
     const fit = () => { const r = cv.getBoundingClientRect(), dp = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dp; cv.height = H * dp; g.setTransform(dp, 0, 0, dp, 0, 0); }; fit();
     const GY = () => H * 0.9, LX = () => W * 0.2, unit = () => Math.min(H / 380, W / 560);
     let gap = 72, t = 0, last = 0, y = 0, vy = 0, duck = 0, obs = [], spawn = 1.2, scroll = 0, flash = 0, done = false, raf = 0, spd = 1, ph = 0, kunPh = 0, arrowT = 3, fx = [], aim = 0, bubL = null, bubK = null, ouch = 0, joy = 0, ouchArrow = false, loT = 0;
-    const DUR = 45, pool = []; Object.entries(D.mix).forEach(([k2, w]) => { for (let n = 0; n < w; n++) pool.push(k2); });
+    const DUR = 45, LIVES = 5, pool = [];
+    const shoe = on => `<svg width="22" height="22" viewBox="0 0 24 24" style="vertical-align:-5px;opacity:${on ? 1 : .25}"><path d="M5 21V11a7 7 0 0 1 14 0v10h-4V11a3 3 0 0 0-6 0v10z" fill="${on ? '#8A5A2B' : '#6B5A48'}" stroke="#3A2410" stroke-width="1.4"/><circle cx="7" cy="17" r=".9" fill="#F2D9A8"/><circle cx="17" cy="17" r=".9" fill="#F2D9A8"/><circle cx="7" cy="13" r=".9" fill="#F2D9A8"/><circle cx="17" cy="13" r=".9" fill="#F2D9A8"/></svg>`;
+    let hudHits = -1; const hudLives = () => { if (hudHits === hits) return; hudHits = hits; $('lsHit').innerHTML = `${tr('A ló ereje')} ` + Array.from({ length: LIVES }, (_, k) => shoe(k < LIVES - hits)).join(''); };
+    const say = (txt, c) => { bubL = { t: 1.1, txt: tr(txt), c }; }; Object.entries(D.mix).forEach(([k2, w]) => { for (let n = 0; n < w; n++) pool.push(k2); });
     const jump = () => { if (y === 0 && !duck) { vy = -H * 1.95; try { puff(LX(), GY(), 6, true); } catch (e) {} } };
     const doDuck = () => { if (y === 0) duck = 0.7; };
     $('lsJ').onpointerdown = e => { e.preventDefault(); jump(); }; $('lsD').onpointerdown = e => { e.preventDefault(); doDuck(); };
@@ -2693,7 +2697,7 @@ function playLaszlo() {
     function obstacle(o) {
       const K = KIND[o.k], u = unit(), w = K.w * u, x = o.x, base = GY() + 4 * u, pic = PROP(o.k), dw = K.dw * u;
       if (K.arrow) {
-        const yTop = GY() - 78 * u;
+        const yTop = GY() - 122 * u;
         g.save(); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 3 * u; g.setLineDash([10 * u, 8 * u]); g.beginPath(); g.moveTo(x + dw, yTop); g.lineTo(x + dw + 70 * u, yTop); g.stroke(); g.restore();
         if (pic) { const ph3 = dw * pic.naturalHeight / pic.naturalWidth; g.save(); g.shadowColor = 'rgba(255,230,120,.95)'; g.shadowBlur = 12 * u; g.drawImage(pic, x, yTop - ph3 / 2, dw, ph3); g.restore(); }
         else { g.strokeStyle = K.col; g.lineWidth = 3; g.beginPath(); g.moveTo(x, yTop); g.lineTo(x + w, yTop); g.stroke(); }
@@ -2701,7 +2705,8 @@ function playLaszlo() {
       }
       if (!pic) { g.fillStyle = K.col; g.fillRect(x, K.high ? GY() - 100 * u : base - 28 * u, w, 28 * u); return; }
       const ph2 = dw * pic.naturalHeight / pic.naturalWidth, dx = x + w / 2 - dw / 2;
-      if (K.high) { g.drawImage(pic, dx - 20 * u, GY() - 96 * u - ph2 * 0.55, dw, ph2); return; } // lelógó ág: a lombja fejmagasságban
+      if (K.high) { // lelógó ág: a fáról lóg be fentről, a lombja fejmagasságban
+        const bw = 250 * u, bh = bw * pic.naturalHeight / pic.naturalWidth, ang = 0.72; g.save(); g.translate(x + w * 0.4, GY() - 150 * u); g.rotate(-ang); g.scale(-1, 1); g.drawImage(pic, -bw + 10 * u, -bh * 0.55, bw, bh); g.restore(); return; }
       g.save(); g.fillStyle = 'rgba(40,30,10,.22)'; g.beginPath(); g.ellipse(x + w / 2, base - 1, dw * 0.45, 5 * u, 0, 0, 7); g.fill(); g.restore();
       g.drawImage(pic, dx, base - ph2 + (K.water ? ph2 * 0.35 : 0), dw, ph2);
     }
@@ -2725,20 +2730,20 @@ function playLaszlo() {
             const air = y < -H * 0.09, low = duck > 0;
             const ok = K.high ? low : (K.water ? y < -H * 0.16 : air);
             if (!ok) { o.hit = true; hits++; shake = 0.35; ouch = 1.1; ouchArrow = !!K.arrow;
-              if (K.arrow) { bubL = { t: 1.1, txt: tr('Aucs!'), c: '#C9472F' }; bubK = { t: 1.1, txt: tr('Hehe, talált!'), c: '#3F2614' }; lsVoice('ouch'); setTimeout(() => lsVoice('hehe'), 380); }
-              else { puff(lx + 20 * u, GY(), 12, true); if (K.high) for (let k3 = 0; k3 < 10; k3++) leaves.push({ x: lx + (rnd() - .5) * 60 * u, y: GY() - 110 * u, vx: -W * 0.3 - rnd() * 60, vy: rnd() * 40, r: rnd() * 6, t: 0 }); fx.push({ x: lx, y: GY() - 150 * u, t: 0, txt: tr(K.high ? 'Bumm, az ág!' : 'Megbotlott a ló!'), c: '#FF8A6E' }); }
+              if (K.arrow) { say('Aucs!', '#C9472F'); bubK = { t: 1.1, txt: tr('Hehe, talált!'), c: '#3F2614' }; lsVoice('ouch'); setTimeout(() => lsVoice('hehe'), 380); }
+              else { puff(lx + 20 * u, GY(), 12, true); if (K.high) for (let k3 = 0; k3 < 10; k3++) leaves.push({ x: lx + (rnd() - .5) * 60 * u, y: GY() - 130 * u, vx: -W * 0.3 - rnd() * 60, vy: rnd() * 40, r: rnd() * 6, t: 0 }); say(K.high ? 'Bumm, az ág!' : 'Megbotlott a ló!', '#C9472F'); }
               gap = Math.min(100, gap + (K.arrow ? 9 : 13)); }
           }
           if (o.x + w < lx - 30 * u && !o.past) { o.past = true;
-            if (!o.hit && K.arrow) { joy = 1.1; bubL = { t: 1.1, txt: tr('Háhá! Mellé!'), c: '#2F6B2A' }; bubK = { t: 1.1, txt: tr('Jaj, ne!'), c: '#8E5A9B' }; lsVoice('haha'); setTimeout(() => lsVoice('jaj'), 420); }
-            else if (!o.hit) { fx.push({ x: lx + 20, y: GY() - 150 * u, t: 0, txt: tr(K.high ? 'Ügyes!' : 'Hopp!'), c: '#CFE5B4' }); if (K.high) for (let k3 = 0; k3 < 6; k3++) leaves.push({ x: o.x + rnd() * 60 * u, y: GY() - 100 * u, vx: -W * 0.5, vy: rnd() * 30, r: rnd() * 6, t: 0 }); } }
+            if (!o.hit && K.arrow) { joy = 1.1; say('Háhá! Mellé!', '#2F6B2A'); bubK = { t: 1.1, txt: tr('Jaj, ne!'), c: '#8E5A9B' }; lsVoice('haha'); setTimeout(() => lsVoice('jaj'), 420); }
+            else if (!o.hit) { if (!bubL || bubL.t < 0.6) say(K.high ? 'Ügyes!' : 'Hopp!', '#2F6B2A'); if (K.high) for (let k3 = 0; k3 < 6; k3++) leaves.push({ x: o.x + rnd() * 60 * u, y: GY() - 130 * u, vx: -W * 0.5, vy: rnd() * 30, r: rnd() * 6, t: 0 }); } }
         });
         obs = obs.filter(o => o.x > -260);
         birdT -= dt; if (birdT <= 0) { const bx = W * (0.55 + rnd() * 0.4); for (let k3 = 0; k3 < 3; k3++) birds.push({ x: bx + k3 * 22 * u, y: GY() - 20 * u - k3 * 8 * u, vx: -(40 + rnd() * 40) * u, vy: -(70 + rnd() * 30) * u, f: rnd() * 3, t: 0 }); birdT = 6 + rnd() * 6; }
-        const left = Math.max(0, DUR - t); $('lsTime').textContent = Math.ceil(left); $('lsHit').textContent = tr('Botlás') + ' ' + hits;
+        const left = Math.max(0, DUR - t); $('lsTime').textContent = Math.ceil(left); hudLives(); gap = Math.min(95, gap);
         $('lsGap').textContent = gap < 15 ? tr('Mindjárt utoléred!') : gap < 45 ? tr('Közeledsz!') : tr('Messze van még');
         if (gap <= 0) { done = true; tLeft = left; setTimeout(() => { cancelAnimationFrame(raf); wrestle(); }, 700); }
-        else if (left <= 0 || gap >= 100) { done = true; setTimeout(() => { cancelAnimationFrame(raf); escaped(); }, 600); }
+        else if (left <= 0 || hits >= LIVES) { done = true; whyEsc = hits >= LIVES ? 'tired' : 'time'; say(hits >= LIVES ? 'Elfáradt a lovam!' : 'Lejárt az idő!', '#C9472F'); setTimeout(() => { cancelAnimationFrame(raf); escaped(); }, 1100); }
       }
       const u = unit(), lx = LX(), kx = lx + 70 * u + gap * (W * 0.52 / 100);
       // madarak a háttérben
@@ -2748,6 +2753,11 @@ function playLaszlo() {
       const shadow = (x, lift, wd) => { const k3 = Math.max(0.35, 1 + lift / (H * 0.5)); g.save(); g.fillStyle = `rgba(40,30,10,${0.28 * k3})`; g.beginPath(); g.ellipse(x, GY() + 5 * u, wd * k3 * u, 7 * k3 * u, 0, 0, 7); g.fill(); g.restore(); };
       shadow(kx, 0, 54); shadow(lx, y, 58);
       obs.filter(o => !KIND[o.k].arrow).forEach(obstacle);
+      // jelzés a közeledő akadály fölött: ugrani vagy lehajolni kell
+      obs.forEach(o => { const K = KIND[o.k]; if (K.arrow || o.past || o.hit) return; const cx = o.x + K.w * u / 2; if (cx < lx + 50 * u || cx > W * 0.97) return;
+        const al = Math.min(1, (W * 0.97 - cx) / (W * 0.15)), cy = GY() - (K.high ? 225 : 175) * u, r = 15 * u;
+        g.save(); g.globalAlpha = al; g.fillStyle = K.high ? '#5B4A3A' : '#2F7F78'; g.strokeStyle = '#FFF8EA'; g.lineWidth = 2.5 * u; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); g.stroke();
+        g.fillStyle = '#FFF8EA'; g.beginPath(); if (K.high) { g.moveTo(cx - 7 * u, cy - 4 * u); g.lineTo(cx + 7 * u, cy - 4 * u); g.lineTo(cx, cy + 6 * u); } else { g.moveTo(cx - 7 * u, cy + 4 * u); g.lineTo(cx + 7 * u, cy + 4 * u); g.lineTo(cx, cy - 6 * u); } g.closePath(); g.fill(); g.restore(); });
       // por a patáknál
       dustT -= dt; if (dustT <= 0 && !done) { if (y === 0) puff(lx - 20 * u, GY(), 1); puff(kx - 20 * u, GY(), 1); dustT = 0.07; }
       if (take > 0) take -= dt;
@@ -2776,7 +2786,7 @@ function playLaszlo() {
       }
       // nyilak a figurák előtt
       obs.filter(o => KIND[o.k].arrow).forEach(obstacle);
-      obs.forEach(o => { if (o.k === 'nyil' && !o.past && o.x > LX() + 60) { g.fillStyle = '#C9472F'; g.beginPath(); g.arc(LX() + 70 * u, GY() - 175 * u, 13 * u, 0, 7); g.fill(); g.fillStyle = '#FFF'; g.font = `900 ${Math.round(18 * u)}px Nunito, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', LX() + 70 * u, GY() - 174 * u); g.textBaseline = 'alphabetic'; } });
+      obs.forEach(o => { if (o.k === 'nyil' && !o.past && o.x > LX() + 60) { g.fillStyle = '#C9472F'; g.beginPath(); g.arc(LX() + 105 * u, GY() - 190 * u, 13 * u, 0, 7); g.fill(); g.fillStyle = '#FFF'; g.font = `900 ${Math.round(18 * u)}px Nunito, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', LX() + 105 * u, GY() - 189 * u); g.textBaseline = 'alphabetic'; } });
       // por és levelek
       dust.forEach(d => { d.t += dt0; d.x += d.vx * dt0; d.y += d.vy * dt0; d.vy += 30 * dt0; const k3 = d.t / d.life; g.fillStyle = `rgba(214,190,140,${0.55 * (1 - k3)})`; g.beginPath(); g.arc(d.x, d.y, d.r * (1 + k3 * 1.6), 0, 7); g.fill(); });
       dust = dust.filter(d => d.t < d.life);
@@ -2800,12 +2810,12 @@ function playLaszlo() {
       fx = fx.filter(f => f.t < 1);
       raf = requestAnimationFrame(frame);
     }
-    if (window.__T) window.__lsArrow = () => { arrowT = 0.95; };
+    if (window.__T) window.__lsArrow = () => { arrowT = 0.95; }; if (window.__T) { window.__lsSpawn = k => obs.push({ k, x: W + 20 }); window.__lsDuck = () => doDuck(); window.__lsPause = v => { spd = v; }; }
     raf = requestAnimationFrame(frame);
   }
   function escaped() {
     const rew = { penz: 60 + Math.max(0, 6 - hits) * 10 }; const got = miniGive('laszlo', rew);
-    miniEnd('ELMENEKÜLT', tr('A kun egérutat nyert'), [tr('Most elmenekült, de László nem adja fel. Holnap újra utána eredhetsz!'), trf('{0} botlás volt az úton.', hits), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`], LS_FACT);
+    miniEnd('ELMENEKÜLT', tr('A kun egérutat nyert'), [tr(whyEsc === 'tired' ? 'László lova ötször megbotlott, és elfáradt. A kun ezt kihasználta, és meglógott.' : 'Lejárt az idő, a kun eltűnt a látóhatáron.') + ' ' + tr('László nem adja fel, holnap újra utána eredhetsz!'), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`], LS_FACT);
   }
   function wrestle() {
     // kötélhúzás: felváltva kell nyomni a két gombot, a kun közben visszahúz
