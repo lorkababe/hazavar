@@ -5185,6 +5185,242 @@ function rearUI() {
   const head = document.querySelector('#drawer .drawer-head h2');
   if (head) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'rearBtn'; b.style.flex = '0 0 auto'; b.textContent = tr('Átrendezés'); b.onclick = rearStart; head.after(b); }
 })();
+
+// ---------- Éjszaka: este lefekszik a város, reggel beszedjük az éjszakai műszak termését ----------
+// a magyar idő számít (Europe/Budapest), 22:00 és 7:00 között éjszaka van
+(function () {
+  const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
+  const NDEV = !/github\.io$/.test(location.hostname);
+  const NIGHT_FROM = 22, NIGHT_TO = 7, ASK_AGAIN = 30 * 60e3, ASK_AUTO = 15 * 60e3, IDLE = 30 * 60e3;
+  const SEEN_KEY = 'hv-seen-' + ERA;
+  const G = {
+    e00: { name: 'Samu', img: 'e00_samu' }, e01: { name: 'Álmos', img: 'e01_almos' }, e02: { name: 'Árpád', img: 'e02_arpad' },
+    e03: { name: 'István', img: 'e03_istvan' }, e04: { name: 'IV. Béla', img: 'e04_bela' }
+  }[ERA];
+  const ASK = {
+    e00: ['Samu ásít. A tűz is ásít. Mindenki ásít. Alszunk?', 'Sötét van, a bogyót sem látni. Samu szerint ilyenkor a legokosabb dolog az alvás.'],
+    e01: ['Nem hiába hívnak Álmosnak. Késő van, a lovak is bóbiskolnak. Lefekszünk?', 'A csillagok már kint vannak, a jurtákban kialudtak a mécsesek. Ideje pihenni.'],
+    e02: ['Hosszú nap volt, a sereg is elfáradt. Pihenjünk, holnap újra nekivágunk.', 'Még a kovácsom is ásít, pedig ő sosem fárad el. Szerintem késő van.'],
+    e03: ['Elmondtuk az esti imát, ideje nyugovóra térni. A szerzetesek majd virrasztanak helyettünk.', 'Késő van, a gyertya is csonkig égett. Holnap is királynak kell lennem.'],
+    e04: ['Késő van, egész nap az országot építettük. Még a hálósapkám is fáradt.', 'A bárók már alszanak, és most az egyszer igazuk van. Lefekszünk?']
+  }[ERA];
+  const MORNING = {
+    e00: ['Jó reggelt! Samu kipihente magát, és már éhes is. Nézd, mit gyűjtöttek a többiek éjjel!', 'Felkelt a nap, Samu is felkelt. Ez nem mindig sikerül egyszerre.'],
+    e01: ['Jó reggelt! Ma kivételesen nem vagyok álmos. A tábor éjjel sem tétlenkedett.', 'Hajnalodik, a lovak már legelnek. Gyere, nézzük, mi gyűlt össze éjjel!'],
+    e02: ['Jó reggelt! Megreggeliztem, a sereg is. Lássuk az éjszakai termést.', 'Szép reggel van. Szerintem ma is honfoglalunk egy kicsit.'],
+    e03: ['Jó reggelt! A reggeli mise után már az ország dolgain jár az eszem. Ezt hozta az éjszaka.', 'Áldott jó reggelt! A szerzetesek szerint az éjszaka termékeny volt.'],
+    e04: ['Jó reggelt! Megittam a kamillateámat, és remek kedvem van. Az éjszakai műszak szépen dolgozott.', 'Felkelt a nap Buda fölött. Lássuk, mit termett a város, amíg aludtunk!']
+  }[ERA];
+  // reggeli meglepetések: r a nyersanyag, m a szorzó az éjszakai termésére, vagy g egy ajándék
+  const EVS = {
+    e00: [
+      { t: 'Teliholdas vadászat', x: 'Olyan fényes volt a hold, hogy a vadászok éjjel is vadásztak.', r: 'termeny', m: 0.5 },
+      { t: 'Álomrajz', x: 'Valaki álmában új képet festett a sziklafalra. Senki sem tudja, mit ábrázol, de nagyon okos.', g: { tudas: 1 } },
+      { t: 'Hullócsillag', x: 'Hullócsillag esett a tábor mellé. A pattintó szerint ebből lesz a legjobb kovakő.', g: { kovako: 1 } },
+      { t: 'A medve belekóstolt', x: 'Egy medve éjjel belekóstolt a készletbe. Nem sokat evett, csak a legjobbakat.', r: 'termeny', m: -0.3, bad: 1 },
+      { t: 'Kialudt a tűz', x: 'Kialudt a tűz, és senki sem akart kimenni a hidegbe. Kicsit kevesebb lett a zsákmány.', r: 'penz', m: -0.25, bad: 1 }
+    ],
+    e01: [
+      { t: 'Csikó született', x: 'Hajnalban csikó született a ménesben. Az egész tábor körülállja.', g: { kovako: 1 } },
+      { t: 'A táltos álma', x: 'A táltos azt álmodta, hogy egy nap nagyon messzire jutunk. Ezt fel is jegyezte.', g: { tudas: 1 } },
+      { t: 'Holdfényes halászat', x: 'A halászok egész éjjel a vízen voltak, és tele hálóval jöttek haza.', r: 'termeny', m: 0.4 },
+      { t: 'Éjszakai vásár', x: 'Késő este befutott egy karaván, és jó vásárt csaptunk.', r: 'penz', m: 0.3 },
+      { t: 'Kiszökött a ménes', x: 'Pár ló kiszökött a karámból, a legények hajnalig kergették őket. Mindet visszahozták, csak dolgozni nem maradt idő.', r: 'penz', m: -0.2, bad: 1 }
+    ],
+    e02: [
+      { t: 'Álmatlan kovács', x: 'A kovács nem tudott aludni, hát kovácsolt. Reggelre egy egész halom munka lett kész.', r: 'penz', m: 0.4 },
+      { t: 'Hajnali érés', x: 'Meleg éjszaka volt, hajnalra megérett a köles.', r: 'termeny', m: 0.4 },
+      { t: 'Csillaghullás', x: 'Csillaghullás volt az áldozóhely fölött. A sámán szerint ez jó jel, és mindent le is írt.', g: { tudas: 1 } },
+      { t: 'Róka a tyúkólban', x: 'Éjjel róka járt a tyúkólban. A kakas szerint nem ő volt a hibás.', r: 'termeny', m: -0.25, bad: 1 }
+    ],
+    e03: [
+      { t: 'Virrasztó szerzetesek', x: 'A szerzetesek egész éjjel másoltak. Reggelre kész lett egy új kódex.', g: { tudas: 1 } },
+      { t: 'Éjjel jött a só', x: 'Éjjel befutott a sószállító szekér. Kicsit késett, de megérte várni.', g: { kovako: 1 } },
+      { t: 'Hajnali vásár', x: 'A piacon már hajnalban sorban álltak a vevők.', r: 'penz', m: 0.35 },
+      { t: 'Megázott a gabona', x: 'Éjjel esett, és valaki nyitva hagyta a csűr ajtaját. A gabona egy része megázott.', r: 'termeny', m: -0.25, bad: 1 }
+    ],
+    e04: [
+      { t: 'Új bárányok', x: 'Éjjel új bárányok születtek. A juhásznak olyan jó kedve van, hogy kétszer annyit nyírt.', r: 'gyapju', m: 0.6 },
+      { t: 'Megszületett a borász unokája', x: 'Éjjel megszületett a borász unokája. Az egész szomszédság ünnepel, és a présház is ráadott egy lapáttal.', r: 'bor', m: 0.6 },
+      { t: 'A kovács álma', x: 'A kovács álmában új fogást talált ki, és reggel rögtön ki is próbálta.', r: 'vas', m: 0.5 },
+      { t: 'Holdfényes favágás', x: 'Telihold volt, a favágók szerint ilyenkor könnyebben dől a fa.', r: 'fa', m: 0.4 },
+      { t: 'Egész éjjel zakatolt a malom', x: 'A molnár nem tudott aludni a zakatolástól, hát inkább dolgozott.', r: 'termeny', m: 0.4 },
+      { t: 'Hajnali vásárosok', x: 'Hajnalban vásárosok érkeztek messziről, és jól fizettek.', r: 'penz', m: 0.3 },
+      { t: 'Beomlott a bánya bejárata', x: 'Éjjel beomlott a bánya bejárata. Senkinek sem esett baja, reggelre kiásták, csak az érc fele maradt bent.', r: 'erc', m: -0.5, bad: 1 },
+      { t: 'Seregélyek a szőlőben', x: 'Hajnalban seregélyek lepték el a szőlőt. Jól laktak, mi kicsit kevésbé.', r: 'szolo', m: -0.3, bad: 1 },
+      { t: 'Szökevény birkák', x: 'Két birka kiszökött, a juhász hajnalig kergette őket. Meglettek, de a nyírás elmaradt.', r: 'gyapju', m: -0.3, bad: 1 },
+      { t: 'Elaludt a posztós', x: 'A posztós elaludt a szövőszék mellett. Szép álma volt, de kevesebb posztó lett.', r: 'poszto', m: -0.3, bad: 1 }
+    ]
+  }[ERA].concat([{ t: 'Csillaghullás', x: 'Csillaghullás volt, és mindenki kívánt valamit. Úgy tűnik, valakinek teljesült.', r: 'penz', m: 0.25 }]);
+
+  // ---- magyar idő ----
+  const FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Budapest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  function parts(ms) { const o = {}; FMT.formatToParts(new Date(ms)).forEach(p => { o[p.type] = p.value; }); return { y: +o.year, mo: +o.month, d: +o.day, h: +o.hour % 24, mi: +o.minute }; }
+  const hourOf = ms => { const p = parts(ms); return p.h + p.mi / 60; };
+  function at(ms, hh) { const p = parts(ms), g = Date.UTC(p.y, p.mo - 1, p.d, hh, 0), q = parts(g); return g - (Date.UTC(q.y, q.mo - 1, q.d, q.h, q.mi) - g); }
+  const isNight = ms => { const h = hourOf(ms); return h >= NIGHT_FROM || h < NIGHT_TO; };
+  function bounds(ms) { return hourOf(ms) >= NIGHT_FROM ? [at(ms, NIGHT_FROM), at(ms + 12 * 3600e3, NIGHT_TO)] : [at(ms - 12 * 3600e3, NIGHT_FROM), at(ms, NIGHT_TO)]; }
+  function lastNightIn(a, b) { for (let t = b; t > a && t > b - 15 * 86400e3; t -= 10 * 60e3) if (isNight(t)) { const [s, e] = bounds(t); return [Math.max(a, s), Math.min(b, e), e]; } return null; }
+
+  // ---- állapot ----
+  let lastAct = Date.now(), nA = 0, busy = false;
+  const seenPrev = (() => { try { return +localStorage.getItem(SEEN_KEY) || 0; } catch (e) { return 0; } })();
+  const markSeen = () => { try { localStorage.setItem(SEEN_KEY, String(Date.now())); } catch (e) {} };
+  ['pointerdown', 'keydown', 'wheel'].forEach(ev => addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true, capture: true }));
+  const spd = () => S.speed || 1;
+  const bt = b => typeof bTime === 'function' ? bTime(b) : DEF[b.type].time;
+  const nm = k => RES[k] ? tr(RES[k].name) : k;
+  const num = n => typeof fmt === 'function' ? fmt(n) : String(Math.round(n));
+  const chips = o => Object.entries(o).filter(([, v]) => Math.round(v)).map(([k, v]) => `<span class="hvn-chip ${v < 0 ? 'neg' : ''}"><img src="img/${RES[k].file || RES[k].icon + '.png'}" alt="">${v > 0 ? '+' : ''}${num(Math.round(v))} ${nm(k)}</span>`).join('');
+
+  function startNight(s, test) {
+    if (S.night) return; const now = Date.now(); s = Math.min(s || now, now);
+    S.night = { s, e: test ? now + 8 * 3600e3 : bounds(isNight(s) ? s : now)[1], gt0: S.gt - (now - s) / 1000 * spd(), test: !!test };
+    S.nightAsk = null; save(); if (openModal === 'nightask') closeModal(); renderBar();
+  }
+  // a termés: minden termelő épület az éjszaka alatt annyiszor ad, ahányszor óránként egyszer beszednéd
+  function harvest(nGt, test) {
+    const before = Object.assign({}, S.res), keep = { sfx: sfxCollect, toast }, hadDaily = typeof dailyHit === 'function' ? dailyHit : null, f0 = floats.length;
+    sfxCollect = () => {}; toast = () => {}; if (hadDaily) dailyHit = () => {};
+    try {
+      const list = S.buildings.filter(b => { const d = DEF[b.type]; return d && d.prod && working(b) && !b.dry && !(b.until && S.gt < b.until) && !(d.prod.tudas && Object.keys(d.prod).length === 1); });
+      const cyc = new Map(); list.forEach(b => { const T = bt(b); if (!T) return; let c = Math.min(Math.floor(nGt / T) + 1, 1 + Math.ceil(nGt / 3600)); if (!test && !DEF[b.type].input) c = Math.min(c, Math.floor((S.gt - b.t0) / T)); cyc.set(b, Math.max(0, c)); });
+      const max = Math.max(0, ...cyc.values()), raw = list.filter(b => !DEF[b.type].input), proc = list.filter(b => DEF[b.type].input);
+      for (let r = 0; r < max; r++) {
+        raw.forEach(b => { if (cyc.get(b) > r && !b.dry) collect(b); });
+        proc.forEach(b => { if (!(cyc.get(b) > r)) return; if (b.fed === false) { const need = typeof inputNeed === 'function' ? inputNeed(b) : DEF[b.type].input; if (!canPay(need)) { cyc.set(b, r); return; } pay(need); b.paid = need; b.fed = true; } collect(b); });
+      }
+    } finally { sfxCollect = keep.sfx; toast = keep.toast; if (hadDaily) dailyHit = hadDaily; floats.length = f0; }
+    const got = {}; Object.keys(S.res).forEach(k => { const d = (S.res[k] || 0) - (before[k] || 0); if (Math.round(d)) got[k] = d; }); return got;
+  }
+  function pickEvent(got) {
+    if (Math.random() > 0.75) return null;
+    const ok = EVS.filter(e => e.g ? Object.keys(e.g).every(k => RES[k]) : (got[e.r] || 0) > 0);
+    const good = ok.filter(e => !e.bad), bad = ok.filter(e => e.bad);
+    const pool = bad.length && (Math.random() < 0.3 || !good.length) ? bad : good; return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  }
+  function morning(early) {
+    if (!S.night || busy) return; busy = true;
+    const n = S.night, now = Date.now(), nGt = n.test ? 8 * 3600 : Math.max(0, Math.min(S.gt - n.gt0, (Math.min(now, n.e) - n.s) / 1000 * spd()));
+    S.night = null; S.nightAsk = { next: now + ASK_AGAIN };
+    let got = {}; try { got = harvest(nGt, n.test); } catch (e) { try { noteErr(e); } catch (x) {} }
+    const ev = nGt > 3600 ? pickEvent(got) : null; let extra = {};
+    if (ev) { if (ev.g) extra = Object.assign({}, ev.g); else { const v = Math.round(got[ev.r] * ev.m); extra = { [ev.r]: ev.m < 0 ? -Math.min(-v, S.res[ev.r] || 0) : v }; }
+      Object.entries(extra).forEach(([k, v]) => { S.res[k] = (S.res[k] || 0) + v; }); }
+    save(); try { hud(); } catch (e) {}
+    const hrs = Math.round(nGt / 3600 * 10) / 10, line = MORNING[Math.floor(Math.random() * MORNING.length)];
+    modal(`${X_BTN}<div class="inner hvn">
+      <span class="eyebrow">${tr(early ? 'KORAI ÉBRESZTŐ' : 'ÚJ NAP VIRRADT')}</span><h2>${tr(early ? 'Ébresztő!' : 'Jó reggelt!')}</h2>
+      <div class="samu-say"><img src="img/${G.img}_reggel.png" alt=""><div class="bubble"><b>${tr(G.name)}</b>${tr(early ? 'Ilyen korán? Na jó, felkelünk. Ennyit dolgozott a város, amíg aludtunk.' : line)}</div></div>
+      <div class="hvn-box"><b>${trf('Az éjszakai műszak termése · {0} óra', String(hrs).replace('.', ','))}</b><div class="hvn-chips">${Object.keys(got).length ? chips(got) : `<span class="muted">${tr('Az éjjel csend volt, egyik műhely sem dolgozott.')}</span>`}</div></div>
+      ${ev ? `<div class="hvn-box ${ev.bad ? 'bad' : 'good'}"><b>${tr(ev.t)}</b><p>${tr(ev.x)}</p><div class="hvn-chips">${chips(extra)}</div></div>` : ''}
+      <div class="row" style="justify-content:flex-end"><button class="btn coral" type="button" id="hvnGo">${tr('Kezdődjön a nap!')}</button></div></div>`, '', 'nightmorning');
+    $('hvnGo').onclick = closeModal; busy = false; renderBar();
+  }
+  function ask() {
+    const again = !!(S.nightAsk && S.nightAsk.n);
+    S.nightAsk = { at: Date.now(), n: (S.nightAsk && S.nightAsk.n || 0) + 1 }; save();
+    modal(`${X_BTN}<div class="inner hvn">
+      <span class="eyebrow">${tr('KÉSŐRE JÁR')}</span><h2>${tr(again ? 'Még mindig ébren vagyunk' : 'Váltsunk éjszakai műszakra?')}</h2>
+      <div class="samu-say"><img src="img/${G.img}_ejszaka.png" alt=""><div class="bubble"><b>${tr(G.name)}</b>${tr(again ? 'Kezdjük most, vagy inkább később? Ha nem szólsz, negyedóra múlva magunktól lefekszünk.' : ASK[Math.floor(Math.random() * ASK.length)])}</div></div>
+      <p>${tr('Éjjel a házakban alszanak, csak a műhelyekben és a tűz mellett dolgoznak tovább. Reggel egyben beszedheted, amit nyolc óra alatt megtermeltek.')}</p>
+      <div class="row" style="gap:10px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" type="button" id="hvnLater">${tr(again ? 'Inkább később' : 'Majd egy picit később')}</button><button class="btn coral" type="button" id="hvnYes">${tr(again ? 'Kezdjük most' : 'Igen, én is elfáradtam')}</button></div></div>`, '', 'nightask');
+    const later = () => { S.nightAsk = { next: Date.now() + ASK_AGAIN, n: S.nightAsk.n }; save(); closeModal(); };
+    $('hvnYes').onclick = () => { closeModal(); startNight(Date.now()); try { toast(tr('Jó éjszakát! Reggel 7-kor kezdődik az új nap.')); } catch (e) {} };
+    $('hvnLater').onclick = later; const x = $('modalRoot').querySelector('.close'); if (x) x.onclick = later;
+  }
+
+  // ---- a nap ritmusa ----
+  function check() {
+    if (typeof S === 'undefined' || !S) return; const now = Date.now(), vis = !document.hidden;
+    if (vis) markSeen();
+    if (S.night) {
+      if (!S.night.test && !isNight(now) && vis && !openModal) morning(false);
+      renderBar(); return;
+    }
+    if (!isNight(now)) { if (S.nightAsk) S.nightAsk = null; renderBar(); return; }
+    // éjszaka van, de a város még ébren: ha régóta senki sem játszik, magától lefekszik
+    if (now - lastAct >= IDLE) { startNight(Math.max(lastAct, bounds(now)[0])); return; }
+    const A = S.nightAsk;
+    if (A && A.at && !A.next && now - A.at >= ASK_AUTO) { startNight(now); return; }
+    if (!vis) return;
+    if (openModal) return;
+    if (!A || (A.next && now >= A.next)) ask();
+  }
+  // ha zárva volt a játék, és közben éjszaka lett, az a rész éjszakai műszaknak számít
+  function fromAway() {
+    if (S.night || !seenPrev) return; const gap = lastNightIn(seenPrev, Date.now());
+    if (gap && gap[1] - gap[0] >= 45 * 60e3) { startNight(gap[0]); S.night.e = gap[2]; save(); }
+  }
+
+  // ---- rajz: kékes sötét, csak a műhelyekben pislákol a fény ----
+  const _draw = draw;
+  draw = function (now) {
+    _draw(now);
+    const want = S && S.night ? 1 : 0; nA += (want - nA) * 0.035; if (Math.abs(want - nA) < 0.002) nA = want; if (nA <= 0) return;
+    try { paintNight(now, nA); } catch (e) {}
+  };
+  function paintNight(now, a) {
+    const c = ctx; c.save(); c.setTransform(DPR, 0, 0, DPR, 0, 0);
+    c.globalCompositeOperation = 'multiply'; c.fillStyle = `rgba(${Math.round(255 - 205 * a)},${Math.round(255 - 180 * a)},${Math.round(255 - 95 * a)},1)`; c.fillRect(0, 0, W, H);
+    c.globalCompositeOperation = 'source-over'; c.fillStyle = `rgba(8,14,40,${0.22 * a})`; c.fillRect(0, 0, W, H);
+    // holdfény a jobb felső sarokból
+    let g = c.createRadialGradient(W * 0.88, H * 0.04, 0, W * 0.88, H * 0.04, Math.max(W, H) * 0.75);
+    g.addColorStop(0, `rgba(150,175,235,${0.16 * a})`); g.addColorStop(1, 'rgba(150,175,235,0)');
+    c.globalCompositeOperation = 'screen'; c.fillStyle = g; c.fillRect(0, 0, W, H);
+    // meleg fény a dolgozó épületekben
+    c.globalCompositeOperation = 'lighter';
+    S.buildings.forEach(b => {
+      const d = DEF[b.type]; if (!d || !d.prod || d.pop || !working(b)) return; const r = spriteRect(b); if (!r) return;
+      const x = ((r.L[0] + r.R[0]) / 2 - camX) * scale, y = (r.y + r.h * 0.62 - camY) * scale, R = Math.max(18, r.w * scale * 0.42);
+      if (x < -R || y < -R || x > W + R || y > H + R) return;
+      const fl = 0.82 + 0.1 * Math.sin(now / 190 + b.id * 1.7) + 0.06 * Math.sin(now / 67 + b.id * 3.1);
+      const gg = c.createRadialGradient(x, y, 0, x, y, R);
+      gg.addColorStop(0, `rgba(255,170,80,${0.30 * a * fl})`); gg.addColorStop(0.35, `rgba(240,120,50,${0.14 * a * fl})`); gg.addColorStop(1, 'rgba(200,90,40,0)');
+      c.fillStyle = gg; c.beginPath(); c.ellipse(x, y, R, R * 0.7, 0, 0, Math.PI * 2); c.fill();
+    });
+    // a képernyő széle sötétebb
+    c.globalCompositeOperation = 'source-over';
+    g = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    g.addColorStop(0, 'rgba(5,10,30,0)'); g.addColorStop(1, `rgba(5,10,30,${0.35 * a})`); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.restore();
+  }
+
+  // éjjel nem lehet 10 percenként beszedni: az épületek alszanak, reggel jön minden egyben
+  const _ready = ready; ready = function (b) { return S && S.night ? false : _ready(b); };
+
+  // ---- felület ----
+  const st = document.createElement('style');
+  st.textContent = `.hvn .samu-say{margin:6px 0 12px}.hvn .samu-say img{width:120px;height:132px}
+  .hvn-box{border-radius:14px;padding:10px 12px;margin:10px 0;background:rgba(255,248,232,.55);border:2px solid rgba(110,68,34,.18)}.hvn-box p{margin:4px 0 6px}
+  .hvn-box.good{background:rgba(212,233,190,.6);border-color:rgba(70,120,50,.3)}.hvn-box.bad{background:rgba(240,214,196,.65);border-color:rgba(160,80,50,.3)}
+  .hvn-chips{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:6px}.hvn-chip{display:inline-flex;align-items:center;gap:5px;font-weight:800}.hvn-chip img{width:24px;height:24px;object-fit:contain}.hvn-chip.neg{color:#9A3A22}
+  #hvnBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(118px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);padding:9px 10px 9px 16px;border-radius:999px;background:rgba(16,24,58,.86);color:#E6ECFF;font-weight:700;font-size:14px;box-shadow:0 6px 22px rgba(0,0,0,.35);border:1px solid rgba(160,180,255,.25)}
+  #hvnBar button{border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:800;background:#E8C46A;color:#2A1A08;cursor:pointer;white-space:nowrap}
+  #hvnDev{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));top:calc(var(--toph,72px) + 120px);z-index:6;display:flex;flex-direction:column;gap:6px}
+  #hvnDev button{border:2px dashed rgba(60,40,20,.5);border-radius:10px;padding:5px 9px;font:12px/1.2 inherit;font-weight:800;background:#F6E7C4;color:#3A2410;cursor:pointer}`;
+  document.head.appendChild(st);
+  const bar = document.createElement('div'); bar.id = 'hvnBar'; bar.hidden = true; document.body.appendChild(bar);
+  function renderBar() {
+    const on = !!(S && S.night); if (!on) { bar.hidden = true; return; }
+    if (bar.hidden || !bar.firstChild) { bar.innerHTML = `<span>${tr('Psszt, mindenki alszik. Reggel 7-kor beszedheted az éjszakai termést.')}</span><button type="button">${tr('Ébresztő!')}</button>`; bar.querySelector('button').onclick = () => morning(true); }
+    bar.hidden = false;
+  }
+  if (NDEV) {
+    const dv = document.createElement('div'); dv.id = 'hvnDev';
+    dv.innerHTML = `<button type="button" id="hvnT1">Teszt · Éjszaka / Reggel</button><button type="button" id="hvnT2">Teszt · Esti kérdés</button>`;
+    document.body.appendChild(dv);
+    $('hvnT1').onclick = () => { if (S.night) { S.night.test = true; morning(false); } else startNight(Date.now(), true); };
+    $('hvnT2').onclick = () => { if (S.night) return; if (openModal) closeModal(); ask(); };
+  }
+
+  try { fromAway(); } catch (e) {}
+  markSeen(); renderBar();
+  setInterval(() => { try { check(); } catch (e) {} }, 15000);
+  setTimeout(() => { try { check(); } catch (e) {} }, 4000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); else setTimeout(() => { try { check(); } catch (e) {} }, 800); });
+  addEventListener('pagehide', markSeen);
+})();
 /*SOCIAL-END*/
 })();
 </script>
