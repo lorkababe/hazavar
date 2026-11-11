@@ -2417,6 +2417,10 @@ const ERA_F = [1, 1.6, 2.5, 3.5, 5][typeof CUR_ERA === 'number' ? CUR_ERA : 0] |
 const amt = n => Math.round(n * ERA_F);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const T = (x) => tr(x), TF = (x, ...a) => trf(x, ...a);
+function lootChips(o) {
+  const it = Object.entries(o).filter(([k, v]) => v > 0 && RES[k]); if (!it.length) return '';
+  return `<p style="font-size:15px;font-weight:800;margin:14px 0 6px">${T('Zsákmány')}</p><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">` + it.map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;background:rgba(255,248,232,.75);border:2px solid rgba(110,68,34,.18)"><img src="img/${RES[k].file || RES[k].icon + '.png'}" alt="" style="width:32px;height:32px;object-fit:contain"><b style="font-size:18px;color:#2F6B2A">+${typeof fmt === 'function' ? fmt(Math.round(v)) : Math.round(v)}</b><span style="font-weight:700;font-size:14px;color:#5A3A1E">${T(RES[k].name)}</span></span>`).join('') + '</div>';
+}
 
 // ---------- kitűzők ----------
 const KIT = [
@@ -2553,7 +2557,7 @@ function inAlly(id) { return !!(SOC.ally && SOC.ally.members.includes(id)); }
 function doRaid(id) {
   const b = bot(id); if (!canDo('raid', id) || inAlly(id)) return; mark('raid', id);
   if (b.real) { SOC.stats.raids++; const t = NET.towns[id] || {}; const ok = Math.random() < raidChance(b) && (t.ready || 0) > 0; const L = raidLoot(), n = L.penz;
-    if (ok) { giveR(L); log(TF('Kifosztottad {0} városát. {1}', b.name, resTxt(L)), 'portya'); RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} városát.', b.name), loot: resTxt(L) }; sfxCollect(); }
+    if (ok) { giveR(L); log(TF('Kifosztottad {0} városát. {1}', b.name, resTxt(L)), 'portya'); RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} városát.', b.name), loot: resTxt(L), lootO: L }; sfxCollect(); }
     else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); RAIDRES = { ok: false, name: b.name, text: TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name) }; }
     netEvent(id, 'portya', { ok, n }); if (SOC.stats.raids >= 10) kitAward('fosztogato'); commit(); refresh(); raidShow(); return; }
   const town = townOf(b); const ready = town.list.filter(x => NOW() - x.ready > 3 * HOUR);
@@ -2561,7 +2565,7 @@ function doRaid(id) {
   if (Math.random() < raidChance(b) && ready.length) {
     const x = pick(ready); x.ready = NOW(); const r = raidLoot(x.type); giveR(r);
     log(TF('Kifosztottad {0} épületét ({1}). {2}', b.name, DEF[x.type] ? DEF[x.type].name : x.type, resTxt(r)), 'portya');
-    RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} épületét ({1}).', b.name, DEF[x.type] ? DEF[x.type].name : x.type), loot: resTxt(r) }; sfxCollect();
+    RAIDRES = { ok: true, name: b.name, text: TF('Kifosztottad {0} épületét ({1}).', b.name, DEF[x.type] ? DEF[x.type].name : x.type), loot: resTxt(r), lootO: r }; sfxCollect();
     if (Math.random() < 0.7) later({ type: 'angry', from: id }, rnd(2, 20) * 60e3);
     if (Math.random() < 0.25) later({ type: 'revenge', from: id }, rnd(1, 6) * HOUR);
   } else { log(TF('{0} visszaverte a portyádat.', b.name), 'portya'); RAIDRES = { ok: false, name: b.name, text: TF('{0} őrei visszavertek. Holnap újra próbálhatod.', b.name) }; }
@@ -2581,7 +2585,7 @@ function raidShow() {
   const r = RAIDRES; RAIDRES = null; if (!r) return;
   modal(`<div class="inner" style="text-align:center"><div style="font-size:64px;line-height:1">${r.ok ? '🏆' : '🛡️'}</div><span class="eyebrow">${T('A PORTYA EREDMÉNYE')}</span>
     <h2 style="color:${r.ok ? '#3E6A1E' : '#9A3020'}">${r.ok ? T('Sikeres portya!') : T('Visszavertek!')}</h2>
-    <p style="font-size:17px">${esc(r.text)}</p>${r.loot ? `<p style="font-size:22px;font-weight:900">${T('Zsákmány')} · ${esc(r.loot)}</p>` : ''}
+    <p style="font-size:17px">${esc(r.text)}</p>${r.loot ? (r.lootO ? lootChips(r.lootO) : `<p style="font-size:22px;font-weight:900">${T('Zsákmány')} · ${esc(r.loot)}</p>`) : ''}
     <div class="row" style="justify-content:center">${btn(T('Vissza a megyébe'), 'id="rrOk"', true, 'teal')}</div></div>`, '', 'soc');
   document.getElementById('rrOk').onclick = () => refresh2();
 }
