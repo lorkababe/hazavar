@@ -354,6 +354,7 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 @media (max-width:1650px){.freecnt{display:none}}.card .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.card[data-lot] .pic>span:first-child{width:110px!important;height:56px!important;margin:0 0 4px!important}.card[data-lot] .pic>span:first-child img{width:110px!important;height:56px!important;max-height:none!important}.card[data-lot] .pic>span:first-child b{width:28px!important;height:28px!important;font-size:20px!important}
 @media (max-height:760px){.card .pic{height:56px!important}.card .pic img{max-height:52px!important}}
 @media (max-height:620px){.card .pic{height:44px!important}.card .pic img{max-height:42px!important}.card .chip{font-size:10px;padding:1px 6px}.drawer-head{padding-top:4px!important;padding-bottom:4px!important}}
+.jv-more{display:inline-flex;gap:8px;margin-left:10px;padding-left:10px;border-left:1px solid rgba(255,240,210,.18);align-items:center}.jv{display:inline-flex;align-items:center;gap:4px;line-height:1}.jv img{width:26px;height:26px;object-fit:contain}.jv b{display:block;font-size:15px;color:#FFF4DF}.jv i{display:none}.jv>span{display:flex;flex-direction:column}@media (max-width:1100px){.jv-more{gap:6px;margin-left:8px;padding-left:8px}.jv img{width:22px;height:22px}}@media (max-width:760px){.jv-more{display:none}}
 </style>
 
 <div id="app"><button class="ibtn wood" type="button" id="btnDaily" aria-label="Napi feladatok"><span class="newdot" id="bDaily" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h10a2 2 0 0 1 2 2v14a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2z"/><path d="M6 3a2 2 0 0 0-2 2v2h2M10 9h5M10 13h5"/></svg>Napi</button><button class="ibtn wood" type="button" id="btnSide" aria-label="Monda" hidden><span class="newdot" id="bSide" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l9-9M13 11l3-3a2.5 2.5 0 1 1 3.5 3.5l-3 3M11 13l3 3"/><circle cx="17.5" cy="6.5" r="1"/></svg><span>Monda</span></button><div id="chiefPops"></div><button class="btn coral" type="button" id="migChip" hidden></button><div class="movefx" id="moveFx"><span id="moveTxt"></span></div>
@@ -367,7 +368,7 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
     <div class="res" title="Pénz. Minden évben új pénzt vernek, és a régit be kell váltani, persze kicsit kevesebbre. Ez a kamara haszna."><img src="img/e03_ikon_penz.png" alt="Pénz (dénár)"><span><span class="num" id="rPenz">0</span><span class="lbl">Pénz · dénár</span></span></div>
     <div class="res" title="Termény (a raktár legfeljebb 1 000-et tart)"><img src="img/ikon_termeny.png" alt="Termény"><span><span class="num" id="rTerm">0</span><span class="cap" id="rCap"> / 1 000</span><span class="lbl">Termény</span></span></div>
     <div class="res" title="Tudás, magától gyűlik és a kutatáshoz kell"><img src="img/ikon_tudas.png" alt="Tudás"><span><span class="num" id="rTud">0</span><span class="lbl">Tudás</span></span></div>
-    <div class="res kincs" id="rJavak" role="button" tabindex="0" title="Fa és a többi jószág. Koppints rá, és a Raktárban mindet látod." style="cursor:pointer"><img src="img/e04_ikon_fa.png" alt="Fa"><span><span class="num" id="rKov">0</span><span class="lbl">Fa · Javak</span></span></div>
+    <div class="res kincs" id="rJavak" role="button" tabindex="0" title="Fa és a többi jószág. Koppints rá, és a Raktárban mindet látod." style="cursor:pointer"><img src="img/e04_ikon_fa.png" alt="Fa"><span><span class="num" id="rKov">0</span><span class="lbl">Fa</span></span><span class="jv-more" id="rJvMore"></span></div>
     <div class="res pop" title="Lakosok (szabad / összes)">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c1-3.5 3.3-5 6-5s5 1.5 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5c2.4 0 4.2 1.5 5 4"/></svg>
       <span><span class="num" id="rPop" style="font-size:18px">0</span><span class="lbl">Lakosok</span></span>
@@ -1604,8 +1605,9 @@ function takeSurp(x) {
   sfxCollect(); toast(tr(t.name) + '!'); save();
 }
 function drawSurprises(now) {
+  if (S.surp && S.surp.some(x => !SURPRISES.some(e => e.id === x.t))) S.surp = S.surp.filter(x => SURPRISES.some(e => e.id === x.t));
   (S.surp || []).forEach(x => {
-    const t = SURPRISES.find(e => e.id === x.t); const ic = IMG[t.icon]; const [cx, cy0] = surpPos(x);
+    const t = SURPRISES.find(e => e.id === x.t); if (!t) return; const ic = IMG[t.icon]; const [cx, cy0] = surpPos(x);
     const cy = cy0 + Math.sin(now / 400 + x.i * 3 + x.j) * 4; const left = x.born + SURP_LIFE - S.gt;
     ctx.save(); if (left < 600) ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(now / 300));
     ctx.beginPath(); ctx.ellipse(cx, cy0 + 30, 16, 6, 0, 0, 7); ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fill();
@@ -1813,6 +1815,7 @@ Object.assign(EN, {
   'Kidőlt fa': 'Fallen tree', 'Vadszőlő a bokorban': 'Wild grapes in the bush', 'Elkóborolt birka': 'Stray sheep', 'Csillogó kő': 'Shiny stone', 'Leesett boroshordó': 'Dropped wine barrel', 'Elhagyott posztóbála': 'Abandoned bale of cloth', 'Rozsdás kard a fűben': 'Rusty sword in the grass',
   'Pénz, Tudás, Fa és Vas': 'Money, Knowledge, Wood and Iron', 'Tudás, Korona, Gyapjú és Posztó': 'Knowledge, Crowns, Wool and Cloth', 'Pénz, Hangulat, Szőlő és Bor': 'Money, Mood, Grapes and Wine', 'Pénz, Tudás, Érc és Vas': 'Money, Knowledge, Ore and Iron', 'Tudás, Korona, Fa és Bor': 'Knowledge, Crowns, Wood and Wine'
 });
+
 
 // ---------- a háttér fái, kövei, szőlősorai: akadályok, pénzért eltakaríthatók ----------
 const OBST_P = {};
@@ -3120,8 +3123,8 @@ function draw(now) {
   const order = depthOrder(items.concat(obstItems(items)));
   try { drawShadows(order); } catch (e) { noteErr(e); }
   order.forEach(b => { try { drawBuilding(b, now, 0); } catch (e) { noteErr(e); } });
-  drawLots();
-  drawSurprises(now);
+  try { drawLots(); } catch (e) { noteErr(e); }
+  try { drawSurprises(now); } catch (e) { noteErr(e); }
   order.forEach(b => { try { drawBuilding(b, now, 1); } catch (e) { noteErr(e); } });
   if (tool && hover && tool.type !== 'ut') { try { const [ow, oh] = typeof dimsT === 'function' ? dimsT(tool.type, tool.rot) : [DEF[tool.type].size, DEF[tool.type].size]; ctx.save(); ctx.setLineDash([8, 6]); ctx.lineWidth = 2.5; rectRaw(hover[0], hover[1], ow, oh, null, 'rgba(255,255,255,0.9)'); ctx.restore(); } catch (e) {} }
   if (tool && tool.type === 'ut' && hover && inArea(hover[0], hover[1])) { const [x, y] = tileTop(hover[0], hover[1]); ctx.save(); ctx.globalAlpha = .7; ctx.fillStyle = '#D69C5E'; ctx.beginPath(); ctx.ellipse(x, y + TH / 2, TW * 0.17, TH * 0.17, 0, 0, 7); ctx.fill(); ctx.restore(); }
@@ -3387,7 +3390,7 @@ function tap(sx, sy) {
 
 // ---------- HUD ----------
 function hud() {
-  $('rPenz').textContent = fmt(S.res.penz); $('rTerm').textContent = fmt(S.res.termeny); $('rTud').textContent = fmt(S.res.tudas); $('rKov').textContent = fmt(S.res.fa || 0);
+  $('rPenz').textContent = fmt(S.res.penz); $('rTerm').textContent = fmt(S.res.termeny); $('rTud').textContent = fmt(S.res.tudas); $('rKov').textContent = fmt(S.res.fa || 0); { const jm = $('rJvMore'); if (jm) jm.innerHTML = GOODS.filter(k => k !== 'fa').map(k => `<span class="jv" title="${tr(RES[k].name)}"><img src="img/${RES[k].icon}.png" alt=""><span><b>${fmt(S.res[k] || 0)}</b><i>${tr(RES[k].name)}</i></span></span>`).join(''); }
   const capT = ' / ' + fmt(termCap()); if ($('rCap').textContent !== capT) $('rCap').textContent = capT; $('rTerm').parentElement.parentElement.classList.toggle('full', S.res.termeny >= termCap());
   $('korN').textContent = S.korona == null ? 25 : S.korona;
   const p = pop(), w = workers(); $('rPop').textContent = (p - w) + ' / ' + p;
@@ -5425,6 +5428,39 @@ function rearUI() {
     $('hvnT1').onclick = () => { if (S.night) { S.night.test = true; morning(false); } else startNight(Date.now(), true); };
     $('hvnT2').onclick = () => { if (S.night) return; if (openModal) closeModal(); ask(); };
   }
+
+  // ---- sarokjelzés, mint a Forge-ban: ha van mit beszedni, megmutatja, hol ----
+  const rdy = document.createElement('button'); rdy.id = 'hvnReady'; rdy.type = 'button'; rdy.hidden = true; document.body.appendChild(rdy);
+  const st2 = document.createElement('style');
+  st2.textContent = `#hvnReady{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(270px + env(safe-area-inset-bottom,0px));z-index:6;width:66px;height:66px;border-radius:50%;border:4px solid #F5C542;background:#FFF4DF;box-shadow:0 6px 18px rgba(40,20,5,.35);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;animation:hvnBob 2.4s ease-in-out infinite}
+  #hvnReady img{width:42px;height:42px;object-fit:contain;pointer-events:none}#hvnReady[hidden]{display:none}
+  #hvnReady b{position:absolute;top:-6px;right:-6px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:#C9472F;color:#fff;font:800 13px/24px Nunito,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  #hvnReady span{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;font:800 11px Nunito,sans-serif;color:#FFF4DF;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+  @keyframes hvnBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`;
+  document.head.appendChild(st2);
+  let rIdx = 0, focus = null, pan = null, rSig = '';
+  const readyList = () => S.buildings.filter(b => { try { return DEF[b.type] && DEF[b.type].prod && ready(b) && !(typeof storeFull === 'function' && storeFull(b)); } catch (e) { return false; } });
+  const ctr = b => { const r = spriteRect(b); if (!r) return null; return [r.cx != null ? r.cx : (r.L[0] + r.R[0]) / 2, r.y + r.h * 0.55]; };
+  function updReady() {
+    const list = S && !S.night && !(typeof tool !== 'undefined' && tool) ? readyList() : [];
+    if (!list.length) { rdy.hidden = true; rSig = ''; return; }
+    const k = Object.keys(DEF[list[0].type].prod)[0], im = (typeof IMG !== 'undefined' && IMG[RES[k] && RES[k].icon]) || null, src = im ? im.src : 'img/' + (RES[k] && RES[k].icon) + '.png';
+    const sig = list.length + '|' + src; if (sig !== rSig) { rSig = sig; rdy.innerHTML = `<img src="${src}" alt=""><b>${list.length}</b><span>${tr('Beszedhető')}</span>`; rdy.title = tr('Van mit beszedni! Koppints, és megmutatom, hol.'); }
+    rdy.hidden = false;
+  }
+  rdy.onclick = () => {
+    const list = readyList(); if (!list.length) return; const b = list[rIdx++ % list.length], c = ctr(b); if (!c) return;
+    const fx = camX + W / scale / 2, fy = camY + H / scale / 2; pan = { fx, fy, tx: c[0], ty: c[1], t0: performance.now() }; focus = { id: b.id, t0: performance.now() };
+  };
+  const _draw2 = draw;
+  draw = function (now) {
+    if (pan) { const k = Math.min(1, (performance.now() - pan.t0) / 450), e = 1 - Math.pow(1 - k, 3); centerOn(pan.fx + (pan.tx - pan.fx) * e, pan.fy + (pan.ty - pan.fy) * e); if (k >= 1) pan = null; }
+    _draw2(now);
+    if (focus) { const age = performance.now() - focus.t0, b = S.buildings.find(x => x.id === focus.id); if (age > 2600 || !b) { focus = null; return; }
+      const c = ctr(b); if (!c) return; const x = (c[0] - camX) * scale, y = (c[1] - camY) * scale, R = (60 + 14 * Math.sin(age / 140)) * Math.max(0.6, scale);
+      ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = Math.min(1, (2600 - age) / 600); ctx.lineWidth = 5; ctx.strokeStyle = '#F5C542'; ctx.shadowColor = 'rgba(255,230,150,.9)'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.ellipse(x, y, R * 1.25, R * 0.75, 0, 0, 7); ctx.stroke(); ctx.restore(); }
+  };
+  setInterval(() => { try { updReady(); } catch (e) {} }, 1000);
 
   try { fromAway(); } catch (e) {}
   markSeen(); renderBar();
