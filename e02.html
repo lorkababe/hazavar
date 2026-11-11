@@ -3518,9 +3518,22 @@ function rearUI() {
       { t: 'Beomlott a bánya bejárata', x: 'Éjjel beomlott a bánya bejárata. Senkinek sem esett baja, reggelre kiásták, csak az érc fele maradt bent.', r: 'erc', m: -0.5, bad: 1 },
       { t: 'Seregélyek a szőlőben', x: 'Hajnalban seregélyek lepték el a szőlőt. Jól laktak, mi kicsit kevésbé.', r: 'szolo', m: -0.3, bad: 1 },
       { t: 'Szökevény birkák', x: 'Két birka kiszökött, a juhász hajnalig kergette őket. Meglettek, de a nyírás elmaradt.', r: 'gyapju', m: -0.3, bad: 1 },
-      { t: 'Elaludt a posztós', x: 'A posztós elaludt a szövőszék mellett. Szép álma volt, de kevesebb posztó lett.', r: 'poszto', m: -0.3, bad: 1 }
+      { t: 'Elaludt a posztós', x: 'A posztós elaludt a szövőszék mellett. Szép álma volt, de kevesebb posztó lett.', r: 'poszto', m: -0.3, bad: 1 },
+      { t: 'Vándorlantos a fogadóban', x: 'Éjjel egy vándorlantos énekelt a fogadóban. Mindenki megtanult tőle két új dalt és egy régi történetet.', g: { tudas: 2 } },
+      { t: 'Elkóborolt bárányok', x: 'Hajnalban hat idegen bárány sétált be a karámba. Senki sem kereste őket, hát maradtak.', g: { gyapju: 8 } },
+      { t: 'Ajándékhordó', x: 'A szomszéd falu bírája éjjel egy hordó bort küldött, mert Béla tavaly segített nekik.', g: { bor: 5 } },
+      { t: 'Szekér a sárban', x: 'Egy ércszállító szekér beragadt a sárba a város alatt. A gazdája hálából otthagyott egy zsákkal.', g: { erc: 8 } },
+      { t: 'Viharban kidőlt fák', x: 'Éjjel nagy szél volt, és kidöntött pár fát az erdő szélén. Legalább nem kellett kivágni őket.', g: { fa: 25 } },
+      { t: 'A molnár hálája', x: 'A molnár egész éjjel őrölt, és reggel egy szekérnyi lisztet hozott ajándékba.', g: { termeny: 120 } },
+      { t: 'Szarka a kincstárban', x: 'Egy szarka berepült a kincstár ablakán, és elvitt pár fényes dénárt. Nagyon büszke magára.', g: { penz: -60 }, bad: 1 },
+      { t: 'Kiborult a festékes kád', x: 'A posztóműhelyben éjjel kiborult a festékes kád. Az egyik vég posztó most lila, és senki sem akarja.', g: { poszto: -2 }, bad: 1 }
     ]
-  }[ERA].concat([{ t: 'Csillaghullás', x: 'Csillaghullás volt, és mindenki kívánt valamit. Úgy tűnik, valakinek teljesült.', r: 'penz', m: 0.25 }]);
+  }[ERA].concat([
+    { t: 'Csillaghullás', x: 'Csillaghullás volt, és mindenki kívánt valamit. Úgy tűnik, valakinek teljesült.', r: 'penz', m: 0.25 },
+    { t: 'Vándorkereskedő', x: 'Hajnalban vándorkereskedő érkezett, és mindenféle csecsebecsét vett tőlünk jó pénzért.', g: { penz: 80 } },
+    { t: 'A bölcs öregasszony', x: 'A falu legöregebb asszonya éjjel mesélt a gyerekeknek. Reggelre mindenki okosabb lett egy kicsit.', g: { tudas: 1 } },
+    { t: 'Bagolyhuhogás', x: 'Egész éjjel huhogott egy bagoly a háztetőn. Senki sem aludt jól, kicsit lassabban ment a munka.', r: 'termeny', m: -0.2, bad: 1 }
+  ]);
 
   // ---- magyar idő ----
   const FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Budapest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -3562,18 +3575,20 @@ function rearUI() {
     } finally { sfxCollect = keep.sfx; toast = keep.toast; if (hadDaily) dailyHit = hadDaily; floats.length = f0; }
     const got = {}; Object.keys(S.res).forEach(k => { const d = (S.res[k] || 0) - (before[k] || 0); if (Math.round(d)) got[k] = d; }); return got;
   }
-  function pickEvent(got) {
-    if (Math.random() > 0.75) return null;
-    const ok = EVS.filter(e => e.g ? Object.keys(e.g).every(k => RES[k]) : (got[e.r] || 0) > 0);
+  function pickEvent(got, test) {
+    if (!test && Math.random() > 0.75) return null;
+    const last = S.nightEvs || [];
+    let ok = EVS.filter(e => e.g ? Object.keys(e.g).every(k => RES[k] && (e.g[k] > 0 || (S.res[k] || 0) >= -e.g[k])) : (got[e.r] || 0) > 0);
+    if (ok.filter(e => !last.includes(e.t)).length >= 2) ok = ok.filter(e => !last.includes(e.t));
     const good = ok.filter(e => !e.bad), bad = ok.filter(e => e.bad);
-    const pool = bad.length && (Math.random() < 0.3 || !good.length) ? bad : good; return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+    const pool = bad.length && (Math.random() < 0.3 || !good.length) ? bad : good; const ev = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null; if (ev) S.nightEvs = [ev.t].concat(last).slice(0, 5); return ev;
   }
   function morning(early) {
     if (!S.night || busy) return; busy = true;
     const n = S.night, now = Date.now(), nGt = n.test ? 8 * 3600 : Math.max(0, Math.min(S.gt - n.gt0, (Math.min(now, n.e) - n.s) / 1000 * spd()));
     S.night = null; S.nightAsk = { next: now + ASK_AGAIN };
     let got = {}; try { got = harvest(nGt, n.test); } catch (e) { try { noteErr(e); } catch (x) {} }
-    const ev = nGt > 3600 ? pickEvent(got) : null; let extra = {};
+    const ev = nGt > 3600 ? pickEvent(got, n.test) : null; let extra = {};
     if (ev) { if (ev.g) extra = Object.assign({}, ev.g); else { const v = Math.round(got[ev.r] * ev.m); extra = { [ev.r]: ev.m < 0 ? -Math.min(-v, S.res[ev.r] || 0) : v }; }
       Object.entries(extra).forEach(([k, v]) => { S.res[k] = (S.res[k] || 0) + v; }); }
     save(); try { hud(); } catch (e) {}
