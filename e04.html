@@ -1923,7 +1923,7 @@ function showClear(k) {
 // építés közben is: ha az épület helyén fa vagy kő áll, felajánljuk az eltakarítást
 const _freeO = free;
 const isBank = t => DEF[t] && DEF[t].terrain === 'bank';
-const roughClash = (type, i, j, rot) => { const [w, h] = dimsT(type, rot || 0), t = DEF[type] && DEF[type].terrain; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const g = ROUGH[(i + a) + ',' + (j + c)]; if (g && g !== t) return true; } return false; };
+const roughClash = (type, i, j, rot) => { if (type === 'ut' || type === 'kout') return false; const [w, h] = dimsT(type, rot || 0), t = DEF[type] && DEF[type].terrain; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const g = ROUGH[(i + a) + ',' + (j + c)]; if (g && g !== t) return true; } return false; };
 const footWet = (type, i, j, rot) => { const [w, h] = dimsT(type, rot || 0); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (wetTile(i + a, j + c)) return true; return false; };
 free = function (type, i, j, ignore, rot) {
   const wc = type === 'favago', wo = isBank(type); if (!wc && !wo) { const r0 = _freeO(type, i, j, ignore, rot); return r0 && tool && tool.type === type && roughClash(type, i, j, tool.rot != null ? tool.rot : rot) ? false : r0; }
