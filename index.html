@@ -3177,7 +3177,7 @@ function rearUI() {
     requestAnimationFrame(step);
     function finish(ok) {
       removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('resize', fit);
-      const rew = { termeny: Math.min(400, Math.round(score / 3)), penz: Math.min(250, Math.round(score / 6)), tudas: Math.min(3, 1 + kills), kovako: kills >= 2 ? 1 : 0 };
+      const rew = { termeny: Math.min(150, Math.round(score / 8)), penz: Math.min(150, Math.round(score / 10)), tudas: kills >= 2 ? 2 : 1, kovako: kills >= 3 ? 1 : 0 };
       const got = give('mamut', rew);
       endScreen('A VADÁSZAT UTÁN', trf('{0} pont', score), [tr(kills >= 3 ? 'Samu szerint ilyen vadászat még nem volt a törzs emlékezete óta. Igaz, a törzs csak három telet emlékszik vissza.' : kills ? 'A törzs ma este jóllakik. A mamut ugyan elfutott, de egy kicsit azért megtépáztátok.' : ok ? 'A mamut most megúszta, de holnap újra próbálkozhatsz.' : 'A mamut ma győzött. Samu szerint holnap jobban megy majd, csak előbb kialussza magát.'),
         trf('{0} találat, {1} elkergetett mamut.', hits, kills), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
@@ -3275,7 +3275,7 @@ function rearUI() {
       const cleanup = () => { drag = null; removeEventListener('pointermove', mv); removeEventListener('pointerup', up); };
       addEventListener('pointermove', mv); addEventListener('pointerup', up); }
     function finish() {
-      const s = stars(); const rew = { penz: Math.min(500, Math.round(score / 12)), termeny: Math.min(300, Math.round(score / 20)), tudas: 1 + s, kovako: s >= 2 ? 1 : 0, korona: s >= 3 ? 1 : 0 };
+      const s = stars(); const rew = { penz: Math.min(220, Math.round(score / 25)), termeny: Math.min(150, Math.round(score / 40)), tudas: s >= 2 ? 2 : 1, kovako: s >= 3 ? 1 : 0, korona: s >= 3 ? 1 : 0 };
       const got = give('turul', rew);
       endScreen('ÉBREDÉS', trf('{0} pont', score), [tr(s >= 3 ? 'Emese mosolyogva ébred. Azt álmodta, hogy fiából nagy fejedelem lesz. A turul is elégedettnek tűnt.' : s >= 2 ? 'Szép álom volt, tele kinccsel. Emese reggel mindent elmesél a táborban.' : s ? 'Emese kicsit zavaros álmot látott, de a turul azért felbukkant benne.' : 'Az álom szétfoszlott, mielőtt a turul ideért volna. Holnap éjjel újra álmodhatsz.'),
         trf('{0} pont, {1} turulmadár.', score, turuls), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
@@ -3430,7 +3430,7 @@ function rearUI() {
       if (done) return; done = true; const pc = pct();
       setTimeout(() => {
         removeEventListener('keydown', kd); removeEventListener('resize', fit);
-        const rew = { penz: Math.min(500, Math.round(score / 6)), termeny: Math.min(300, pc * 4), tudas: 1 + (pc >= 40 ? 1 : 0) + (win ? 1 : 0), kovako: win ? 2 : pc >= 50 ? 1 : 0, korona: win && lives === 3 ? 1 : 0 };
+        const rew = { penz: Math.min(260, Math.round(score / 15)), termeny: Math.min(160, pc * 2), tudas: win ? 2 : 1, kovako: win ? 1 : 0, korona: win && lives === 3 ? 1 : 0 };
         const got = give('honfog', rew);
         endScreen('A FOGLALÁS UTÁN', trf('{0}% a medencéből', pc), [tr(win ? 'Szvatopluk elsápad. A kis földből, fűből és vízből az egész Kárpát-medence lett. A fehér ló viszont nagyon jól érzi magát nála.' : pc >= 50 ? 'A medence nagyobbik fele már a miénk. Holnap folytatjuk a foglalást!' : 'Ma még csak egy kis darab lett a miénk. Szvatopluk még nevet, de nem sokáig.'),
           trf('{0} pont.', score), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
@@ -3511,7 +3511,7 @@ function rearUI() {
       setTimeout(() => {
         removeEventListener('keydown', kd); removeEventListener('resize', fit);
         const lvl = n >= 20 ? 3 : n >= 14 ? 2 : n >= 8 ? 1 : 0;
-        const rew = { penz: Math.min(500, Math.round(score / 8)), termeny: Math.min(250, n * 12), tudas: 1 + lvl, kovako: lvl >= 2 ? 1 : 0, korona: lvl >= 3 ? 1 : 0 };
+        const rew = { penz: Math.min(300, Math.round(score / 25)), termeny: Math.min(180, n * 9), tudas: lvl >= 2 ? 2 : 1, kovako: lvl >= 2 ? 1 : 0, korona: lvl >= 3 ? 1 : 0 };
         const got = give('templom', rew);
         endScreen('A SZENTELÉS UTÁN', trf('{0} kő, {1} pont', n, score), [tr(['A kőművesek még keresik a következő követ. Ebből egy kicsi kápolna lett, de a falu így is büszke rá.', 'Kész a falusi templom! A tíz falu népe vasárnaponként ide jár misére.', 'Felépült az apátság! A szerzetesek már másolják is a könyveket.', 'Elkészült a székesfehérvári bazilika! István király itt koronáztatja majd meg magát.'][lvl]),
           trf('{0} tökéletes kő.', perfect), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
@@ -3566,6 +3566,11 @@ function rearUI() {
     intro: () => { if (has('showIntro')) { try { closeModal(); } catch (e) {} showIntro(); } },
     reset: () => { if (!has('fresh')) return; S = fresh(); try { connCache = null; } catch (e) {} save(); location.reload(); }
   };
+  // végtelen nyersanyag: amíg be van kapcsolva, minden nyersanyag tele marad
+  const INF_KEY = 'hv-dev-inf'; let inf = false; try { inf = localStorage.getItem(INF_KEY) === '1'; } catch (e) {}
+  const fill = () => { if (!inf || typeof S === 'undefined' || !S || !S.res) return; Object.keys(RES).forEach(k => { const v = k === 'tudas' ? 999 : k === 'kovako' || k === 'hirnev' ? 999 : 999999; if ((S.res[k] || 0) < v) S.res[k] = v; }); if ((S.korona || 0) < 999) S.korona = 999; };
+  setInterval(() => { try { fill(); } catch (e) {} }, 400);
+  A.inf = () => { inf = !inf; try { localStorage.setItem(INF_KEY, inf ? '1' : '0'); } catch (e) {} fill(); redraw(); say(inf ? 'Végtelen nyersanyag bekapcsolva, minden korszakban.' : 'Végtelen nyersanyag kikapcsolva.'); };
   let confirmReset = false;
   function render() {
     const spd = S.speed || 1, w = S.winter;
@@ -3573,7 +3578,7 @@ function rearUI() {
       <div class="r" style="margin-top:5px"><button data-a="jump" data-v="600">+10 perc</button><button data-a="jump" data-v="${H}">+1 óra</button><button data-a="jump" data-v="${8 * H}">+8 óra</button><button data-a="jump" data-v="${24 * H}">+1 nap</button><button data-a="ready">Minden kész most</button></div>
       <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
       <div class="i">A többi korszak mentése megmarad, csak átugrasz oda.</div>
-      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
+      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
       <div class="i">Most a(z) ${(S.quest || 0) + 1}. küldetésnél tartasz.</div>
       <h4>Újrajátszás</h4><div class="r"><button data-a="mini">Mai kalandok újra</button>${g$('hvnT1') ? '<button data-a="night">Éjszaka / Reggel</button><button data-a="ask">Esti kérdés</button>' : ''}${has('showIntro') ? '<button data-a="intro">Bevezető újra</button>' : ''}${has('showEraEnd') ? '<button data-a="eraEnd">Korszak vége ablak</button>' : ''}</div>
       ${ERA === 4 ? `<h4>Tatárjárás</h4><div class="r"><button data-a="tatar">Elölről</button>${w && !w.done ? '<button data-a="tatarWin">Ugrás a csatához</button>' : ''}<button data-a="honal">Második honalapító</button></div><div class="i">${w ? (w.done ? 'Lezajlott: ' + (w.outcome || '') + ', ' + (w.score || 0) + '%' : 'Folyamatban, ' + Math.max(0, Math.round((WINTER_LEN - (S.gt - w.start)) / H)) + ' óra van hátra') : 'Még nem kezdődött el.'}</div>` : ''}

@@ -2368,13 +2368,13 @@ function playJulianus() {
   }
   function win(caught) {
     const pts = st.el + st.ero * 2 + st.ez + (st.trust || 0) * 2 - caught;
-    const rew = { tudas: pts >= 12 ? 4 : pts >= 7 ? 3 : 2, korona: pts >= 12 ? 3 : pts >= 7 ? 1 : 0 };
+    const rew = { penz: Math.min(700, 150 + pts * 40), tudas: pts >= 12 ? 4 : pts >= 7 ? 3 : 2, korona: pts >= 12 ? 2 : pts >= 7 ? 1 : 0 };
     const got = miniGive('julianus', rew);
     miniEnd('IV. BÉLA UDVARÁBAN', tr('Hazaértél a hírrel!'), [tr(pts >= 12 ? 'Béla király figyelmesen végighallgat, és rögtön összehívja a tanácsot. Julianus maga sem csinálta volna jobban.' : 'Fáradtan, de hazaértél. A király meghallgat, bár közben kétszer ásít.'), trf('Maradt {0} elemózsia, {1} erő és {2} ezüst.', st.el, st.ero, st.ez), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`],
       'Julianus domonkos szerzetes 1235-ben indult el, és 1236-ban a Volga mentén valóban magyarul beszélő népet talált. Hazatérve beszámolt a tatár veszélyről, ezt Riccardus barát jegyezte le. Második útján már nem jutott el hozzájuk, mert a mongolok közben elpusztították a vidéket, de hazahozta Batu kán fenyegető levelét IV. Bélának.');
   }
   function fail() {
-    const rew = { tudas: 1 }; const got = miniGive('julianus', rew);
+    const rew = { penz: 120, tudas: 1 }; const got = miniGive('julianus', rew);
     miniEnd('AZ ÚT VÉGET ÉRT', tr(st.el <= 0 ? 'Elfogyott az elemózsia' : 'Elfogyott az erőd'), [tr('Julianus hazafordul, és otthon elmeséli, amit látott. Nem jutott el a végéig, de legalább tanult belőle.'), `<b>${got ? tr('Jutalom') + ': ' + miniRewText(rew) : ''}</b>`, tr('Holnap újra nekivághatsz.')],
       'Julianus első útján a négy barátból kettő hazafordult, Gellért barát meghalt. Julianus egyedül, nagy nélkülözések között jutott el a Volgáig. Az út tényleg ilyen nehéz volt.');
   }
@@ -5876,6 +5876,11 @@ function rearUI() {
     intro: () => { if (has('showIntro')) { try { closeModal(); } catch (e) {} showIntro(); } },
     reset: () => { if (!has('fresh')) return; S = fresh(); try { connCache = null; } catch (e) {} save(); location.reload(); }
   };
+  // végtelen nyersanyag: amíg be van kapcsolva, minden nyersanyag tele marad
+  const INF_KEY = 'hv-dev-inf'; let inf = false; try { inf = localStorage.getItem(INF_KEY) === '1'; } catch (e) {}
+  const fill = () => { if (!inf || typeof S === 'undefined' || !S || !S.res) return; Object.keys(RES).forEach(k => { const v = k === 'tudas' ? 999 : k === 'kovako' || k === 'hirnev' ? 999 : 999999; if ((S.res[k] || 0) < v) S.res[k] = v; }); if ((S.korona || 0) < 999) S.korona = 999; };
+  setInterval(() => { try { fill(); } catch (e) {} }, 400);
+  A.inf = () => { inf = !inf; try { localStorage.setItem(INF_KEY, inf ? '1' : '0'); } catch (e) {} fill(); redraw(); say(inf ? 'Végtelen nyersanyag bekapcsolva, minden korszakban.' : 'Végtelen nyersanyag kikapcsolva.'); };
   let confirmReset = false;
   function render() {
     const spd = S.speed || 1, w = S.winter;
@@ -5883,7 +5888,7 @@ function rearUI() {
       <div class="r" style="margin-top:5px"><button data-a="jump" data-v="600">+10 perc</button><button data-a="jump" data-v="${H}">+1 óra</button><button data-a="jump" data-v="${8 * H}">+8 óra</button><button data-a="jump" data-v="${24 * H}">+1 nap</button><button data-a="ready">Minden kész most</button></div>
       <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
       <div class="i">A többi korszak mentése megmarad, csak átugrasz oda.</div>
-      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
+      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
       <div class="i">Most a(z) ${(S.quest || 0) + 1}. küldetésnél tartasz.</div>
       <h4>Újrajátszás</h4><div class="r"><button data-a="mini">Mai kalandok újra</button>${g$('hvnT1') ? '<button data-a="night">Éjszaka / Reggel</button><button data-a="ask">Esti kérdés</button>' : ''}${has('showIntro') ? '<button data-a="intro">Bevezető újra</button>' : ''}${has('showEraEnd') ? '<button data-a="eraEnd">Korszak vége ablak</button>' : ''}</div>
       ${ERA === 4 ? `<h4>Tatárjárás</h4><div class="r"><button data-a="tatar">Elölről</button>${w && !w.done ? '<button data-a="tatarWin">Ugrás a csatához</button>' : ''}<button data-a="honal">Második honalapító</button></div><div class="i">${w ? (w.done ? 'Lezajlott: ' + (w.outcome || '') + ', ' + (w.score || 0) + '%' : 'Folyamatban, ' + Math.max(0, Math.round((WINTER_LEN - (S.gt - w.start)) / H)) + ' óra van hátra') : 'Még nem kezdődött el.'}</div>` : ''}
