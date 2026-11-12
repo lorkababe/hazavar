@@ -3339,6 +3339,11 @@ draw = function (now) {
 };
 setTimeout(() => { try { wallFix(); } catch (e) {} }, 500);
 setInterval(() => { wallCache = null; }, 3000);
+// áthelyezés, bontás után azonnal újraigazítjuk a falat
+let wallSig = '';
+setInterval(() => { try { const s = S.buildings.filter(b => isWall(b.type)).map(b => b.id + ':' + b.i + ',' + b.j).join('|'); if (s !== wallSig) { wallSig = s; wallFix(); } } catch (e) {} }, 250);
+const _placeWall = place;
+place = function (i, j) { const r = _placeWall(i, j); try { wallFix(); wallSig = ''; } catch (e) {} return r; };
 
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;
@@ -3624,8 +3629,17 @@ function drawBuilding(b, now, pass = 0) {
   const _drw = () => { if (r.flip) { ctx.save(); ctx.translate(r.x + r.w, r.y); ctx.scale(-1, 1); ctx.drawImage(r.im, 0, 0, r.w, r.h); ctx.restore(); } else ctx.drawImage(r.im, r.x, r.y, r.w, r.h); };
   if (r.gbB) { // halvány tervrajz, és alulról felfelé színesedik, ahogy épül
     ctx.save(); ctx.filter = 'grayscale(0.85) sepia(0.55) brightness(1.1) contrast(0.85)'; _drw(); ctx.restore();
+    { const gi = grassOnly(r.im); if (gi) { const im0 = r.im; r.im = gi; _drw(); r.im = im0; } } // a fű és a föld már most színes, hogy ne lebegjen
     const cut = r.y + r.h * (1 - (0.08 + 0.92 * r.prog)); ctx.save(); ctx.beginPath(); ctx.rect(r.x - 4, cut, r.w + 8, r.h + 40); ctx.clip(); _drw(); ctx.restore();
   } else _drw(); ctx.restore();
+}
+const GRASSC = new Map();
+function grassOnly(im) {
+  if (!im || !im.naturalWidth) return null; if (GRASSC.has(im)) return GRASSC.get(im);
+  let c = null; try { c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0); const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+    for (let k = 0; k < a.length; k += 4) { const r = a[k], gg = a[k + 1], b = a[k + 2], y = Math.floor(k / 4 / c.width) / c.height; if (!(gg > r * 0.98 && gg > b * 1.25 && gg > 60) && !(y > 0.8 && r > gg && gg > b && r - b > 40)) a[k + 3] = 0; }
+    g.putImageData(d, 0, 0); } catch (e) { c = null; }
+  GRASSC.set(im, c); return c;
 }
 // buborékok és csíkok külön körben, hogy egyik épület se takarja a másikét
 function drawOverlay(b, r, now) {
