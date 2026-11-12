@@ -3085,7 +3085,7 @@ const TJ_KARD_MAX = 10, TJ_KARD_CD = 4 * 3600, TJ_IDLE = 10 * 3600;
 const TJ_MEGYE = ['Pest', 'Nógrád', 'Heves', 'Borsod', 'Fejér', 'Veszprém', 'Somogy', 'Bihar', 'Csanád', 'Zala'];
 let TJ_MUHI = false;
 const tjPic = n => { const im = new Image(); im.src = 'img/' + n + (n.includes('.') ? '' : '.png'); return im; };
-const TJ_IMG = { lovas: tjPic('e04_tj_tatar_lovas'), kunok: tjPic('e04_tj_kunok') };
+const TJ_IMG = { lovas: tjPic('e04_tj_tatar_lovas'), kunok: tjPic('e04_tj_kunok'), men: tjPic('e04_tj_menekulok') };
 
 // a felkészültség öt részből áll, mindegyik 20%, Muhi még hozzátesz
 prep = function () {
@@ -3236,6 +3236,11 @@ draw = function (now) {
       ctx.globalAlpha = Math.min(1, Math.min(f, 1 - f) * 8); ctx.drawImage(im, x - sw / 2, y - sh + 10 + Math.sin(now / 90 + r) * 2, sw, sh);
     }
     ctx.globalAlpha = 1;
+    const mn = TJ_IMG.men;
+    if (k > 0.12 && mn.complete && mn.naturalWidth) {
+      const f = (now / 42000) % 1, [x, y] = tileTop(20 - f * 16, 13 - f * 3), sw = 250, sh = sw * mn.naturalHeight / mn.naturalWidth;
+      ctx.globalAlpha = Math.min(1, Math.min(f, 1 - f) * 7); ctx.save(); ctx.translate(x, y + Math.abs(Math.sin(now / 160)) * -2); ctx.scale(-1, 1); ctx.drawImage(mn, -sw / 2, -sh + 8, sw, sh); ctx.restore(); ctx.globalAlpha = 1;
+    }
     const ku = TJ_IMG.kunok;
     if (w.kun === 'be' && ku.complete && ku.naturalWidth) { const [x, y] = tileTop(27, 4), sw = 380, sh = sw * ku.naturalHeight / ku.naturalWidth; ctx.globalAlpha = w.kunGone ? 0.55 : 1; ctx.drawImage(ku, x - sw / 2, y - sh * 0.75, sw, sh); }
     ctx.restore();
