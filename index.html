@@ -3296,9 +3296,9 @@ function rearUI() {
   function runHonfog() {
     const P = { map: pic('e02_mg_kmedence.jpg'), own: pic('e02_mg_kmedence_foglalt.jpg'), a: [0, 1, 2, 3].map(k => pic('e02_mg_arpad' + k)), e: [0, 1, 2].map(k => pic('e02_mg_jaror' + k)) };
     modal(`<div class="inner"><div class="me-hud"><span>${tr('Idő')} <b id="hfT">75</b></span><span>${tr('Föld')} <b id="hfP">0</b>% / 75%</span><span>${tr('Pont')} <b id="hfS">0</b></span><span id="hfL"></span>${devSpeed()}</div>
-      <div class="me-wrap" id="hfW" style="aspect-ratio:16/10"><canvas id="hfC"></canvas></div></div>`, '', 'minigame');
+      <div class="me-wrap" id="hfW" style="aspect-ratio:16/10;overflow:visible;background:transparent"><canvas id="hfC" style="inset:-56px;width:calc(100% + 112px);height:calc(100% + 112px);z-index:2;pointer-events:none"></canvas></div></div>`, '', 'minigame');
     const wrap = g$('hfW'), cv = g$('hfC'), g = cv.getContext('2d'); let W = 0, H = 0;
-    const fit = () => { const r = wrap.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; g.setTransform(d, 0, 0, d, 0, 0); };
+    const PAD = 56; let DPR2 = 1; const fit = () => { const r = wrap.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); DPR2 = d; W = r.width; H = r.height; cv.width = (W + 2 * PAD) * d; cv.height = (H + 2 * PAD) * d; g.setTransform(d, 0, 0, d, PAD * d, PAD * d); };
     fit(); addEventListener('resize', fit);
     let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; });
     const GW = 64, GH = 40, OWN = 1, TRAIL = 2, cell = new Uint8Array(GW * GH), id = (x, y) => y * GW + x;
@@ -3350,9 +3350,9 @@ function rearUI() {
     const kd = e => { if (!g$('hfC')) { removeEventListener('keydown', kd); return; } const d = keyMap[e.key]; if (d) { e.preventDefault(); setDir(d); } };
     addEventListener('keydown', kd);
     let tp = null;
-    cv.onpointerdown = e => { tp = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} };
-    cv.onpointermove = e => { if (!tp) return; const dx = e.clientX - tp.x, dy = e.clientY - tp.y; if (Math.hypot(dx, dy) < 18) return; setDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); tp = { x: e.clientX, y: e.clientY }; };
-    cv.onpointerup = () => { tp = null; };
+    wrap.onpointerdown = e => { tp = { x: e.clientX, y: e.clientY }; try { wrap.setPointerCapture(e.pointerId); } catch (x) {} };
+    wrap.onpointermove = e => { if (!tp) return; const dx = e.clientX - tp.x, dy = e.clientY - tp.y; if (Math.hypot(dx, dy) < 18) return; setDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); tp = { x: e.clientX, y: e.clientY }; };
+    wrap.onpointerup = () => { tp = null; };
     function stepPlayer() {
       if (pl.want) { const [a, b, d] = DIRS[pl.want]; if (!(pl.out && a === -pl.dx && b === -pl.dy)) { pl.dx = a; pl.dy = b; pl.dir = d; } pl.want = null; }
       if (!pl.dx && !pl.dy) { pl.px = pl.x; pl.py = pl.y; return; }
@@ -3375,13 +3375,13 @@ function rearUI() {
       });
     }
     function draw(now) {
-      const cw = W / GW, ch = H / GH;
+      const cw = W / GW, ch = H / GH; g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.restore(); g.save(); g.beginPath(); if (g.roundRect) g.roundRect(0, 0, W, H, 16); else g.rect(0, 0, W, H); g.clip();
       if (P.map.complete && P.map.naturalWidth) g.drawImage(P.map, 0, 0, W, H); else { g.fillStyle = '#9DBA5A'; g.fillRect(0, 0, W, H); }
       if (mask && P.own.complete && P.own.naturalWidth) {
-        if (!draw.tmp) draw.tmp = document.createElement('canvas'); const tc = draw.tmp; if (tc.width !== cv.width) { tc.width = cv.width; tc.height = cv.height; }
-        const tg = tc.getContext('2d'); tg.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, W, H); tg.drawImage(P.own, 0, 0, W, H); tg.fillStyle = 'rgba(214,80,40,0.16)'; tg.fillRect(0, 0, W, H);
+        if (!draw.tmp) draw.tmp = document.createElement('canvas'); const tc = draw.tmp; if (tc.width !== Math.round(W * DPR2)) { tc.width = Math.round(W * DPR2); tc.height = Math.round(H * DPR2); }
+        const tg = tc.getContext('2d'); tg.setTransform(DPR2, 0, 0, DPR2, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, W, H); tg.drawImage(P.own, 0, 0, W, H); tg.fillStyle = 'rgba(214,80,40,0.16)'; tg.fillRect(0, 0, W, H);
         tg.globalCompositeOperation = 'destination-in'; tg.imageSmoothingEnabled = true; tg.drawImage(mask, 0, 0, W, H);
-        g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(tc, 0, 0); g.restore();
+        g.drawImage(tc, 0, 0, W, H);
         // aranyszegély a saját föld szélén
         g.save(); g.beginPath();
         for (let y = BRD; y < GH - BRD; y++) for (let x = BRD; x < GW - BRD; x++) { if (cell[id(x, y)] === OWN) { if (cell[id(x + 1, y)] !== OWN) { g.moveTo((x + 1) * cw, y * ch); g.lineTo((x + 1) * cw, (y + 1) * ch); } if (cell[id(x - 1, y)] !== OWN) { g.moveTo(x * cw, y * ch); g.lineTo(x * cw, (y + 1) * ch); } if (cell[id(x, y + 1)] !== OWN) { g.moveTo(x * cw, (y + 1) * ch); g.lineTo((x + 1) * cw, (y + 1) * ch); } if (cell[id(x, y - 1)] !== OWN) { g.moveTo(x * cw, y * ch); g.lineTo((x + 1) * cw, y * ch); } } }
@@ -3400,6 +3400,7 @@ function rearUI() {
       // Árpád
       // poofs
       poofs.forEach(q => { g.save(); g.globalAlpha = 1 - q.t; g.fillStyle = '#FFF4DF'; for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, r = (8 + q.t * 30); g.beginPath(); g.arc(q.x * cw + Math.cos(a) * r, q.y * ch + Math.sin(a) * r * 0.6, 6 * (1 - q.t) + 2, 0, 7); g.fill(); } g.restore(); });
+      g.restore(); // a térkép vége, Árpád kilóghat a képből
       // Árpád: simán csúszik a mezők között, arany gyűrű és nyíl jelzi
       const fr = Math.min(1, acc / (1 / 13)), ax = pl.px == null ? pl.x : pl.px + (pl.x - pl.px) * fr, ay = pl.py == null ? pl.y : pl.py + (pl.y - pl.py) * fr;
       const X = (ax + 0.5) * cw, Y = (ay + 0.5) * ch, pul = 0.5 + 0.5 * Math.sin(now / 160);
