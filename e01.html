@@ -4000,10 +4000,10 @@ function rearUI() {
     const BH = () => H * 0.07, LV = [[8, 'Falusi templom kész!', 'Apátság'], [14, 'Az apátság kész!', 'Bazilika'], [20, 'Kész a bazilika!', 'Bazilika']];
     const stack = [{ x: 0.24, w: 0.52, k: 0 }]; // a talapzat a kapuval
     const newMv = (w, n) => { const amp = (1 - w) / 2 + 0.05; return { w, ph: Math.random() < 0.5 ? -Math.PI / 2 : Math.PI / 2, om: 1.9 + n * 0.07, amp, x: 0.5 - w / 2 }; };
-    let land = null, shake = 0; const doorH = () => { const di = P.door; return di.complete && di.naturalWidth ? stack[0].w * W * di.naturalHeight / di.naturalWidth : BH() * 3; };
+    const FALL = 0.42; let land = null, shake = 0; const doorH = () => { const di = P.door; return di.complete && di.naturalWidth ? stack[0].w * W * di.naturalHeight / di.naturalWidth : BH() * 3; };
     let mv = newMv(0.52, 0), score = 0, perfect = 0, combo = 0, done = false, cam = 0, last = performance.now(), falls = [], fx = [], angel = 0, won = false;
     const drop = () => {
-      if (done) return; const top = stack[stack.length - 1]; const L = Math.max(mv.x, top.x), R = Math.min(mv.x + mv.w, top.x + top.w);
+      if (done || land) return; const from0 = hoverY(), top = stack[stack.length - 1]; const L = Math.max(mv.x, top.x), R = Math.min(mv.x + mv.w, top.x + top.w);
       if (R - L <= 0.005) { falls.push({ x: mv.x, w: mv.w, y: stack.length, vy: 0, r: 0, k: stack.length % 4 }); finish(); return; }
       let nx = L, nw = R - L;
       if (Math.abs(mv.x - top.x) < 0.012) { nx = top.x; nw = top.w; combo++; perfect++; angel = 1.4; score += 150 + combo * 30; fx.push({ t: 0, txt: combo > 1 ? trf('Tökéletes! ×{0}', combo) : tr('Tökéletes!') }); if (combo >= 3) { const grow = Math.min(0.04, 0.52 - nw); nx -= grow / 2; nw += grow; } try { sfxCollect(); } catch (e) {} }
@@ -4011,7 +4011,7 @@ function rearUI() {
       stack.push({ x: nx, w: nw, k: stack.length % 5 === 4 ? 3 : stack.length % 3 });
       const n = stack.length - 1; const lv = LV.find(l => l[0] === n); if (lv) { fx.push({ t: 0, txt: tr(lv[1]), big: 1 }); score += n * 40; g$('tpLv').textContent = tr(lv[2]); if (n >= 20) { won = true; finish(); return; } }
       g$('tpN').textContent = n; g$('tpS').textContent = score;
-      land = { n, t: 0, from: hoverY() }; mv = newMv(nw, n);
+      land = { n, t: 0, from: from0 }; falls.forEach(f => { if (f.y === n && f.vy === 0) f.ln = true; }); mv = newMv(nw, n);
     };
     if (window.__T) window.__tpAuto = () => { const top = stack[stack.length - 1]; mv.x = top.x + 0.004; mv.ph = Math.asin(Math.max(-1, Math.min(1, (mv.x + mv.w / 2 - 0.5) / mv.amp))); drop(); };
     const kd = e => { if (!g$('tpC')) { removeEventListener('keydown', kd); return; } if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); drop(); } };
@@ -4023,14 +4023,14 @@ function rearUI() {
       // talapzat: kapus fal
       const b0 = stack[0], dw = b0.w * W, di = P.door; if (di.complete && di.naturalWidth) { const dh = dw * di.naturalHeight / di.naturalWidth; g.drawImage(di, b0.x * W, yOf(0), dw, dh); }
       if (shake > 0) { g.save(); g.translate(Math.sin(now / 25) * shake * 14, 0); }
-      for (let n = 1; n < stack.length; n++) { const s = stack[n]; let y = yOf(n); if (land && land.n === n && land.t < 0.2) { const k = land.t / 0.2; y = land.from + (y - land.from) * k * k; } drawBlock(s.x, y, s.w, s.k); if (land && land.n === n && land.hit) { const a = 1 - (land.t - 0.2) / 0.25; g.save(); g.globalAlpha = Math.max(0, a) * 0.8; g.fillStyle = '#E9DCC0'; for (let q = 0; q < 6; q++) { const side = q < 3 ? -1 : 1, px = (side < 0 ? s.x : s.x + s.w) * W + side * (8 + (q % 3) * 9) * (1.2 - a), py = y + BH() - 2 - (q % 3) * 4; g.beginPath(); g.arc(px, py, 5 + (q % 3) * 2, 0, 7); g.fill(); } g.restore(); } }
+      for (let n = 1; n < stack.length; n++) { const s = stack[n]; let y = yOf(n); if (land && land.n === n && land.t < FALL) { const k = land.t / FALL; y = land.from + (y - land.from) * k * k; } drawBlock(s.x, y, s.w, s.k); if (land && land.n === n && land.hit) { const a = 1 - (land.t - 0.2) / 0.25; g.save(); g.globalAlpha = Math.max(0, a) * 0.8; g.fillStyle = '#E9DCC0'; for (let q = 0; q < 6; q++) { const side = q < 3 ? -1 : 1, px = (side < 0 ? s.x : s.x + s.w) * W + side * (8 + (q % 3) * 9) * (1.2 - a), py = y + BH() - 2 - (q % 3) * 4; g.beginPath(); g.arc(px, py, 5 + (q % 3) * 2, 0, 7); g.fill(); } g.restore(); } }
       if (shake > 0) g.restore();
       // tető és harangtorony, ha kész
       if (done && stack.length > 1) { const s = stack[stack.length - 1], ri = P.roof, bi = P.bell, y0 = yOf(stack.length - 1); if (ri.complete && ri.naturalWidth) { const rw = s.w * W * 1.08, rh = rw * ri.naturalHeight / ri.naturalWidth; g.drawImage(ri, s.x * W - s.w * W * 0.04, y0 - rh + BH() * 0.25, rw, rh); if (won && bi.complete && bi.naturalWidth) { const bw = Math.min(s.w * W * 0.45, W * 0.16), bh2 = bw * bi.naturalHeight / bi.naturalWidth; g.drawImage(bi, s.x * W + s.w * W / 2 - bw / 2, y0 - rh - bh2 * 0.72, bw, bh2); } } }
-      if (!done) { const y = hoverY(), cx = (mv.x + mv.w / 2) * W, ang = Math.atan2(cx - W / 2, y + H * 0.35) * 0.9;
+      if (!done && !(land && !land.hit)) { const y = hoverY() - (land ? (1 - Math.min(1, (land.t - FALL) / 0.35)) * H * 0.35 : 0), cx = (mv.x + mv.w / 2) * W, ang = Math.atan2(cx - W / 2, y + H * 0.35) * 0.9;
         g.save(); g.strokeStyle = 'rgba(70,45,20,.75)'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(W / 2, -H * 0.35); g.lineTo(cx, y); g.stroke(); g.fillStyle = '#5A3A10'; g.beginPath(); g.arc(cx, y, 3.5, 0, 7); g.fill();
         g.translate(cx, y); g.rotate(-ang); g.translate(-cx, -y); drawBlock(mv.x, y + 3, mv.w, stack.length % 5 === 4 ? 3 : stack.length % 3); g.restore(); }
-      falls.forEach(f => { g.save(); const y = yOf(f.y) + f.vy; g.translate((f.x + f.w / 2) * W, y + BH() / 2); g.rotate(f.r); g.translate(-(f.w / 2) * W, -BH() / 2); drawBlock(0, 0, f.w, f.k); g.restore(); });
+      falls.forEach(f => { g.save(); let y = yOf(f.y) + f.vy; if (f.ln && land) { const k = Math.min(1, land.t / FALL); y = land.from + (yOf(f.y) - land.from) * k * k; } g.translate((f.x + f.w / 2) * W, y + BH() / 2); g.rotate(f.r); g.translate(-(f.w / 2) * W, -BH() / 2); drawBlock(0, 0, f.w, f.k); g.restore(); });
       if (angel > 0) { const im = P.ang[Math.floor(now / 300) % 2]; if (im.complete && im.naturalWidth) { const h = H * 0.18, w = h * im.naturalWidth / im.naturalHeight; g.save(); g.globalAlpha = Math.min(1, angel * 2); g.drawImage(im, W * (mv.x + mv.w / 2 > 0.5 ? 0.18 : 0.82) - w / 2, H * 0.3 + Math.sin(now / 200) * 6, w, h); g.restore(); } }
       fx.forEach((f, fi) => { g.save(); g.globalAlpha = Math.max(0, 1 - f.t / (f.big ? 2 : 1.1)); g.font = `900 ${f.big ? 26 : 20}px Nunito,sans-serif`; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,20,5,.7)'; const y = H * (f.big ? 0.26 : 0.42) - f.t * 30 + (f.big ? 0 : fi * 4); g.strokeText(f.txt, W / 2, y); g.fillStyle = f.big ? '#FFE9A8' : '#FFFFFF'; g.fillText(f.txt, W / 2, y); g.restore(); });
     }
@@ -4038,9 +4038,9 @@ function rearUI() {
       if (!g$('tpC')) { removeEventListener('keydown', kd); removeEventListener('resize', fit); return; }
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * sp; last = now;
       if (!done) { mv.ph += mv.om * dt; mv.x = 0.5 + mv.amp * Math.sin(mv.ph) - mv.w / 2; }
-      if (land) { land.t += dt; if (land.t >= 0.2 && !land.hit) { land.hit = true; shake = 0.18; } if (land.t > 0.45) land = null; } if (shake > 0) shake -= dt;
+      if (land) { land.t += dt; if (land.t >= FALL && !land.hit) { land.hit = true; shake = 0.18; falls.forEach(f => { f.ln = false; }); } if (land.t > FALL + 0.35) land = null; } if (shake > 0) shake -= dt;
       const want = Math.max(0, doorH() + (stack.length - 1) * BH() - H * 0.5); cam += (want - cam) * Math.min(1, dt * 4);
-      falls.forEach(f => { f.vy += dt * 900 * (f.vy < 1 ? 0.3 : 1); f.r += dt * 2 * (f.s || 1); }); falls = falls.filter(f => f.vy < H * 1.5);
+      falls.forEach(f => { if (f.ln) return; f.vy += dt * 900 * (f.vy < 1 ? 0.3 : 1); f.r += dt * 2 * (f.s || 1); }); falls = falls.filter(f => f.vy < H * 1.5);
       fx.forEach(f => f.t += dt); fx = fx.filter(f => f.t < (f.big ? 2 : 1.1)); if (angel > 0) angel -= dt;
       draw(now); requestAnimationFrame(step);
     }
