@@ -2508,6 +2508,8 @@ const BL_CARDS = [
   { who: 'pap', real: 1, t: 'A papoknak járó tizedet terményben szedjék, ne ezüstben, mert a parasztoknak nincs pénzük.', y: { egy: -6, nem: 8, kin: -4 }, n: { egy: 8, nem: -8 } },
   { who: 'nemes', real: 1, t: 'A király kondái ne legeljenek ingyen a nemesek erdejében.', y: { nem: 10, kin: -8 }, n: { nem: -10, kin: 4 } },
   { who: 'nemes', real: 1, t: 'Az ispánok csak a saját vármegyéjük népe fölött ítélkezzenek, a királyi szolgák fölött ne.', y: { nem: 10, kir: -8 }, n: { kir: 6, nem: -10 } },
+  { who: 'nemes', real: 1, odd: 1, t: 'A király lovászai, solymászai és kutyásai ne szállásolják be magukat a nemesek falvaiba.', y: { nem: 10, kir: -6 }, n: { nem: -10, kir: 4 } },
+  { who: 'nemes', real: 1, odd: 1, t: 'Az udvarnokok és a várjobbágyok maradjanak meg a régi szabadságukban, amit még Szent István adott nekik.', y: { nem: 8, kir: -4 }, n: { nem: -8 } },
   { who: 'kov', real: 0, t: 'Minden nemesnek járjon vasárnaponként egy ingyen lángos a királyi konyháról.', y: { nem: 8, kin: -16 }, n: { kir: 4, kin: 2 }, fun: 'A lángos 1222-ben még fel sem volt találva. Kozma nagyon csalódott.' },
   { who: 'rav', real: 0, t: 'A király ne énekeljen a lakomán. Mindenkinek fáj a füle.', y: { nem: 10, kir: -12 }, n: { kir: 6, nem: -6 }, fun: 'II. András hangjáról sajnos nincs korabeli feljegyzés. Talán nem véletlenül.' },
   { who: 'bar', real: 0, t: 'Minden báró kapjon egy saját sárkányt a vára őrzésére.', y: { nem: 6, kin: -18 }, n: { kir: 4 }, fun: 'Sárkány nem volt raktáron. A kincstárnok elájult az árától.' },
@@ -2545,7 +2547,38 @@ const BL_ENVOY = [
     y: { kir: 4, nem: -6 }, n: { kir: -4, kin: 2 }, yt: 'Igent mondtál, és elfogadtad a sajtot. Az egész trónterem befogta az orrát.', nt: 'Nemet mondtál. A követ megsértődött, és a sajtot a kincstárnok asztalán hagyta. Ott van azóta is.' },
   { lang: 'görögül', from: 'a bizánci követ', t: 'Χαῖρε, ὦ βασιλεῦ! Ὁ αὐτοκράτωρ χρυσίον δανείσασθαι βούλεται.',
     tr: 'Üdvözlégy, király! A császár aranyat szeretne kölcsönkérni tőled.',
-    y: { kin: -16, kir: 8 }, n: { kir: -2 }, yt: 'Igent mondtál, és kölcsönadtad a kincstár aranyát a bizánci császárnak. Hogy visszakapod-e, az jó kérdés.', nt: 'Nemet mondtál. A követ szomorúan bólintott, a kincstárnok viszont megölelt.' }
+    y: { kin: -16, kir: 8 }, n: { kir: -2 }, yt: 'Igent mondtál, és kölcsönadtad a kincstár aranyát a bizánci császárnak. Hogy visszakapod-e, az jó kérdés.', nt: 'Nemet mondtál. A követ szomorúan bólintott, a kincstárnok viszont megölelt.' },
+  { lang: 'németül', from: 'az osztrák követ', t: 'Hêrre künic, mîn hêrre der herzoge gert iuwer tohter ze wîbe für sînen sun!',
+    tr: 'Király uram, az uram, a herceg a lányodat kéri feleségül a fiának!',
+    y: { kir: 6, nem: -6, kin: -6 }, n: { kir: -4, nem: 2 }, yt: 'Igent mondtál. Épp most jegyezted el a lányodat egy osztrák herceggel. A királyné még nem tud róla, és jobb, ha nem tőled tudja meg.', nt: 'Nemet mondtál. A követ sértődötten távozott, Bécsben ezt még sokáig emlegetik.' },
+  { lang: 'velenceiül', from: 'a velencei követ', t: 'Sior re, la Serenissima ve domanda indrìo Zara, che xe nostra!',
+    tr: 'Király úr, Velence visszakéri Zára városát, mert szerinte az övé!',
+    y: { kin: 6, kir: -14, nem: -8 }, n: { kir: 4, nem: 4 }, yt: 'Igent mondtál, és ezzel odaadtad Zárát Velencének. A dalmát urak ájultan estek össze a trónteremben.', nt: 'Nemet mondtál. A velencei követ elhúzta a száját, de Zára a tiéd maradt.' },
+  { lang: 'arabul', from: 'egy böszörmény kereskedő', t: 'يا مولاي الملك، أريد أن أبيعك جملاً جميلاً جداً!',
+    tr: 'Királyom, el szeretnék adni neked egy nagyon szép tevét!',
+    y: { kin: -10, kir: 4 }, n: { kir: -1 }, yt: 'Igent mondtál, és lett egy tevéd. Fehérváron azóta mindenki őt bámulja, ő pedig mindenkit leköp.', nt: 'Nemet mondtál. A teve sértődötten nézett rád, a kereskedő pedig továbbállt Esztergom felé.' },
+  { lang: 'latinul', from: 'az érsek követe', t: 'Rex, archiepiscopus dicit: hodie nemo carnem comedat, ne rex quidem!',
+    tr: 'Király, az érsek azt üzeni, hogy ma senki ne egyen húst, még a király sem!',
+    y: { egy: 10, nem: -6 }, n: { egy: -8, nem: 4 }, yt: 'Igent mondtál. A mai lakomán csak káposzta lesz. Kövér Kozma sírva fakadt.', nt: 'Nemet mondtál. Az érsek felhúzta a szemöldökét, és felírt valamit egy kis táblára.' }
+];
+// csavaros, becsapós kérések: elsőre ártatlanok, a válasz után derül ki a turpisság
+const BL_TWIST = [
+  { who: 'ido', tag: 'FURCSA IDEGEN', t: 'Egy fura ruhás idegen azt mondja, a jövőből jött. Szerinte ezt az oklevelet nyolcszáz év múlva is tanulni fogják az iskolában. Pecsételd meg gyorsan, mert különben összeomlik a történelem!',
+    y: { kir: 2 }, n: { kir: -2 }, yt: 'Megpecsételted. Az idegen megkönnyebbülten sóhajtott, és azt mondta, a témazáró dolgozatban is benne lesz. Nyolcszáz év múlva a diákok előre haragszanak rád.', nt: 'Nemet mondtál. Az idegen kétségbeesetten nyomkodott egy világító kis táblát, aztán köddé vált. A történelem szerencsére nem omlott össze.' },
+  { who: 'nemes', tag: 'KÖVETELÉS', t: 'Mindössze annyit kérünk, hogy a király mindig igazságos legyen. Ugye ez nem nagy kérés?',
+    y: { kin: -14, nem: 8 }, n: { nem: -4, kir: 4 }, yt: 'Megpecsételted. Csak utána olvastad el az apró betűs részt: „…és minden igazságtalanságért fizessen egy aranyat a kérelmezőnek.” A báró már írja a számlát.', nt: 'Visszadobtad, és jól tetted. Az apró betűs rész szerint minden igazságtalanságért egy aranyat kellett volna fizetned. A báró dühösen gyűrte össze a lapot.' },
+  { who: 'nemes', tag: 'KÖVETELÉS', t: 'Ne legyen tilos, hogy a nemesek ne fizessenek adót, kivéve, ha nem akarnak nem fizetni.',
+    y: { nem: 4, kin: -4 }, n: { nem: -2 }, yt: 'Megpecsételted. Három jegyző három napig vitatkozott, hogy ez mit jelent. Végül mindhárman feladták, és elmentek ebédelni.', nt: 'Visszadobtad. A báró megkönnyebbült, mert ő sem tudta, mit kért.' },
+  { who: 'oreg', tag: 'ESEMÉNY', t: 'A király macskája ráült a félkész oklevélre, és nem hajlandó leszállni. Elzavarod?',
+    y: { kir: -2, egy: 2 }, n: { nem: 2 }, yt: 'Elzavartad. A macska megsértődött, és lelökte a tintatartót. Az utolsó pontot újra kell írni, a jegyző halkan sír.', nt: 'Hagytad. Az oklevélen azóta is ott egy macskaszőr. Nyolcszáz év múlva a kutatók nagyon izgatottak lesznek tőle.' },
+  { who: 'rav', tag: 'KÖVETELÉS', t: 'Itt a pápa levele, ő is támogatja a kérésünket! Nézd, ott a pecsét is az alján!',
+    y: { nem: 8, egy: -12 }, n: { egy: 6, nem: -4 }, yt: 'Elhitted. Később kiderült, hogy a pecsét egy fakanál lenyomata, a levél pedig egy pörköltrecept. Elég jó recept egyébként.', nt: 'Nem hitted el, és jól tetted. A pecsét egy fakanál lenyomata volt, a levél pedig egy pörköltrecept.' },
+  { who: 'nemes', tag: 'KÖVETELÉS', again: 1, t: 'A nemesek azt kérik, hogy ezentúl minden kérést kétszer kelljen benyújtani.',
+    y: { nem: 4, kir: -4 }, n: { nem: -4 }, yt: 'Megpecsételted. Így a nemeseknek ezt a kérést is be kell nyújtaniuk még egyszer. Már sorban is állnak vele.', nt: 'Visszadobtad. A nemesek erre azt mondták, hogy akkor most benyújtják még egyszer.' },
+  { who: 'kin', tag: 'ESEMÉNY', t: 'Felség, a kincstárban találtam egy ládát, rajta a felirat: „Nem szabad kinyitni!” Kinyissuk?',
+    y: { kin: 10, kir: 2 }, n: { kin: -2 }, yt: 'Kinyitottátok. Benne egy másik láda volt, „Most már tényleg nem szabad!” felirattal. Abban végül ezüstdénárok lapultak.', nt: 'Nem nyitottátok ki. A kincstárnok éjjel mégis belenézett. Ezüst volt benne, de ezt neked nem mondta el.' },
+  { who: 'kov', tag: 'KÖVETELÉS', t: 'Kérem, hogy a lakomán mindig a legnagyobb sült kerüljön a király elé. Tiszteletből.',
+    y: { kir: 4, nem: 2 }, n: { nem: -2 }, yt: 'Megpecsételted. A legnagyobb sült azóta mindig a király elé kerül, de valahogy mindig Kövér Kozma ül a király mellett, és mindig ő eszi meg.', nt: 'Visszadobtad. Kozma vállat vont, és a második legnagyobb sültet is szívesen megette.' }
 ];
 const BL_DAY = [
   { t: 'Ma esik az eső, mindenki morcos. Minden nemesi változás erősebb.', mod: { nem: 1.4 } },
@@ -2560,8 +2593,11 @@ function playBulla() {
   const real = mgShuffle(BL_CARDS.filter(c => c.real), rnd).slice(0, 6), fake = mgShuffle(BL_CARDS.filter(c => c.real === 0), rnd).slice(0, 3), ev = mgShuffle(BL_CARDS.filter(c => c.ev), rnd).slice(0, 3);
   const NOBLES = ['bar', 'rav', 'kov', 'oreg'];
   BL_WHO.kovet = { name: 'Külföldi követ', img: 'e04_mg_bulla_kovet', emo: '🧔' };
+  BL_WHO.ido = { name: 'Furcsa idegen', img: 'e04_idoutazo', emo: '🕶️' };
   const deck = mgShuffle(real.concat(fake, ev), rnd).map(c => c.who === 'nemes' ? Object.assign({}, c, { who: NOBLES[Math.floor(rnd() * NOBLES.length)] }) : c);
-  if (MG_DEV || rnd() < 0.55) { const e = BL_ENVOY[Math.floor(rnd() * BL_ENVOY.length)]; deck[2 + Math.floor(rnd() * (deck.length - 3))] = Object.assign({ who: 'kovet', envoy: 1 }, e); }
+  const envAt = 2 + Math.floor(rnd() * (deck.length - 3));
+  if (MG_DEV || rnd() < 0.7) { const e = BL_ENVOY[Math.floor(rnd() * BL_ENVOY.length)]; deck[envAt] = Object.assign({ who: 'kovet', envoy: 1 }, e); }
+  { const tws = mgShuffle(BL_TWIST.slice(), rnd).slice(0, 2), free = deck.map((c, i) => i).filter(i => i > 0 && i !== envAt && !deck[i].real); mgShuffle(free, rnd).slice(0, tws.length).forEach((i, n) => { const t = tws[n]; deck[i] = Object.assign({ tw: 1 }, t, { who: t.who === 'nemes' ? NOBLES[Math.floor(rnd() * NOBLES.length)] : t.who }); }); }
   const m = { kir: 50, nem: 50, egy: 50, kin: 50 }; let k = 0, goodReal = 0, fakeIn = 0, dead = null;
   Object.values(BL_WHO).forEach(w => mgPic(w.img)); mgPic('e04_mg_bulla_terem.jpg');
   const mCol = v => { const d = Math.min(1, Math.abs(v - 50) / 50); return `hsl(${Math.round(125 - 125 * Math.pow(d, 1.15))},${62 + d * 10}%,${40 + (d > .5 ? 2 : 0)}%)`; };
@@ -2581,9 +2617,9 @@ function playBulla() {
     if (dead) return over();
     if (k >= deck.length) return seal();
     const c = deck[k], w = BL_WHO[c.who], pic = mgPic(w.img);
-    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${trf('{0}. KÉRÉS A {1}-BÓL', k + 1, deck.length)}</span>${meters()}
-      <div class="bl-card"><div class="bl-who"><div class="face">${pic ? mgImg(w.img) : w.emo}</div><div>${tr(w.name)}</div></div><div class="txt"><span class="tag">${c.envoy ? tr('KÜLFÖLDI KÖVET') : tr(c.ev ? 'ESEMÉNY' : 'KÖVETELÉS')}</span><br>${c.envoy ? `<i style="font-size:18px">${c.t}</i><br><small style="color:var(--ink-soft)">${trf('A követ {0} beszél. Senki nem érti, de mindenki rád néz.', tr(c.lang))}</small>` : tr(c.t)}</div></div>
-      <div class="bl-opts"><button class="btn coral" type="button" id="blN">✘ ${tr(c.envoy ? 'Megrázom a fejem' : c.ev ? 'Nem' : 'Visszadobom')}</button><button class="btn teal" type="button" id="blY">✔ ${tr(c.envoy ? 'Bólintok, hátha jó' : c.ev ? 'Igen' : 'Megpecsételem')}</button></div>
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${trf('{0}. KÉRÉS A {1}-{2}', k + 1, deck.length, [1, 2, 4, 7, 9].includes(deck.length % 10) || deck.length % 10 === 0 && deck.length % 100 === 10 || deck.length % 100 === 0 ? 'BŐL' : 'BÓL')}</span>${meters()}
+      <div class="bl-card"><div class="bl-who"><div class="face">${pic ? mgImg(w.img) : w.emo}</div><div>${tr(w.name)}</div></div><div class="txt"><span class="tag">${c.envoy ? tr('KÜLFÖLDI KÖVET') : c.tw ? tr(c.tag) : tr(c.ev ? 'ESEMÉNY' : 'KÖVETELÉS')}</span><br>${c.envoy ? `<i style="font-size:18px">${c.t}</i><br><small style="color:var(--ink-soft)">${trf('A követ {0} beszél. Senki nem érti, de mindenki rád néz.', tr(c.lang))}</small>` : tr(c.t)}</div></div>
+      <div class="bl-opts"><button class="btn coral" type="button" id="blN">✘ ${tr(c.envoy ? 'Megrázom a fejem' : c.tw && c.tag !== 'KÖVETELÉS' ? 'Nem' : c.ev ? 'Nem' : 'Visszadobom')}</button><button class="btn teal" type="button" id="blY">✔ ${tr(c.envoy ? 'Bólintok, hátha jó' : c.tw && c.tag !== 'KÖVETELÉS' ? 'Igen' : c.ev ? 'Igen' : 'Megpecsételem')}</button></div>
       <div class="bl-res" id="blRes"></div><div class="row"><button class="btn" type="button" id="blNext" hidden>${tr('Következő')}</button></div></div>`, '', 'bulla');
     // ráviszed az egeret: pötty jelzi, mire lesz hatással (mint egy jó tanácsadó, aki nem mondja meg, mennyire)
     const hint = o => { $('modalRoot').querySelectorAll('.bl-m').forEach((el, n) => { const d = o && o[BL_M[n].id]; const dot = el.querySelector('.dot'); dot.classList.toggle('on', !!d); dot.classList.toggle('big', !!d && Math.abs(d) > 11); }); };
@@ -2592,7 +2628,9 @@ function playBulla() {
       $('blY').disabled = $('blN').disabled = true; const o = eff(yes ? c.y : c.n);
       Object.entries(o).forEach(([key, v]) => m[key] += v);
       let msg = '';
-      if (c.real && yes) { goodReal++; msg = tr('Ez tényleg benne van az Aranybullában!'); }
+      if (c.real && yes) { goodReal++; msg = tr(c.odd ? 'Furcsán hangzik, de ez tényleg benne van az Aranybullában!' : 'Ez tényleg benne van az Aranybullában!'); }
+      else if (c.real && !yes && c.odd) msg = tr('Pedig ez nem vicc, ez tényleg a valódi Aranybulla egyik pontja.');
+      else if (c.tw) { msg = tr(yes ? c.yt : c.nt); if (c.again && !c.copy) deck.splice(k + 1, 0, Object.assign({}, c, { copy: 1, t: c.t + ' ' + 'Most már másodszor.', yt: 'Másodszor is megpecsételted. A nemesek elégedetten bólogatnak, a jegyző viszont már nem érzi a kezét.', nt: 'Másodszor is visszadobtad. A nemesek tanácstalanul néznek egymásra, mert erre nincs szabály.' })); }
       else if (c.real && !yes) msg = tr('Pedig ez a valódi Aranybullában is benne van.');
       else if (c.real === 0 && yes) { fakeIn++; msg = tr(c.fun); }
       else if (c.real === 0) msg = tr('Jól tetted, ez nem került bele.') + ' ' + tr(c.fun);
@@ -2601,7 +2639,7 @@ function playBulla() {
       const hit = BL_M.find(x => m[x.id] <= 0 || m[x.id] >= 100);
       if (hit) dead = hit.id + (m[hit.id] <= 0 ? '0' : '1');
       $('modalRoot').querySelector('.bl-meters').outerHTML = meters();
-      $('blRes').innerHTML = msg; $('blRes').style.color = (c.real && yes) || (c.real === 0 && !yes) ? 'var(--good)' : c.ev || c.envoy ? 'var(--ink)' : 'var(--bad)';
+      $('blRes').innerHTML = msg; $('blRes').style.color = (c.real && yes) || (c.real === 0 && !yes) ? 'var(--good)' : c.ev || c.envoy || c.tw ? 'var(--ink)' : 'var(--bad)';
       $('blNext').hidden = false; k++; $('blNext').onclick = next;
       try { $('blNext').scrollIntoView({ behavior: 'smooth', block: 'end' }); } catch (e) {}
     };
