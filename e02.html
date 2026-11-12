@@ -4001,7 +4001,7 @@ function rearUI() {
     ['e02_mg_kmedence.jpg', 'e02_mg_kmedence_foglalt.jpg', 'e02_mg_arpad0', 'e02_mg_arpad1', 'e02_mg_arpad2', 'e02_mg_arpad3', 'e02_mg_jaror0', 'e02_mg_jaror1', 'e02_mg_jaror2'].forEach(pic);
     modal(`${XB}<img class="hero" src="img/e02_mg_feher_lo.jpg?v=2" alt="" style="object-position:center 40%"><div class="inner"><span class="eyebrow">${tr('895 · A FEHÉR LÓ MONDÁJA')}</span><h2>${tr('Honfoglalás')}</h2>
       <p>${tr('Árpád egy gyönyörű fehér lovat küldött Szvatopluknak arany nyereggel, és cserébe csak egy kis földet, füvet és vizet kért. Szvatopluk nevetve beleegyezett. Most rajtad a sor, hogy kiderüljön, mennyi az a kicsi!')}</p>
-      <p style="font-weight:800">${tr('Lovagolj ki a saját földedről, és kerülj vissza rá. Amit körbelovagoltál, az a tiéd lesz. Ha egy ellenséges járőr keresztezi a nyomodat, mielőtt visszaérsz, elveszik a kör. A medence háromnegyedét kell elfoglalnod.')}</p>
+      <p style="font-weight:800">${tr('Lovagolj ki a saját földedről, és kerülj vissza rá. Amit körbelovagoltál, az a tiéd lesz. Te vagy az arany gyűrűs lovas a sárga nyíllal. Ha egy ellenséges járőr keresztezi a nyomodat, mielőtt visszaérsz, elveszik a kör. Ha viszont bekerítesz egy járőrt, odavész, és a földje a tiéd. A medence háromnegyedét kell elfoglalnod.')}</p>
       <p style="font-size:14px">${tr('Gépen a nyilakkal vagy a WASD gombokkal irányítasz. Telefonon húzd az ujjad abba az irányba, amerre lovagolnál.')}</p>
       <div class="row"><button class="btn coral" type="button" id="hfGo">${tr('Nyeregbe!')}</button></div></div>`, '', 'minigame');
     g$('hfGo').onclick = () => { if (!start('honfog')) return; runHonfog(); };
@@ -4032,21 +4032,29 @@ function rearUI() {
       for (let k = 0; k < cell.length; k++) { im.data[k * 4 + 3] = cell[k] === OWN ? 255 : 0; } mg.putImageData(im, 0, 0); mask = m;
     }
     rebuildMask();
+    if (window.__T) window.__hfTrap = () => { const f = foes[1]; f.x = 12.5; f.y = 12.5; for (let x = 8; x <= 17; x++) { cell[id(x, 8)] = TRAIL; cell[id(x, 17)] = TRAIL; } for (let y = 8; y <= 17; y++) { cell[id(8, y)] = TRAIL; cell[id(17, y)] = TRAIL; } for (let y = 3; y < 8; y++) cell[id(8, y)] = TRAIL; fill(); return foes.map(q => !!q.gone); };
     if (window.__T) window.__hfOwn = () => { for (let y = 5; y < 20; y++) for (let x = 5; x < 30; x++) cell[id(x, y)] = OWN; rebuildMask(); };
+    const poofs = [];
     function fill() {
-      // ami nem érhető el egy ellenségtől se, az a mienk lesz
-      const seen = new Uint8Array(GW * GH), q = [];
-      foes.forEach(f => { const k = id(f.x | 0, f.y | 0); if (!cell[k]) { q.push(k); seen[k] = 1; } });
-      while (q.length) { const k = q.pop(), x = k % GW, y = (k / GW) | 0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, b]) => { const n = id(x + a, y + b); if (x + a >= 0 && x + a < GW && y + b >= 0 && y + b < GH && !seen[n] && !cell[n]) { seen[n] = 1; q.push(n); } }); }
+      // a szabad föld darabokra esik: a legnagyobb darab marad szabad, a többi a mienk, a bekerített ellenség odavész
+      const comp = new Int32Array(GW * GH).fill(-1), sizes = []; let nc = 0;
+      for (let k0 = 0; k0 < cell.length; k0++) { if (cell[k0] || comp[k0] >= 0) continue; const q = [k0]; comp[k0] = nc; let n = 0;
+        while (q.length) { const k = q.pop(), x = k % GW, y = (k / GW) | 0; n++; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, b]) => { const xx = x + a, yy = y + b; if (xx < 0 || yy < 0 || xx >= GW || yy >= GH) return; const m = id(xx, yy); if (!cell[m] && comp[m] < 0) { comp[m] = nc; q.push(m); } }); }
+        sizes.push(n); nc++; }
+      let keep = -1, best = -1; sizes.forEach((n, c) => { if (n > best) { best = n; keep = c; } });
       const before = pct(); let got = 0;
-      for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL || (!cell[k] && !seen[k])) { cell[k] = OWN; got++; }
-      const gain = pct() - before; score += got * 2 + gain * gain * 3; if (gain >= 8) msg = { t: 1.3, txt: trf('Szép darab! +{0}%', gain) }; else if (gain > 0) msg = { t: 0.9, txt: '+' + gain + '%' };
+      for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL || (!cell[k] && comp[k] !== keep)) { cell[k] = OWN; got++; }
+      const gain = pct() - before; score += got * 2 + gain * gain * 3;
+      let killed = 0; foes.forEach(f => { if (f.gone) return; if (cell[id(f.x | 0, f.y | 0)] === OWN) { f.gone = true; killed++; poofs.push({ x: f.x, y: f.y, t: 0, k: f.k }); } });
+      if (killed) { score += killed * 400; msg = { t: 1.6, txt: killed > 1 ? trf('{0} járőrt bekerítettél! +{1}', killed, killed * 400) : trf('Bekerítetted a járőrt! +400') }; respawnAt = t + 6; }
+      else if (gain >= 8) msg = { t: 1.3, txt: trf('Szép darab! +{0}%', gain) }; else if (gain > 0) msg = { t: 0.9, txt: '+' + gain + '%' };
       rebuildMask(); try { sfxCollect(); } catch (e) {}
     }
+    let respawnAt = 0;
     function lose() {
       lives--; g$('hfL').innerHTML = lifeHTML(); flash = 0.6; msg = { t: 1.3, txt: tr('Elvágták az utad! Vissza a táborba.') };
       for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL) cell[k] = 0;
-      pl.x = pl.sx; pl.y = pl.sy; pl.dx = pl.dy = 0; pl.out = false; pl.want = null; try { sfxClick(); } catch (e) {}
+      pl.x = pl.sx; pl.y = pl.sy; pl.px = pl.x; pl.py = pl.y; pl.dx = pl.dy = 0; pl.out = false; pl.want = null; try { sfxClick(); } catch (e) {}
       if (lives <= 0) end();
     }
     const DIRS = { up: [0, -1, 0], right: [1, 0, 1], down: [0, 1, 2], left: [-1, 0, 3] };
@@ -4065,19 +4073,16 @@ function rearUI() {
       const c = cell[id(nx, ny)];
       if (c === TRAIL) { lose(); return; }
       if (!pl.out && c === 0) { pl.out = true; pl.sx = pl.x; pl.sy = pl.y; }
-      pl.x = nx; pl.y = ny;
+      pl.px = pl.x; pl.py = pl.y; pl.x = nx; pl.y = ny;
       if (pl.out) { if (c === OWN) { pl.out = false; fill(); pl.dx = pl.dy = 0; } else cell[id(nx, ny)] = TRAIL; }
     }
     function stepFoes(dt) {
       foes.forEach(f => {
+        if (f.gone) return;
         const K = KINDS[f.k], v = K.v * (1 + t / DUR * 0.6) * dt;
         let nx = f.x + f.vx * v, ny = f.y + f.vy * v;
         if (cell[id(nx | 0, f.y | 0)] === OWN) { f.vx *= -1; nx = f.x; } if (cell[id(f.x | 0, ny | 0)] === OWN) { f.vy *= -1; ny = f.y; }
         f.x = nx; f.y = ny; f.flip = f.vx < 0;
-        if (cell[id(f.x | 0, f.y | 0)] === OWN) { // bekerítették: új helyen bukkan fel
-          let tries = 0; do { f.x = BRD + Math.random() * (GW - 2 * BRD); f.y = BRD + Math.random() * (GH - 2 * BRD); } while (cell[id(f.x | 0, f.y | 0)] && ++tries < 400);
-          if (tries >= 400) f.gone = true;
-        }
         if (f.gone) return;
         for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const x = (f.x | 0) + a, y = (f.y | 0) + b; if (x >= 0 && y >= 0 && x < GW && y < GH && Math.hypot(x + 0.5 - f.x, y + 0.5 - f.y) < K.r && (cell[id(x, y)] === TRAIL || (pl.out && pl.x === x && pl.y === y))) { lose(); return; } }
       });
@@ -4100,7 +4105,15 @@ function rearUI() {
       // ellenségek
       foes.forEach(f => { if (f.gone) return; const im = P.e[KINDS[f.k].img]; if (!im.complete || !im.naturalWidth) return; const h = ch * (f.k === 2 ? 6.5 : 5.5), w = h * im.naturalWidth / im.naturalHeight, x = f.x * cw, y = f.y * ch + Math.sin(now / 120 + f.k) * 1.5; g.save(); g.translate(x, y); if (f.flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h * 0.7, w, h); g.restore(); });
       // Árpád
-      const ai = P.a[pl.dir]; if (ai.complete && ai.naturalWidth) { const h = ch * 6.5, w = h * ai.naturalWidth / ai.naturalHeight; g.beginPath(); g.fillStyle = 'rgba(255,240,180,.55)'; g.ellipse((pl.x + 0.5) * cw, (pl.y + 0.5) * ch, cw * 1.6, ch * 0.9, 0, 0, 7); g.fill(); g.drawImage(ai, (pl.x + 0.5) * cw - w / 2, (pl.y + 0.5) * ch - h * 0.7 + Math.sin(now / 90) * 1.5, w, h); }
+      // poofs
+      poofs.forEach(q => { g.save(); g.globalAlpha = 1 - q.t; g.fillStyle = '#FFF4DF'; for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, r = (8 + q.t * 30); g.beginPath(); g.arc(q.x * cw + Math.cos(a) * r, q.y * ch + Math.sin(a) * r * 0.6, 6 * (1 - q.t) + 2, 0, 7); g.fill(); } g.restore(); });
+      // Árpád: simán csúszik a mezők között, arany gyűrű és nyíl jelzi
+      const fr = Math.min(1, acc / (1 / 13)), ax = pl.px == null ? pl.x : pl.px + (pl.x - pl.px) * fr, ay = pl.py == null ? pl.y : pl.py + (pl.y - pl.py) * fr;
+      const X = (ax + 0.5) * cw, Y = (ay + 0.5) * ch, pul = 0.5 + 0.5 * Math.sin(now / 160);
+      const ai = P.a[pl.dir]; if (ai.complete && ai.naturalWidth) { const h = ch * 7.5, w = h * ai.naturalWidth / ai.naturalHeight, top = Math.max(h * 0.55, Y), fy = top - h * 0.72 + h * 0.9;
+        g.save(); g.lineWidth = 3.5; g.strokeStyle = `rgba(255,214,60,${0.65 + 0.35 * pul})`; g.fillStyle = 'rgba(255,230,140,.45)'; g.shadowColor = 'rgba(255,220,100,.9)'; g.shadowBlur = 10; g.beginPath(); g.ellipse(X, fy, w * (0.42 + pul * 0.05), ch * (1.3 + pul * 0.2), 0, 0, 7); g.fill(); g.stroke(); g.restore();
+        g.drawImage(ai, X - w / 2, top - h * 0.72 + Math.sin(now / 90) * 1.5, w, h);
+        const ty = Math.max(14, top - h * 0.72 - 8 + Math.sin(now / 200) * 3); g.fillStyle = '#F2C14E'; g.strokeStyle = '#5A3A10'; g.lineWidth = 2; g.beginPath(); g.moveTo(X - 9, ty - 12); g.lineTo(X + 9, ty - 12); g.lineTo(X, ty); g.closePath(); g.fill(); g.stroke(); }
       if (flash > 0) { g.fillStyle = `rgba(201,71,47,${flash * 0.5})`; g.fillRect(0, 0, W, H); }
       if (msg) { g.save(); g.globalAlpha = Math.min(1, msg.t * 2); g.font = '900 22px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,20,5,.8)'; g.strokeText(msg.txt, W / 2, H * 0.15); g.fillStyle = '#FFE9A8'; g.fillText(msg.txt, W / 2, H * 0.15); g.restore(); }
     }
@@ -4110,7 +4123,9 @@ function rearUI() {
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * sp; last = now;
       if (!done) {
         t += dt; acc += dt; const ST = 1 / 13; while (acc >= ST && !done) { acc -= ST; stepPlayer(); }
-        stepFoes(dt); if (flash > 0) flash -= dt; if (msg) { msg.t -= dt; if (msg.t <= 0) msg = null; }
+        stepFoes(dt); if (respawnAt && t >= respawnAt && foes.filter(f => !f.gone).length < 2) { respawnAt = 0; const k = Math.floor(Math.random() * 3); const free0 = []; for (let k2 = 0; k2 < cell.length; k2++) if (!cell[k2]) free0.push(k2); if (free0.length > 30) { const c = free0[Math.floor(Math.random() * free0.length)], a2 = Math.random() * 7; foes.push({ k, x: c % GW + 0.5, y: ((c / GW) | 0) + 0.5, vx: Math.cos(a2), vy: Math.sin(a2), flip: false }); msg = { t: 1.2, txt: tr('Új járőr érkezett!') }; } }
+        poofs.forEach(q => q.t += dt); for (let q = poofs.length - 1; q >= 0; q--) if (poofs[q].t > 1) poofs.splice(q, 1);
+        if (flash > 0) flash -= dt; if (msg) { msg.t -= dt; if (msg.t <= 0) msg = null; }
         const pc = pct(); g$('hfT').textContent = Math.max(0, Math.ceil(DUR - t)); g$('hfP').textContent = pc; g$('hfS').textContent = score;
         if (pc >= 75) { score += Math.round((DUR - t) * 10) + lives * 200; end(true); } else if (t >= DUR) end();
       }
