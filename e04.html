@@ -962,13 +962,13 @@ function rotBtn() {
 }
 function roadHint(noRoad) {
   if (!tool || tool.type === 'ut' || noRoad === lastHint) return; lastHint = noRoad;
-  const base = tool.mode === 'move' ? trf('Hová tegyük át {0}? Koppints az új helyére.', withArt(DEF[tool.type].name)) : trf('Hová kerüljön {0}? Koppints egy szabad mezőre.', withArt(DEF[tool.type].name));
+  const base = tool.type === 'fal' && tool.mode !== 'move' ? tr('Húzd végig az ujjad vagy az egered, ahová falat szeretnél, mint az utat. A fal magától fordul, a sarkokra bástya kerül. Ha egy meglévő falról indulsz, azt bontod le. Ami a falon belül van, az zölden látszik, azt a tatár nem égeti fel.') : tool.mode === 'move' ? trf('Hová tegyük át {0}? Koppints az új helyére.', withArt(DEF[tool.type].name)) : trf('Hová kerüljön {0}? Koppints egy szabad mezőre.', withArt(DEF[tool.type].name));
   $('placeText').textContent = base + (noRoad ? ' ' + tr('Sárga mezőn még nem ér el ösvény, oda vezess majd egyet.') : DEF[tool.type].road ? '' : ' ' + tr('Ennek nem kell ösvény.'));
 }
 function startBuild(type) { lastHint = null; setTimeout(rotBtn, 0);
   closeDrawer(); tool = { mode: 'build', type }; hideInfo();
   $('placebar').hidden = false; $('nav').hidden = true;
-  $('placeText').textContent = type === 'ut' ? tr('Húzd végig az ujjad vagy az egered a mezőkön, és ösvény lesz belőle. Ha egy meglévő ösvényről indulsz, azt törlöd, és visszakapod az árát. Ha végeztél, nyomd meg a Kész gombot.') : trf('Hová kerüljön {0}? Koppints egy szabad mezőre.', withArt(DEF[type].name));
+  $('placeText').textContent = type === 'fal' ? tr('Húzd végig az ujjad vagy az egered, ahová falat szeretnél, mint az utat. A fal magától fordul, a sarkokra bástya kerül. Ha egy meglévő falról indulsz, azt bontod le. Ami a falon belül van, az zölden látszik, azt a tatár nem égeti fel.') : type === 'ut' ? tr('Húzd végig az ujjad vagy az egered a mezőkön, és ösvény lesz belőle. Ha egy meglévő ösvényről indulsz, azt törlöd, és visszakapod az árát. Ha végeztél, nyomd meg a Kész gombot.') : trf('Hová kerüljön {0}? Koppints egy szabad mezőre.', withArt(DEF[type].name));
 }
 function startMove(b) { lastHint = null; setTimeout(rotBtn, 0); tool = { mode: 'move', type: b.type, id: b.id, rot: b.rot || 0 }; hideInfo(); $('placebar').hidden = false; $('nav').hidden = true; $('placeText').textContent = trf('Hová tegyük át {0}? Koppints az új helyére.', withArt(DEF[b.type].name)); }
 function endTool() { hover = null; if ($('rotBtn')) $('rotBtn').hidden = true; tool = null; $('placebar').hidden = true; $('nav').hidden = false; }
@@ -1657,7 +1657,7 @@ function resolveWinter() {
   // a tatár mindenhol pusztít, csak a kőépületek és a kővár közelében állók maradnak meg biztosan
   const frac = Math.max(0.05, { dics: 0.12, tul: 0.3, seb: 0.45, rom: 0.6 }[o.id] - 0.04 * count('kovar'));
   const forts = S.buildings.filter(b => (b.type === 'kovar' || b.type === 'visegrad') && !off(b));
-  const safe = b => DEF[b.type].stone || b.type === 'fo' || forts.some(f => { const [fw, fh] = dimsB(f), [bw, bh] = dimsB(b); return Math.max(0, f.i - (b.i + bw), b.i - (f.i + fw)) < 3 && Math.max(0, f.j - (b.j + bh), b.j - (f.j + fh)) < 3; });
+  const safe = b => DEF[b.type].stone || b.type === 'fo' || inWalls(b) || forts.some(f => { const [fw, fh] = dimsB(f), [bw, bh] = dimsB(b); return Math.max(0, f.i - (b.i + bw), b.i - (f.i + fw)) < 3 && Math.max(0, f.j - (b.j + bh), b.j - (f.j + fh)) < 3; });
   const cand = S.buildings.filter(b => !b.ruined && !safe(b)); const n = Math.round(cand.length * frac);
   for (let k = 0; k < n && cand.length; k++) { const b = cand.splice(Math.floor(Math.random() * cand.length), 1)[0]; b.ruined = true; b.until = 0; }
   if (n) fx.push(trf('{0} épület leégett. A romokat fél áron újjáépítheted.', n)); else fx.push(tr('Egyetlen épület sem égett le. Ezt a krónikások sem fogják elhinni.'));
@@ -3257,6 +3257,89 @@ renderWinterBody = function (first) {
   d.querySelectorAll('button').forEach(x => x.onclick = () => { const t = x.dataset.t, w = S.winter; if (t === '12') { w.start -= 12 * 3600; } if (t === 'k') { w.kardAt = null; } save(); if (t === 'c') { closeModal(); tjMuhi(); return; } el.dataset.sig = ''; renderWinterBody(false); });
 };
 
+// ---------- Kőfal: húzással rakható, magától fordul, a töréspontokra sarokbástya kerül ----------
+const isWall = t => t === 'fal' || t === 'falsarok';
+let wallPaint = null;
+function wallAt(i, j) { return S.buildings.find(b => isWall(b.type) && b.i === i && b.j === j); }
+function wallFix() {
+  const ws = S.buildings.filter(b => isWall(b.type)); if (!ws.length) return;
+  const at = new Set(ws.map(b => b.i + ',' + b.j)), h = (i, j) => at.has(i + ',' + j);
+  ws.forEach(b => {
+    const nI = h(b.i - 1, b.j) || h(b.i + 1, b.j), nJ = h(b.i, b.j - 1) || h(b.i, b.j + 1);
+    const t = nI && !nJ ? 'fal' : nJ && !nI ? 'fal' : 'falsarok', rot = t === 'fal' && nJ ? 1 : 0;
+    if (b.type !== t || (b.rot || 0) !== rot) { b.type = t; b.rot = rot; }
+  });
+  connCache = null; try { shadowCache = null; } catch (e) {} wallCache = null;
+}
+function wallPut(i, j) {
+  if (wallPaint.mode === 'erase') { const b = wallAt(i, j); if (b) { S.buildings = S.buildings.filter(x => x !== b); give(DEF.fal.cost); sfxClick(); wallFix(); } return; }
+  if (wallAt(i, j) || !inArea(i, j) || !free('fal', i, j, null, 0)) return;
+  if (!canPay(DEF.fal.cost)) { if (!wallPaint.warned) { wallPaint.warned = true; toast(trf('Elfogyott a nyersanyag. Hiányzik · {0}', missText(DEF.fal.cost))); } return; }
+  pay(DEF.fal.cost); const bt = DEF.fal.bt;
+  S.buildings.push({ id: S.nextId++, type: 'fal', i, j, t0: S.gt + bt, built: S.gt, rot: 0, until: S.gt + bt, dur: bt });
+  S.stats.built++; if (S.newTypes) { delete S.newTypes.fal; delete S.newTypes.falsarok; } wallPaint.n++; sfxClick(); wallFix();
+}
+function wallLine(a, b) { // két mező közötti lépcsős vonal, hogy gyors húzásnál se legyen lyuk
+  const out = []; let [i, j] = a; const [ti, tj] = b;
+  while (i !== ti || j !== tj) { if (Math.abs(ti - i) >= Math.abs(tj - j)) i += Math.sign(ti - i); else j += Math.sign(tj - j); out.push([i, j]); }
+  return out;
+}
+const wallTile = e => { const [bx, by] = toBg(e.offsetX, e.offsetY); return tileAt(bx, by); };
+cv.addEventListener('pointerdown', e => {
+  if (!tool || !isWall(tool.type) || tool.mode === 'move' || e.button > 0) return;
+  e.stopImmediatePropagation(); const [i, j] = wallTile(e);
+  wallPaint = { mode: wallAt(i, j) ? 'erase' : 'add', last: [i, j], n: 0, id: e.pointerId };
+  try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+  wallPut(i, j); hover = [i, j];
+}, true);
+cv.addEventListener('pointermove', e => {
+  if (!wallPaint || e.pointerId !== wallPaint.id) return; e.stopImmediatePropagation();
+  const p = wallTile(e); hover = p; if (p[0] === wallPaint.last[0] && p[1] === wallPaint.last[1]) return;
+  wallLine(wallPaint.last, p).forEach(([i, j]) => wallPut(i, j)); wallPaint.last = p;
+}, true);
+const wallEnd = e => {
+  if (!wallPaint || (e && e.pointerId !== wallPaint.id)) return; if (e) e.stopImmediatePropagation();
+  const n = wallPaint.n; wallPaint = null; wallFix(); save(); try { hud(); } catch (x) {} checkQuest();
+  if (n) toast(trf('{0} falszakasz épül. A sarkokra magától bástya kerül.', n));
+};
+cv.addEventListener('pointerup', wallEnd, true); cv.addEventListener('pointercancel', wallEnd, true);
+// a falsarok nem kell külön az építés menüben, a fal magától választja
+DEF.falsarok.cost = DEF.fal.cost;
+DEF.fal.desc = 'Húzd végig, ahová falat szeretnél, mint az utat. A fal magától fordul, a töréspontokra sarokbástya kerül. Ami a falon belül van, azt a tatár nem égeti fel. Minden falszakasz 1 Védelmet ad.';
+DEF.falsarok.desc = 'Sarokbástya kis toronnyal. A fal magától rakja ide, ahol megtörik.';
+
+// ---------- mi van a falon belül? ----------
+let wallCache = null;
+function wallInside() {
+  if (wallCache) return wallCache;
+  const at = new Set(S.buildings.filter(b => isWall(b.type)).map(b => b.i + ',' + b.j)), inside = new Set(), nw = at.size;
+  // a kőből rakott nagy épületek (udvarház, kővár) is lezárják a falat
+  S.buildings.forEach(b => { if (isWall(b.type) || b.ruined || !(b.type === 'fo' || b.type === 'kovar' || b.type === 'visegrad' || DEF[b.type].stone)) return; const [w, h] = dimsB(b); for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) at.add((b.i + x) + ',' + (b.j + y)); });
+  if (nw >= 4) {
+    const I0 = -18, I1 = 42, seen = new Set(), q = [];
+    for (let i = I0; i <= I1; i++) for (const j of [I0, I1]) { q.push([i, j]); q.push([j, i]); }
+    while (q.length) { const [i, j] = q.pop(), k = i + ',' + j; if (i < I0 || j < I0 || i > I1 || j > I1 || seen.has(k) || at.has(k)) continue; seen.add(k); q.push([i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]); }
+    for (let i = I0; i <= I1; i++) for (let j = I0; j <= I1; j++) { const k = i + ',' + j; if (!seen.has(k) && !at.has(k)) inside.add(k); }
+    if (inside.size > 900) inside.clear();
+  }
+  wallCache = inside; return inside;
+}
+function inWalls(b) { const ins = wallInside(); if (!ins.size) return false; const [w, h] = dimsB(b); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (!ins.has((b.i + a) + ',' + (b.j + c))) return false; return true; }
+// építés közben megmutatjuk, mi van már a falon belül
+const _drawWall = draw;
+draw = function (now) {
+  _drawWall(now);
+  if (!(tool && isWall(tool.type))) return;
+  try {
+    const ins = wallInside(); if (!ins.size) return;
+    ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR); ctx.fillStyle = 'rgba(120,230,140,0.22)';
+    ins.forEach(k => { const [i, j] = k.split(',').map(Number), p = [tileTop(i, j), tileTop(i + 1, j), tileTop(i + 1, j + 1), tileTop(i, j + 1)]; ctx.beginPath(); p.forEach((q, n) => n ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fill(); });
+    ctx.restore();
+  } catch (e) {}
+};
+setTimeout(() => { try { wallFix(); } catch (e) {} }, 500);
+setInterval(() => { wallCache = null; }, 3000);
+
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;
 function tick(dt) {
@@ -3696,7 +3779,7 @@ function renderDrawer() {
   $('tabs').innerHTML = CATS.map(([id, n]) => `<button type="button" class="tab" data-cat="${id}" aria-pressed="${id === curCat}">${n}${hasNew(id) ? `<span class="newdot" aria-label="${tr('újdonság')}">!</span>` : ''}</button>`).join('');
   $('tabs').querySelectorAll('.tab').forEach(t => t.onclick = () => { curCat = t.dataset.cat; renderDrawer(); });
   const lotCard = curCat === 'telek' ? lotCardHTML() : '';
-  const types = curCat === 'telek' ? [] : Object.keys(DEF).filter(t => t !== 'fo' && !DEF[t].old && !(DEF[t].secret && !unlocked(t)) && !(DEF[t].unique && S.buildings.some(b => b.type === t)) && (curCat === 'all' || DEF[t].cat === curCat));
+  const types = curCat === 'telek' ? [] : Object.keys(DEF).filter(t => t !== 'fo' && t !== 'falsarok' && !DEF[t].old && !(DEF[t].secret && !unlocked(t)) && !(DEF[t].unique && S.buildings.some(b => b.type === t)) && (curCat === 'all' || DEF[t].cat === curCat));
   types.forEach(t => drawerSeen.add(t));
   $('cards').innerHTML = lotCard + types.map(t => {
     const d = DEF[t], lock = !unlocked(t); const tech = d.tech && TECH.find(x => x.id === d.tech);
@@ -4066,7 +4149,7 @@ function renderWinterBody(first) {
   const phrase = tr(['a fél ország leég', 'sok falu elpusztul', 'a kővárak kitartanak, de a falvak égnek', 'a tatár a falainkba törik bele'][cur]);
   el.innerHTML = `<span class="eyebrow">${tr('TATÁRJÁRÁS')} · ${tr('MÉG')} <span class="wtime">${dur(left / S.speed)}</span></span>
     <h2>${tr('Jönnek a tatárok, 1241')}</h2>
-    <p>${first ? tr('Batu kán serege átkelt a Vereckei-hágón. Ugyanott, ahol annak idején mi. A bárók azt mondják, majd elmennek maguktól.') + ' ' : ''}${trf('{0} múlva ideérnek. Védelem, kővárak, teli magtár és kincstár kell. Ami fából van és nincs kővár mellett, az leéghet.', dur(left / S.speed))}</p>
+    <p>${first ? tr('Batu kán serege átkelt a Vereckei-hágón. Ugyanott, ahol annak idején mi. A bárók azt mondják, majd elmennek maguktól.') + ' ' : ''}${trf('{0} múlva ideérnek. Védelem, kővárak, teli magtár és kincstár kell. Ami fából van, és nincs kővár mellett vagy kőfalon belül, az leéghet.', dur(left / S.speed))}</p>
     <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-family:var(--display);font-weight:800;font-size:20px">${tr('Felkészültség')}</b><b class="num" style="font-size:28px;color:var(--ochre-dark)">${p.total}%</b></div>
     <div class="big-prep"><i style="width:${p.total}%"></i><u style="left:25%"></u><u style="left:50%"></u><u style="left:80%"></u></div>
     <div class="thr">${names.map((n, k) => `<span class="${k === cur ? 'on' : ''}">${n}${k === cur ? tr(' ← most') : ''}</span>`).join('')}</div>
