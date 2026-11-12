@@ -511,7 +511,7 @@ const DEF = {
   banyavaros3: { old: 1, line: 'banyavaros1', name: 'Szabad királyi bányaváros', lvl: 3, size: 4, img: 'e05_banyavaros3', cat: 'lak', cost: { penz: 6500, fa: 160, vas: 40, forint: 40 }, pop: 120, hang: 8, prod: { penz: 950 }, time: 15 * M, road: true, terrain: 'hill', aura: { r: 4, mul: 0.25, to: 'arany', txt: 'a közeli bányák és aranymosók 25%-kal több Aranyat adnak' }, desc: 'Városháza órával, szökőkút a téren, és saját kiváltság a királytól. A polgárai ezt minden alkalommal meg is említik.' },
   // ---- termelők ----
   favago:    { inset: 0.06, name: 'Favágó', size: 2, img: 'e05_favago', cat: 'term', cost: { penz: 120 }, workers: 2, prod: { fa: 14 }, time: 10 * M, bt: 5 * M, road: true, modes: true, terrain: 'forest', free1: true, desc: 'Fejsze, tuskó, farakás. A favágó szerint az erdő végtelen. Az erdő szerint nem.' },
-  szanto:    { name: 'Háromnyomásos szántó', size: 3, img: 'e04_haromnyomasos_szanto', cat: 'term', cost: { penz: 200, fa: 10 }, workers: 4, prod: { termeny: 160 }, time: 10 * M, bt: 20 * M, road: true, modes: true, desc: 'Őszi búza, tavaszi árpa és egy pihenő harmad. Béla óta így megy, és jól megy.' },
+  haromnyomasos_szanto: { name: 'Háromnyomásos szántó', size: 3, img: 'e04_haromnyomasos_szanto', cat: 'term', cost: { penz: 200, fa: 10 }, workers: 4, prod: { termeny: 160 }, time: 10 * M, bt: 20 * M, road: true, modes: true, desc: 'Őszi búza, tavaszi árpa és egy pihenő harmad. Béla óta így megy, és jól megy.' },
   aranymoso: { inset: 0.06, name: 'Aranymosó', size: 2, img: 'e05_aranymoso', cat: 'term', cost: { penz: 300, fa: 20 }, workers: 2, prod: { arany: 2 }, time: 15 * M, bt: 20 * M, road: true, modes: true, terrain: 'bank', tech: 'mos', desc: 'Csatorna, szita, mosótál. A patak homokjában ott csillog az arany, csak sokat kell rázni érte.' },
   szolohegy1: { inset: 0.08, name: 'Szőlőhegy', size: 3, img: 'e05_szolohegy1', cat: 'term', cost: { penz: 400, fa: 20 }, workers: 2, prod: { bor: 4 }, time: 20 * M, bt: 30 * M, road: true, modes: true, terrain: 'hill', tech: 'szolo', up: 'szolohegy2', upT: 2 * H1, desc: 'Tőkék, karók, kis présház a pincével. Itt a szőlőből egyenesen bor lesz, a borász szerint a jó pince a titka.' },
   szolohegy2: { old: 1, line: 'szolohegy1', lvl: 2, inset: 0.08, name: 'Szőlőhegy', size: 3, img: 'e05_szolohegy2', cat: 'term', cost: { penz: 800, fa: 40, vas: 4 }, workers: 2, prod: { bor: 7 }, time: 20 * M, road: true, modes: true, terrain: 'hill', up: 'szolohegy3', upT: 4 * H1, desc: 'Több sor, nagyobb présház, hordók az ajtó előtt. A szomszédok már kóstolni is átjárnak.' },
@@ -539,6 +539,37 @@ const DEF = {
   palota1:   { name: 'Visegrádi palota', size: 5, img: 'e05_palota1', cat: 'hang', unique: true, cost: { penz: 4000, fa: 150, vas: 30, forint: 15 }, pop: 10, hang: 12, prod: { hirnev: 1 }, time: H1, bt: 3 * H1, road: true, tech: 'palota', stone: true, up: 'palota2', upT: 6 * H1, desc: 'Most kezdik építeni. Kőfal, udvar, állványok és egy kőműves, aki szerint ez még legalább tíz év.' },
   palota2:   { old: 1, line: 'palota1', lvl: 2, name: 'Visegrádi palota', size: 5, img: 'e05_palota2', cat: 'hang', unique: true, cost: { penz: 8000, fa: 200, vas: 50, bor: 20, forint: 40 }, pop: 20, hang: 18, prod: { hirnev: 2 }, time: H1, road: true, stone: true, up: 'palota3', upT: 10 * H1, desc: 'Gótikus szárnyak, szökőkút az udvaron, zászlók mindenütt. Ide már királyokat is meg lehet hívni.' },
   palota3:   { old: 1, line: 'palota1', lvl: 3, name: 'Visegrádi királyi palota', size: 5, img: 'e05_palota3', cat: 'hang', unique: true, cost: { penz: 14000, fa: 300, vas: 70, bor: 40, forint: 80 }, pop: 30, hang: 26, prod: { hirnev: 4 }, time: H1, road: true, stone: true, desc: 'Herkules-kút, rózsakert, aranyozott tornyok. A kortársak szerint földi paradicsom, a kertész szerint rengeteg gyomlálás.' },
+  // ---- Béla korából költözött épületek: termelnek tovább, egy részük átépíthető ----
+  jobbagytelek: { old: 1, b4: 1, name: 'Jobbágytelek', w: 1, h: 2, img: 'e04_jobbagytelek', cat: 'lak', cost: { penz: 150, fa: 10 }, pop: 10, prod: { penz: 45 }, time: 5 * M, bt: 10 * M, road: true, desc: 'Ház, kert, kerítés. A jobbágy a telkén dolgozik, a földesúrnak ad belőle, a királynak is, és ha marad, magának is.' },
+  vendegtelep: { old: 1, b4: 1, name: 'Vendégtelep', size: 2, img: 'e04_vendegtelep', cat: 'lak', cost: { penz: 420, fa: 30 }, pop: 26, prod: { penz: 130 }, time: 10 * M, bt: 30 * M, road: true, up: 'polgarhaz', upT: 2 * H1, desc: 'Német, vallon és olasz telepesek, akiket a király hívott. Szorgalmasak, csak az a baj, hogy mindent jobban tudnak.' },
+  lakotorony: { old: 1, b4: 1, name: 'Nemesi lakótorony', size: 2, img: 'e04_lakotorony', cat: 'lak', cost: { penz: 600, fa: 40, vas: 8 }, pop: 6, hang: 6, faith: 'ker', def: 2, bt: H1, stone: true, aura: { r: 3, mul: -0.1, to: 'lak', txt: 'a környező jobbágyok kevesebbet termelnek, mert a földesúr is kér' }, desc: 'Egy kisnemes kőtornya. Az urak örülnek, a szomszéd jobbágyok kevésbé.' },
+  vizimalom: { old: 1, b4: 1, inset: 0.06, name: 'Vízimalom', size: 2, img: 'e04_vizimalom', cat: 'term', cost: { penz: 380, fa: 40 }, workers: 2, prod: { termeny: 80 }, time: 15 * M, bt: 40 * M, road: true, modes: true, terrain: 'bank', aura: { r: 4, mul: 0.25, to: 'termeny', txt: 'a közeli szántók 25%-kal több Terményt adnak' }, desc: 'A folyó hajtja a kereket, a kerék a követ, a kő őrli a búzát. A molnár csak a vámot szedi.' },
+  juhaszat:  { old: 1, b4: 1, inset: 0.08, name: 'Juhászat', size: 3, img: 'e04_juhaszat', cat: 'term', cost: { penz: 260, fa: 20 }, workers: 3, prod: { penz: 60 }, time: 15 * M, bt: 20 * M, road: true, modes: true, desc: 'Birkák, kutya, egy juhász, aki furulyázik. A gyapjúból posztó lesz, a furulyaszóból semmi.' },
+  posztomuhely: { old: 1, b4: 1, name: 'Posztóműhely', size: 2, img: 'e04_posztomuhely', cat: 'term', cost: { penz: 450, fa: 30 }, workers: 3,  prod: { penz: 90 }, time: 20 * M, bt: 40 * M, road: true, modes: true, desc: 'Szövőszék és kallómalom. Gyapjúból posztót készít, ami köpeny, nadrág és vásári áru lesz.' },
+  szolohegy: { old: 1, b4: 1, inset: 0.12, name: 'Szőlőhegy', size: 2, img: 'e04_szolohegy', cat: 'term', cost: { penz: 260, fa: 15 }, workers: 2, prod: { bor: 3 }, time: 15 * M, bt: 30 * M, road: true, modes: true, terrain: 'hill', desc: 'Napos domboldal, karók, tőkék. A vincellér szerint a tavalyi jobb volt, de ezt minden évben mondja.' },
+  preshaz:   { old: 1, b4: 1, name: 'Présház', size: 1, img: 'e04_preshaz', cat: 'term', cost: { penz: 350, fa: 30 }, workers: 2,  prod: { bor: 3 }, time: 20 * M, bt: 40 * M, road: true, modes: true, desc: 'Prés, kád, hordó. Szőlőből bort csinál, a borból jókedvet, a jókedvből néha verekedést.' },
+  ercbanya:  { old: 1, b4: 1, inset: 0.12, name: 'Ércbánya', size: 2, img: 'e04_ercbanya', cat: 'term', cost: { penz: 400, fa: 40 }, workers: 4, prod: { vas: 3 }, up: 'vashamor1', upT: 2 * H1, time: 20 * M, bt: 45 * M, road: true, modes: true, terrain: 'hill', desc: 'Lyuk a sziklában, csille, gyertya. A bányász lent dolgozik, a gondja fent marad.' },
+  kovacsmuhely: { old: 1, b4: 1, name: 'Kovácsműhely', size: 2, img: 'e04_kovacsmuhely', cat: 'term', cost: { penz: 450, fa: 40 }, workers: 3,  prod: { vas: 3 }, time: 20 * M, bt: 40 * M, road: true, modes: true, aura: { r: 2, mul: -0.15, to: 'lak', txt: 'a közeli házak 15%-kal kevesebbet adnak, mert reggeltől estig kalapál' }, desc: 'Fújtató, üllő, kalapács. Az ércből vasat csinál, a csendből zajt.' },
+  vasarter:  { old: 1, b4: 1, name: 'Vásártér', size: 3, img: 'e04_vasarter', cat: 'term', cost: { penz: 1200, fa: 60, bor: 8 }, workers: 4, hang: 4, prod: { penz: 220 }, time: 20 * M, bt: 2 * H1, road: true, modes: true, aura: { r: 4, mul: 0.15, to: 'penz', txt: 'a közeli épületek 15%-kal több Pénzt adnak' }, desc: 'Sátrak, standok, kikiáltó. Itt minden kapható, ami nem kell, és semmi, ami kellene.' },
+  revhaz:    { old: 1, b4: 1, name: 'Révház', w: 1, h: 2, img: 'e04_revhaz', cat: 'term', cost: { penz: 320, fa: 30 }, workers: 2, prod: { penz: 90 }, time: 10 * M, bt: 30 * M, road: true, modes: true, terrain: 'bank', desc: 'Komp és révész. Átvisz a folyón, és mindenkitől kér révpénzt, a királytól is, csak tőle halkabban.' },
+  penzvero_kamara: { old: 1, b4: 1, name: 'Pénzverő kamara', size: 2, img: 'e04_penzvero_kamara', cat: 'term', cost: { penz: 900, vas: 12 }, workers: 3, prod: { penz: 320 }, time: 30 * M, bt: 2 * H1, road: true, modes: true, stone: true, desc: 'A kamarahaszna ide folyik be. Minden évben új pénzt vernek, és a régit be kell váltani. Persze kicsit kevesebbre.' },
+  fogado:    { old: 1, b4: 1, name: 'Fogadó', size: 2, img: 'e04_fogado', cat: 'hang', cost: { penz: 600, fa: 50 }, workers: 2, hang: 5, faith: 'pog', input: { bor: 2 }, prod: { penz: 200 }, time: 20 * M, bt: H1, road: true, modes: true, aura: { r: 3, mul: 0.1, to: 'lak', txt: 'a közeli házak 10%-kal többet adnak' }, desc: 'Bor, kenyér, szalmazsák. Az utazó itt pihen, a helyi meg itt mondja el, mi újság.' },
+  ciszterci_apatsag: { old: 1, b4: 1, name: 'Ciszterci apátság', size: 3, img: 'e04_ciszterci_apatsag', cat: 'hang', cost: { penz: 1500, fa: 80, bor: 15 }, workers: 3, hang: 10, faith: 'pog', prod: { tudas: 2 }, time: H1, bt: 3 * H1, road: true, stone: true, aura: { r: 4, mul: 0.2, to: 'termeny', txt: 'a közeli szántók és malmok 20%-kal több Terményt adnak, mert a szerzetesek értenek a földhöz' }, desc: 'Fehér ruhás szerzetesek, akik imádkoznak és dolgoznak. Főleg dolgoznak. A mocsarat is lecsapolják.' },
+  lovagi_tornater: { old: 1, b4: 1, name: 'Lovagi tornatér', w: 2, h: 3, img: 'e04_lovagi_tornater', cat: 'hang', cost: { penz: 1000, vas: 18 }, hang: 9, faith: 'ker', def: 2, bt: 2 * H1, desc: 'Lándzsa, ló, zászlók. Az urak szeretik nézni, ahogy más urak leesnek a lóról.' },
+  jak:       { old: 1, b4: 1, name: 'Jáki templom', size: 3, img: 'e04_jak_1', stages: ['e04_jak_1', 'e04_jak_2', 'e04_jak_3'], cat: 'hang', cost: { penz: 2500, fa: 100, vas: 25, bor: 15 }, hang: 10, faith: 'pog', pop: 4, prod: { penz: 200 }, time: H1, road: true, gb: true, stone: true, gbFx: 'hang', bt: 4 * H1, buildTime: 4 * H1, desc: 'Legendás épület. A Ják nemzetség temploma, kapuján a tizenkét apostol. Minden szint több Hangulatot és Pénzt ad. Hírnévvel szintezhető.' },
+  visegrad:  { old: 1, b4: 1, name: 'Visegrádi vár', size: 3, img: 'e04_visegrad_1', stages: ['e04_visegrad_1', 'e04_visegrad_2', 'e04_visegrad_3'], cat: 'ved', cost: { penz: 4000, fa: 120, vas: 50 }, def: 8, hang: 4, faith: 'ker', pop: 6, gb: true, stone: true, gbFx: 'def', bt: 4 * H1, buildTime: 4 * H1, desc: 'Legendás épület. A tatárjárás után épült fellegvár a Duna fölött. Minden szint Védelmet és Terményt ad. Hírnévvel szintezhető.' },
+  haz:       { old: 1, b4: 1, name: 'Parasztház', size: 1, img: 'e02_foldhaz', cat: 'lak', cost: { penz: 60, termeny: 20 }, pop: 6, prod: { penz: 15 }, time: 5 * M, road: true, up: 'jobbagytelek', upT: H1, desc: 'Régi ház még István idejéből. Építsd át Jobbágytelekké!' },
+  falu:      { old: 1, b4: 1, name: 'Falu', size: 2, img: 'e03_falu', cat: 'lak', cost: { penz: 180, termeny: 90 }, pop: 16, prod: { penz: 42 }, time: 5 * M, road: true, up: 'polgarhaz', upT: 2 * H1, desc: 'Régi falu. Ha behívod a hospeseket, Vendégteleppé építheted át.' },
+  szanto:    { old: 1, b4: 1, name: 'Szántóföld', w: 3, h: 2, img: 'e03_szanto', cat: 'term', cost: { penz: 70 }, workers: 3, prod: { termeny: 36 }, time: 5 * M, road: true, modes: true, up: 'haromnyomasos_szanto', upT: 2 * H1, desc: 'Régi kétnyomásos szántó. A háromnyomásos több termést ad.' },
+  soraktar:  { old: 1, b4: 1, name: 'Sóraktár', w: 1, h: 2, img: 'e03_soraktar', cat: 'term', cost: { penz: 100, termeny: 40 }, workers: 2, prod: { kovako: 1 }, time: 20 * M, road: true, modes: true, desc: 'Az erdélyi só raktára. A só most is a király kincse.' },
+  penzverde: { old: 1, b4: 1, name: 'Pénzverde', size: 2, img: 'e03_penzverde', cat: 'term', cost: { penz: 160, termeny: 50, kovako: 1 }, workers: 3, prod: { penz: 60 }, time: 10 * M, road: true, modes: true, up: 'penzvero_kamara', upT: 3 * H1, desc: 'István pénzverdéje. Pénzverő kamarává építhető át.' },
+  piac:      { old: 1, b4: 1, name: 'Piac', size: 2, img: 'e03_piac', cat: 'term', cost: { penz: 140, termeny: 60 }, workers: 2, prod: { penz: 30 }, hang: 3, time: 10 * M, road: true, up: 'vasarter', upT: 4 * H1, desc: 'Régi piac. Vásártérré építhető át, ha megvan a Vásárjog.' },
+  templom:   { old: 1, b4: 1, name: 'Falusi templom', size: 1, img: 'e03_falusi_templom', cat: 'hang', cost: { penz: 80, termeny: 30 }, hang: 4, faith: 'pog', up: 'plebaniatemplom', upT: 2 * H1, desc: 'Kis kőtemplom. Plébániatemplommá építhető át.' },
+  liget:     { old: 1, b4: 1, name: 'Szent liget', size: 1, img: 'e03_szent_liget', cat: 'hang', cost: { penz: 50, termeny: 30 }, hang: 3, faith: 'pog', desc: 'A régi liget. A nagymama még ide jár, csak nem mondja el a papnak.' },
+  kolostor:  { old: 1, b4: 1, name: 'Bencés kolostor', size: 2, img: 'e03_kolostor', cat: 'hang', cost: { penz: 200, termeny: 80 }, workers: 2, hang: 5, faith: 'pog', prod: { tudas: 1 }, time: 30 * M, up: 'ciszterci_apatsag', upT: 4 * H1, desc: 'A bencések kolostora. Ciszterci apátsággá építhető át.' },
+  ispan:     { old: 1, b4: 1, name: 'Ispánsági vár', w: 2, h: 3, img: 'e03_ispansagi_var', cat: 'ved', cost: { penz: 220, termeny: 100 }, def: 3, hang: 1, faith: 'ker', up: 'kovar', upT: 8 * H1, desc: 'Földvár cölöpfallal. A tatár ezt felgyújtja. Építsd át Kővárrá!' },
+  vezeri:    { old: 1, b4: 1, name: 'Pannonhalmi apátság', size: 3, img: 'e03_pannonhalma', cat: 'hang', cost: { penz: 500, termeny: 250, kovako: 4 }, pop: 6, hang: 12, faith: 'pog', prod: { penz: 90 }, time: 20 * M, road: true, gb: true, stone: true, gbFx: 'penz', desc: 'Legendás épület az előző korból. A bencések ezer évig itt lesznek. Hírnévvel szintezhető.' },
+  lehel:     { old: 1, b4: 1, name: 'Koronázási palást', size: 2, img: 'e03_koronazasi_palast', cat: 'hang', cost: {}, hang: 10, def: 2, secret: true, unique: true, desc: 'Gizella hímeztette. Most is megvan, és minden koronázáson ott lesz.' },
   // ---- emléktár ----
   r_verecke: { name: 'Vereckei-hágó', size: 2, img: 'e01_vereckei_hago', cat: 'emlek', cost: {}, hang: 6, tech: 'r_verecke', secret: true, unique: true, desc: 'Az Emléktárból. Erre jöttetek be a Kárpát-medencébe.' },
   r_jurta:   { name: 'Vezéri jurta', size: 3, img: 'e01_vezeri_jurta', cat: 'emlek', cost: {}, hang: 6, pop: 4, tech: 'r_jurta', secret: true, unique: true, desc: 'Az Emléktárból. A régi idők jurtája.' },
@@ -572,7 +603,7 @@ TECH.forEach((t, k) => { if (k > 0 && !t.after) t.req = [TECH[k - 1].id]; });
 const QUESTS = [
   { face: 'magyaraz', text: 'Üdvözöllek, Károly Róbert vagyok. Az ország szét van szakadva, minden sarkában egy kiskirály ül, és mind azt hiszi, ő az úr. Kezdjük az alapokkal, rakj le egy Favágót az erdő szélén, a térkép bal felső részén.', check: () => has('favago'), rew: { fa: 40 } },
   { face: 'magyaraz', text: 'Az emberek városba akarnak költözni. Építs két Polgárházat, mert a polgár adót fizet, és nem lázad.', check: () => S.buildings.filter(b => b.type === 'polgarhaz').length >= 2, rew: { penz: 200 } },
-  { face: 'orul', text: 'Kenyér nélkül nincs rend. Rakj le egy Háromnyomásos szántót a házak közelébe.', check: () => has('szanto'), rew: { termeny: 200 } },
+  { face: 'orul', text: 'Kenyér nélkül nincs rend. Rakj le egy Háromnyomásos szántót a házak közelébe.', check: () => has('haromnyomasos_szanto'), rew: { termeny: 200 } },
   { face: 'nevet', text: 'Hallottad? A patakban arany csillog! Tanuld ki az Aranymosást, és rakj le egy Aranymosót úgy, hogy belelógjon a vízbe.', check: () => has('aranymoso'), rew: { penz: 250 } },
   { face: 'aggodik', text: 'A kiskirályok mindenhol vámot szednek. Mi is szedünk, csak tisztességesen. Tanuld ki a Vámrendeletet, és építs egy Vámházat.', check: () => has('vamhaz'), rew: { penz: 300 } },
   { face: 'magyaraz', text: 'Kard és patkó nélkül nem lehet rendet rakni. Építs Vashámort a dombra, és gyűjts össze 15 Vasat.', check: () => (S.res.vas || 0) >= 15 || !!S.techs.rozgony, rew: { tudas: 3 } },
@@ -649,6 +680,7 @@ function fresh() {
       s.res.penz += Math.min(20000, Math.floor((r.penz || 0) * 0.25)); s.res.hirnev = Math.floor(r.hirnev || 0); s.res.kovako = Math.max(1, Math.floor(r.kovako || 0));
       if (d.korona != null) s.korona = d.korona; if (d.gb) s.gb = d.gb; s.dowry = 1;
     }
+    carryCity(s, d);
   } catch (e) {}
   return s;
 }
@@ -3366,6 +3398,57 @@ setInterval(() => { try { const s = S.buildings.filter(b => isWall(b.type)).map(
 const _placeWall = place;
 place = function (i, j) { const r = _placeWall(i, j); try { wallFix(); wallSig = ''; } catch (e) {} return r; };
 
+// ---------- Béla városa átköltözik az Anjou-kori térképre ----------
+// ami a város 20×20-as közepén állt, az ugyanott marad; ami a régi telkeken volt, annak a közepén keresünk helyet; ami sehova nem fér, azért pénz jár
+const CARRY_MAP = { szanto3: 'haromnyomasos_szanto' };
+function carryCity(s, d) {
+  if (!d || !Array.isArray(d.buildings) || s.carry) return 0;
+  s.carry = 1; const occ = {}, mark = (t, i, j, rot, v) => { const [w, h] = dimsT(t, rot); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[(i + a) + ',' + (j + c)] = v; };
+  s.buildings.forEach(b => mark(b.type, b.i, b.j, b.rot || 0, b.id)); Object.keys(s.roads || {}).forEach(k => { occ[k] = 'ut'; });
+  const okTile = k => !BLOCKED.has(k) && !BARON_TILES.has(k);
+  const inLot = (l, x, y) => l && x >= l.i && x < l.i + l.w && y >= l.j && y < l.j + l.h && LANDSET.has(x + ',' + y);
+  const fits = (t, i, j, rot, lot) => { const [w, h] = dimsT(t, rot), ter = DEF[t].terrain;
+    for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const x = i + a, y = j + c, k = x + ',' + y; const inG = x >= 0 && y >= 0 && x < N && y < N; if ((!inG && !inLot(lot, x, y)) || occ[k] || !okTile(k)) return false; if (ROUGH[k] && ROUGH[k] !== ter) return false; }
+    if (ter === 'bank') { let n = 0; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (T_BANK.has((i + a) + ',' + (j + c))) n++; if (!n) return false; }
+    if (ter === 'forest' || ter === 'hill') { let n = 0; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (ROUGH[(i + a) + ',' + (j + c)] === ter) n++; if (n * 2 < w * h) return false; }
+    return true; };
+  let moved = 0, refund = 0, kept = 0; const later = [];
+  d.buildings.forEach(b => {
+    if (b.type === 'fo') return; const t = CARRY_MAP[b.type] || b.type; if (!DEF[t] || DEF[t].cat === 'ut') return;
+    const rot = b.rot || 0;
+    if (DEF[t].terrain === 'bank') { later.push([b, t, rot]); return; }
+    if (fits(t, b.i, b.j, rot)) { const nb = { id: s.nextId++, type: t, i: b.i, j: b.j, rot, t0: 0, mode: b.mode }; if (b.ruined) nb.ruined = true; s.buildings.push(nb); mark(t, b.i, b.j, rot, nb.id); kept++; }
+    else later.push([b, t, rot]);
+  });
+  later.forEach(([b, t, rot]) => {
+    let best = null;
+    if (DEF[t].terrain !== 'bank') for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { if (!fits(t, i, j, rot)) continue; const dd = Math.hypot(i - b.i, j - b.j); if (!best || dd < best[2]) best = [i, j, dd]; }
+    // ha a városban nincs neki hely, kap egy hozzá illő telket (erdeit, dombit, vízpartit), ingyen
+    if (!best) { const want = { forest: 'E', hill: 'D', bank: 'V' }[DEF[t].terrain] || 'M';
+      for (const l of LOTS2.filter(x => x.k === want).concat(LOTS2.filter(x => x.k !== want))) { if (best) break; const own = (s.lots || []).includes(l.id);
+        for (let i = l.i; i < l.i + l.w && !best; i++) for (let j = l.j; j < l.j + l.h && !best; j++) if (fits(t, i, j, rot, l)) { best = [i, j, 0]; if (!own) { s.lots = s.lots || []; s.lots.push(l.id); s.freeLots = (s.freeLots || 0) + 1; } } } }
+    if (best) { const nb = { id: s.nextId++, type: t, i: best[0], j: best[1], rot, t0: 0, mode: b.mode }; s.buildings.push(nb); mark(t, best[0], best[1], rot, nb.id); moved++; }
+    else { refund += Math.round(((DEF[t].cost || {}).penz || 100) * 0.6); }
+  });
+  Object.keys(d.roads || {}).forEach(k => { const [i, j] = k.split(',').map(Number); if (i >= 0 && j >= 0 && i < N && j < N && !occ[k] && okTile(k) && !ROUGH[k]) s.roads[k] = d.roads[k]; });
+  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund };
+  return s.carried;
+}
+
+// aki már elkezdte az Anjou-kort üres várossal, annak is utánaköltözik Béla városa
+setTimeout(() => { try {
+  if (!S || S.carry) return; const d = JSON.parse(localStorage.getItem('panelvar-e04-v1') || 'null'); if (!d || !Array.isArray(d.buildings) || d.buildings.length < 2) { S.carry = 1; return; }
+  const n = carryCity(S, d); save(); hud(); const ci = S.carryInfo || {};
+  const show = () => { if (openModal) { setTimeout(show, 1500); return; }
+    modal(`<div class="inner"><span class="eyebrow">${tr('MEGÉRKEZETT BÉLA VÁROSA')}</span><h2>${tr('Átköltöztünk!')}</h2>
+      <p>${trf('{0} épület jött át Béla korából. A legtöbb ugyanott áll, ahol eddig. Ami a régi telkeken volt, az új helyet kapott, és ahol kellett, ingyen telket is adtam hozzá.', n)}</p>
+      ${ci.refund ? `<p>${trf('Ami sehogy sem fért el, azért {0} Pénzt kaptál.', fmt(ci.refund))}</p>` : ''}
+      <p>${tr('A régi épületek tovább termelnek. A Vendégtelepből Polgárház, az Ércbányából Vashámor építhető, koppints rájuk, és nyomd meg az Átépítés gombot.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="cyOk">${tr('Nézzük!')}</button></div></div>`, '', 'carry');
+    $('cyOk').onclick = () => { closeModal(); renderGuide(); }; };
+  show();
+} catch (e) { try { noteErr(e); } catch (e2) {} } }, 2500);
+
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
 auraFits = function (a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz); if (a.to === 'arany') return !!(d.prod && d.prod.arany); return true; };
 auraMul = function (b, res) {
@@ -4074,8 +4157,9 @@ function showIntro() {
     <div class="inner"><span class="eyebrow">HazaVár · ${tr('5. korszak')}</span>
     <h2>${tr('Az Anjouk kora')}</h2>
     <p>${tr('1301-ben kihalt az Árpád-ház. Az országot kiskirályok osztották fel maguk között, és mindegyik azt hiszi, ő az úr. A fiatal Károly Róbert rendet rak, aztán a fia, Nagy Lajos fényes lovagi udvart épít Visegrádon.')}</p>
-    <p>${tr('Ebben a korban az arany a király. A patakban és a hegyekben arany van, a pénzverdében aranyforint lesz belőle. A régi épületek nem költöznek, új várost kezdesz, és minden épület ugyanakkora marad, amikor szépíted.')}</p>
+    <p>${tr('Ebben a korban az arany a király. A patakban és a hegyekben arany van, a pénzverdében aranyforint lesz belőle. A városod Béla korából átköltözött az új térképre. A régi épületek tovább termelnek, az újak pedig ugyanakkorák maradnak, amikor szépíted őket.')}</p>
     ${S.dowry ? `<p><b>${tr('Béla korából magaddal hoztad a fát, a vasat, a bort, a Hírnevet és a pénzed egy részét.')}</b></p>` : ''}
+    ${S.carried ? `<p><b>${trf('{0} épület költözött veled. Ami a régi telkeken állt, az új helyet kapott, ahol kellett, ingyen telekkel.', S.carried)}</b></p>` : ''}
     ${bonus ? `<p><b>${trf('A második honalapítás öröksége {0} Pénz kezdőtőke.', bonus)}</b></p>` : ''}
     <div class="row"><button class="btn coral" type="button" id="goPlay">${tr('Indulás!')}</button></div></div>`, '', 'intro');
   $('goPlay').onclick = () => { S.intro = true; unlockRelics(); save(); closeModal(); setTimeout(() => { try { showMerchant(); } catch (e) {} }, 800); };
