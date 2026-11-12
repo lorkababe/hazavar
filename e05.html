@@ -481,7 +481,7 @@ const RES = {
 const GOODS = ['fa', 'vas', 'bor', 'arany', 'forint'];
 const H1 = 3600, M = 60;
 // Béla-kori áruk: ezeket a vándorkereskedő megveszi az Anjou-kor elején
-const OLD_GOODS = { szolo: 3, gyapju: 3, poszto: 10, erc: 4 };
+const OLD_GOODS = { szolo: 8, gyapju: 8, poszto: 25, erc: 10 };
 
 // ---------- térkép: erdő balra fent, dombok és sziklák jobbra fent, Duna balra lent, patak jobbra lent ----------
 const BLOCKED = new Set(["-4,10","-4,11","-4,12","-4,13","-4,14","-5,10","-5,11","-5,12","-5,13","-5,14","-6,10","-6,11","-6,12","-6,13","-6,14","-7,10","-7,11","-7,12","-7,13","-7,14","-8,10","-8,11","-8,12","-8,13","-8,14","11,-4","11,-5","11,-6","11,-7","11,-8","12,-4","12,-5","12,-6","12,-7","12,-8","13,-4","13,-5","13,-6","13,-7","13,-8","14,-4","14,-5","14,-6","14,-7","14,-8","15,-4","15,-5","15,-6","15,-7","15,-8","20,10","20,11","20,7","20,8","20,9","21,10","21,11","21,7","21,8","21,9","22,10","22,11","22,7","22,8","22,9","23,10","23,11","23,7","23,8","23,9","24,10","24,11","24,7","24,8","24,9"]);
@@ -3489,6 +3489,17 @@ setInterval(() => { try { if (!S || openModal) return; const g = document.getEle
 const isLajos = () => !!(S && S.trade);
 setInterval(() => { try { if (!isLajos()) return; document.querySelectorAll('img[src*="e05_karoly_"]').forEach(im => { im.src = im.getAttribute('src').replace('e05_karoly_', 'e05_lajos_'); });
   const g = document.getElementById('guide'); if (g) g.querySelectorAll('b').forEach(b => { if (b.textContent === 'Károly Róbert') b.textContent = 'Nagy Lajos'; }); } catch (e) {} }, 300);
+// ---------- illusztrációk: a teljes kép látszik, a széleken elmosott háttérrel ----------
+(function () {
+  const st = document.createElement('style');
+  st.textContent = `.herow{position:relative;flex:none;width:100%;height:min(40vh,440px);overflow:hidden;border-radius:24px 30px 0 0;background:#3A2410}
+  .herow .bg{position:absolute;inset:-30px;width:calc(100% + 60px);height:calc(100% + 60px);object-fit:cover;filter:blur(18px) brightness(.8) saturate(1.1)}
+  .herow .fg{position:relative;display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 18px rgba(0,0,0,.35))}
+  @media (max-width:640px){.herow{height:auto;aspect-ratio:2/1}}`;
+  document.head.appendChild(st);
+  const wrap = () => { document.querySelectorAll('#modalRoot img.hero').forEach(im => { if (!/e05_/.test(im.getAttribute('src') || '')) return; const d = document.createElement('div'); d.className = 'herow'; const bg = document.createElement('img'); bg.className = 'bg'; bg.src = im.src; bg.alt = ''; bg.setAttribute('aria-hidden', 'true'); im.classList.remove('hero'); im.classList.add('fg'); im.replaceWith(d); d.appendChild(bg); d.appendChild(im); }); };
+  new MutationObserver(wrap).observe(document.body, { childList: true, subtree: true });
+})();
 
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;
