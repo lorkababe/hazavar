@@ -2239,7 +2239,7 @@ const HOUR = 3600e3, DAY = 24 * HOUR;
 const today = () => new Date(NOW()).toDateString();
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const ERA_F = [1, 1.6, 2.5, 3.5, 5][typeof CUR_ERA === 'number' ? CUR_ERA : 0] || 1;
+const ERA_F = [1, 1.6, 2.5, 3.5, 5, 6.5][typeof CUR_ERA === 'number' ? CUR_ERA : 0] || 1;
 const amt = n => Math.round(n * ERA_F);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const T = (x) => tr(x), TF = (x, ...a) => trf(x, ...a);
@@ -2823,7 +2823,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-(sync|rearr)-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
@@ -3322,24 +3322,38 @@ function rearUI() {
   const SEEN_KEY = 'hv-seen-' + ERA;
   const G = {
     e00: { name: 'Samu', img: 'e00_samu' }, e01: { name: 'Álmos', img: 'e01_almos' }, e02: { name: 'Árpád', img: 'e02_arpad' },
-    e03: { name: 'István', img: 'e03_istvan' }, e04: { name: 'IV. Béla', img: 'e04_bela' }
+    e03: { name: 'István', img: 'e03_istvan' }, e04: { name: 'IV. Béla', img: 'e04_bela' }, e05: { name: 'Károly Róbert', img: 'e05_karoly' }
   }[ERA];
   const ASK = {
     e00: ['Samu ásít. A tűz is ásít. Mindenki ásít. Alszunk?', 'Sötét van, a bogyót sem látni. Samu szerint ilyenkor a legokosabb dolog az alvás.'],
     e01: ['Nem hiába hívnak Álmosnak. Késő van, a lovak is bóbiskolnak. Lefekszünk?', 'A csillagok már kint vannak, a jurtákban kialudtak a mécsesek. Ideje pihenni.'],
     e02: ['Hosszú nap volt, a sereg is elfáradt. Pihenjünk, holnap újra nekivágunk.', 'Még a kovácsom is ásít, pedig ő sosem fárad el. Szerintem késő van.'],
     e03: ['Elmondtuk az esti imát, ideje nyugovóra térni. A szerzetesek majd virrasztanak helyettünk.', 'Késő van, a gyertya is csonkig égett. Holnap is királynak kell lennem.'],
-    e04: ['Késő van, egész nap az országot építettük. Még a hálósapkám is fáradt.', 'A bárók már alszanak, és most az egyszer igazuk van. Lefekszünk?']
+    e04: ['Késő van, egész nap az országot építettük. Még a hálósapkám is fáradt.', 'A bárók már alszanak, és most az egyszer igazuk van. Lefekszünk?'],
+    e05: ['Késő van, a kiskirályok is alszanak. Végre senki nem szed vámot. Lefekszünk?', 'Elfújtam a gyertyát, de a pénzverdében még csilingel az arany. Pihenjünk, holnap is király leszek.']
   }[ERA];
   const MORNING = {
     e00: ['Jó reggelt! Samu kipihente magát, és már éhes is. Nézd, mit gyűjtöttek a többiek éjjel!', 'Felkelt a nap, Samu is felkelt. Ez nem mindig sikerül egyszerre.'],
     e01: ['Jó reggelt! Ma kivételesen nem vagyok álmos. A tábor éjjel sem tétlenkedett.', 'Hajnalodik, a lovak már legelnek. Gyere, nézzük, mi gyűlt össze éjjel!'],
     e02: ['Jó reggelt! Megreggeliztem, a sereg is. Lássuk az éjszakai termést.', 'Szép reggel van. Szerintem ma is honfoglalunk egy kicsit.'],
     e03: ['Jó reggelt! A reggeli mise után már az ország dolgain jár az eszem. Ezt hozta az éjszaka.', 'Áldott jó reggelt! A szerzetesek szerint az éjszaka termékeny volt.'],
-    e04: ['Jó reggelt! Megittam a kamillateámat, és remek kedvem van. Az éjszakai műszak szépen dolgozott.', 'Felkelt a nap Buda fölött. Lássuk, mit termett a város, amíg aludtunk!']
+    e04: ['Jó reggelt! Megittam a kamillateámat, és remek kedvem van. Az éjszakai műszak szépen dolgozott.', 'Felkelt a nap Buda fölött. Lássuk, mit termett a város, amíg aludtunk!'],
+    e05: ['Jó reggelt! A Duna fölött felkelt a nap, és a bányák is ébren voltak egész éjjel.', 'Szép reggelt, felség! Megszámoltam az aranyat, kétszer. Lássuk, mit hozott az éjszaka.']
   }[ERA];
   // reggeli meglepetések: r a nyersanyag, m a szorzó az éjszakai termésére, vagy g egy ajándék
   const EVS = {
+    e05: [
+      { t: 'Csillogó patak', x: 'Éjjel megáradt a patak, és reggelre új aranyszemcsék csillogtak a homokban.', r: 'arany', m: 0.6 },
+      { t: 'Álmatlan pénzverő', x: 'A pénzverő mester nem tudott aludni, hát vert még egy kosárnyi forintot.', r: 'forint', m: 0.5 },
+      { t: 'Holdfényes szüret', x: 'Telihold volt, a szüretelők éjjel is szedték a fürtöket.', r: 'bor', m: 0.5 },
+      { t: 'Szorgos hámor', x: 'A kovácsok egész éjjel kalapáltak. A szomszédok nem örültek, a raktár igen.', r: 'vas', m: 0.5 },
+      { t: 'Kidőlt fák', x: 'Éjjel nagy szél volt, és kidöntött pár fát az erdő szélén.', g: { fa: 30 } },
+      { t: 'Vándorlovag', x: 'Egy vándorlovag szállt meg a városban, és egész este a külföldi udvarokról mesélt.', g: { tudas: 2 } },
+      { t: 'Elfelejtett zsák', x: 'Egy vámszedő elfelejtette a zsákját a sorompónál. Senki nem jött érte.', g: { penz: 300 } },
+      { t: 'Beomlott tárna', x: 'Éjjel beomlott egy régi tárna. Senkinek nem esett baja, de a fél éjszakai arany bent maradt.', r: 'arany', m: -0.4, bad: 1 },
+      { t: 'Hamis pénzverő', x: 'Valaki ólomból vert forintot éjjel. Elfogták, de a pénzverde fél éjszakát állt.', r: 'forint', m: -0.4, bad: 1 },
+      { t: 'Seregélyek a szőlőben', x: 'Hajnalban seregélyek lepték el a szőlőt. Jól laktak, mi kicsit kevésbé.', r: 'bor', m: -0.3, bad: 1 }
+    ],
     e00: [
       { t: 'Teliholdas vadászat', x: 'Olyan fényes volt a hold, hogy a vadászok éjjel is vadásztak.', r: 'termeny', m: 0.5 },
       { t: 'Álomrajz', x: 'Valaki álmában új képet festett a sziklafalra. Senki sem tudja, mit ábrázol, de nagyon okos.', g: { tudas: 1 } },
@@ -4143,7 +4157,7 @@ function rearUI() {
     const spd = S.speed || 1, w = S.winter;
     p.innerHTML = `<h4>Idő</h4><div class="r">${[1, 10, 60, 300].map(v => `<button data-a="sp" data-v="${v}" class="${spd === v ? 'on' : ''}">${v}×</button>`).join('')}</div>
       <div class="r" style="margin-top:5px"><button data-a="jump" data-v="600">+10 perc</button><button data-a="jump" data-v="${H}">+1 óra</button><button data-a="jump" data-v="${8 * H}">+8 óra</button><button data-a="jump" data-v="${24 * H}">+1 nap</button><button data-a="ready">Minden kész most</button></div>
-      <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
+      <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla', 'Anjou'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
       <div class="i">A többi korszak mentése megmarad, csak átugrasz oda.</div>
       <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
       <div class="i">Most a(z) ${(S.quest || 0) + 1}. küldetésnél tartasz.</div>
