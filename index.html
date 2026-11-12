@@ -3304,9 +3304,8 @@ function rearUI() {
     const GW = 64, GH = 40, OWN = 1, TRAIL = 2, cell = new Uint8Array(GW * GH), id = (x, y) => y * GW + x;
     const BRD = 1; for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (x < BRD || y < BRD || x >= GW - BRD || y >= GH - BRD) cell[id(x, y)] = OWN;
     // kiindulás: a Vereckei-hágó, jobb felül
-    for (let y = BRD; y < BRD + 6; y++) for (let x = GW - BRD - 10; x < GW - BRD; x++) cell[id(x, y)] = OWN;
     const total = (GW - 2 * BRD) * (GH - 2 * BRD); const pct = () => { let n = 0; for (let y = BRD; y < GH - BRD; y++) for (let x = BRD; x < GW - BRD; x++) if (cell[id(x, y)] === OWN) n++; return Math.round(n / total * 100); };
-    const pl = { x: GW - BRD - 4, y: BRD + 4, px: GW - BRD - 4, py: BRD + 4, dx: 0, dy: 0, want: null, dir: 2, acc: 0, out: false, sx: 0, sy: 0 };
+    const pl = { x: GW - 1, y: 0, px: GW - 1, py: 0, dx: 0, dy: 0, want: null, dir: 3, acc: 0, out: false, sx: 0, sy: 0 };
     const KINDS = [{ img: 0, v: 9, r: 0.8 }, { img: 1, v: 6, r: 0.8 }, { img: 2, v: 4.5, r: 1.1 }];
     const foes = [];
     const addFoe = k => { let x, y; do { x = BRD + 4 + Math.random() * (GW - 2 * BRD - 8); y = BRD + 4 + Math.random() * (GH - 2 * BRD - 8); } while (cell[id(x | 0, y | 0)]); const a = Math.random() * Math.PI * 2; foes.push({ k, x, y, vx: Math.cos(a), vy: Math.sin(a), flip: false }); };
@@ -3404,7 +3403,7 @@ function rearUI() {
       // Árpád: simán csúszik a mezők között, arany gyűrű és nyíl jelzi
       const fr = Math.min(1, acc / (1 / 13)), ax = pl.px == null ? pl.x : pl.px + (pl.x - pl.px) * fr, ay = pl.py == null ? pl.y : pl.py + (pl.y - pl.py) * fr;
       const X = (ax + 0.5) * cw, Y = (ay + 0.5) * ch, pul = 0.5 + 0.5 * Math.sin(now / 160);
-      const ai = P.a[pl.dir]; if (ai.complete && ai.naturalWidth) { const h = ch * 7.5, w = h * ai.naturalWidth / ai.naturalHeight, top = Math.min(H - h * 0.2, Math.max(Y, h * 0.8)), XX = Math.max(w * 0.5, Math.min(W - w * 0.5, X)), fy = top - h * 0.72 + h * 0.9;
+      const ai = P.a[pl.dir]; if (ai.complete && ai.naturalWidth) { const h = ch * 7.5, w = h * ai.naturalWidth / ai.naturalHeight, top = Y, XX = X, fy = top - h * 0.72 + h * 0.9;
         g.save(); g.lineWidth = 3.5; g.strokeStyle = `rgba(255,214,60,${0.65 + 0.35 * pul})`; g.fillStyle = 'rgba(255,230,140,.45)'; g.shadowColor = 'rgba(255,220,100,.9)'; g.shadowBlur = 10; g.beginPath(); g.ellipse(XX, fy, w * (0.42 + pul * 0.05), ch * (1.3 + pul * 0.2), 0, 0, 7); g.fill(); g.stroke(); g.restore();
         g.drawImage(ai, XX - w / 2, top - h * 0.72 + Math.sin(now / 90) * 1.5, w, h);
         const ty = Math.max(14, top - h * 0.72 - 8 + Math.sin(now / 200) * 3); g.fillStyle = '#F2C14E'; g.strokeStyle = '#5A3A10'; g.lineWidth = 2; g.beginPath(); g.moveTo(XX - 9, ty - 12); g.lineTo(XX + 9, ty - 12); g.lineTo(XX, ty); g.closePath(); g.fill(); g.stroke(); }
