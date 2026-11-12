@@ -354,7 +354,7 @@ textarea.pin{resize:vertical;min-height:70px;font-weight:700}
 @media (max-width:1650px){.freecnt{display:none}}.card .desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.card[data-lot] .pic>span:first-child{width:110px!important;height:56px!important;margin:0 0 4px!important}.card[data-lot] .pic>span:first-child img{width:110px!important;height:56px!important;max-height:none!important}.card[data-lot] .pic>span:first-child b{width:28px!important;height:28px!important;font-size:20px!important}
 @media (max-height:760px){.card .pic{height:56px!important}.card .pic img{max-height:52px!important}}
 @media (max-height:620px){.card .pic{height:44px!important}.card .pic img{max-height:42px!important}.card .chip{font-size:10px;padding:1px 6px}.drawer-head{padding-top:4px!important;padding-bottom:4px!important}}
-.jvchip{padding:0 12px}.jv-more{display:grid;grid-template-columns:repeat(3,auto);gap:1px 12px;align-items:center}.jv{display:inline-flex;align-items:center;gap:5px;line-height:1}.jv img{width:19px;height:19px;object-fit:contain}.jv b{font-size:14px;color:var(--cream);min-width:18px}.jv i{display:none}@media (max-width:1380px){#rGoods{display:none}}
+.jvchip{padding:0 12px}.res:has(#rKov){display:none}@media (max-width:1380px){.res:has(#rKov){display:flex}}.jv-more{display:grid;grid-template-columns:repeat(4,auto);gap:1px 12px;align-items:center}.jv{display:inline-flex;align-items:center;gap:5px;line-height:1}.jv img{width:19px;height:19px;object-fit:contain}.jv b{font-size:14px;color:var(--cream);min-width:18px}.jv i{display:none}@media (max-width:1380px){#rGoods{display:none}}
 </style>
 
 <div id="app"><button class="ibtn wood" type="button" id="btnDaily" aria-label="Napi feladatok"><span class="newdot" id="bDaily" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h10a2 2 0 0 1 2 2v14a2 2 0 0 0 2 2H8a2 2 0 0 1-2-2z"/><path d="M6 3a2 2 0 0 0-2 2v2h2M10 9h5M10 13h5"/></svg>Napi</button><button class="ibtn wood" type="button" id="btnSide" aria-label="Monda" hidden><span class="newdot" id="bSide" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l9-9M13 11l3-3a2.5 2.5 0 1 1 3.5 3.5l-3 3M11 13l3 3"/><circle cx="17.5" cy="6.5" r="1"/></svg><span>Monda</span></button><div id="chiefPops"></div><button class="btn coral" type="button" id="migChip" hidden></button><div class="movefx" id="moveFx"><span id="moveTxt"></span></div>
@@ -3457,7 +3457,7 @@ function tap(sx, sy) {
 
 // ---------- HUD ----------
 function hud() {
-  $('rPenz').textContent = fmt(S.res.penz); $('rTerm').textContent = fmt(S.res.termeny); $('rTud').textContent = fmt(S.res.tudas); $('rKov').textContent = fmt(S.res.fa || 0); { const jm = $('rJvMore'); if (jm) jm.innerHTML = GOODS.filter(k => k !== 'fa').map(k => `<span class="jv" title="${tr(RES[k].name)}"><img src="img/${RES[k].icon}.png" alt=""><span><b>${fmt(S.res[k] || 0)}</b><i>${tr(RES[k].name)}</i></span></span>`).join(''); }
+  $('rPenz').textContent = fmt(S.res.penz); $('rTerm').textContent = fmt(S.res.termeny); $('rTud').textContent = fmt(S.res.tudas); $('rKov').textContent = fmt(S.res.fa || 0); { const jm = $('rJvMore'); if (jm) jm.innerHTML = GOODS.map(k => `<span class="jv" title="${tr(RES[k].name)}"><img src="img/${RES[k].icon}.png" alt=""><span><b>${fmt(S.res[k] || 0)}</b><i>${tr(RES[k].name)}</i></span></span>`).join(''); }
   const capT = ' / ' + fmt(termCap()); if ($('rCap').textContent !== capT) $('rCap').textContent = capT; $('rTerm').parentElement.parentElement.classList.toggle('full', S.res.termeny >= termCap());
   $('korN').textContent = S.korona == null ? 25 : S.korona;
   const p = pop(), w = workers(); $('rPop').textContent = (p - w) + ' / ' + p;
@@ -5353,6 +5353,7 @@ function rearUI() {
     { t: 'Bagolyhuhogás', x: 'Egész éjjel huhogott egy bagoly a háztetőn. Senki sem aludt jól, kicsit lassabban ment a munka.', r: 'termeny', m: -0.2, bad: 1 }
   ]);
 
+  const CALM = ['Nyugodt éjszaka volt. Csak a tücskök ciripeltek, és valahol messze egy kutya ugatott.', 'Semmi különös nem történt. Mindenki jól kialudta magát, és ez is valami.', 'Csendes éjszaka volt, a hold végig vigyázott a városra.', 'Az éjjeliőr szerint semmi sem történt. Igaz, ő is elbóbiskolt egy kicsit.']
   // ---- magyar idő ----
   const FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Budapest', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   function parts(ms) { const o = {}; FMT.formatToParts(new Date(ms)).forEach(p => { o[p.type] = p.value; }); return { y: +o.year, mo: +o.month, d: +o.day, h: +o.hour % 24, mi: +o.minute }; }
@@ -5394,7 +5395,7 @@ function rearUI() {
     const got = {}; Object.keys(S.res).forEach(k => { const d = (S.res[k] || 0) - (before[k] || 0); if (Math.round(d)) got[k] = d; }); return got;
   }
   function pickEvent(got, test) {
-    if (!test && Math.random() > 0.75) return null;
+    if (!test && Math.random() > 0.85) return null;
     const last = S.nightEvs || [];
     let ok = EVS.filter(e => e.g ? Object.keys(e.g).every(k => RES[k] && (e.g[k] > 0 || (S.res[k] || 0) >= -e.g[k])) : (got[e.r] || 0) > 0);
     if (ok.filter(e => !last.includes(e.t)).length >= 2) ok = ok.filter(e => !last.includes(e.t));
@@ -5415,7 +5416,7 @@ function rearUI() {
       <span class="eyebrow">${tr(early ? 'KORAI ÉBRESZTŐ' : 'ÚJ NAP VIRRADT')}</span><h2>${tr(early ? 'Ébresztő!' : 'Jó reggelt!')}</h2>
       <div class="samu-say"><img src="img/${G.img}_reggel.png" alt=""><div class="bubble"><b>${tr(G.name)}</b>${tr(early ? 'Ilyen korán? Na jó, felkelünk. Ennyit dolgozott a város, amíg aludtunk.' : line)}</div></div>
       <div class="hvn-box"><b>${trf('Az éjszakai műszak termése · {0} óra', String(hrs).replace('.', ','))}</b><div class="hvn-chips">${Object.keys(got).length ? chips(got) : `<span class="muted">${tr('Az éjjel csend volt, egyik műhely sem dolgozott.')}</span>`}</div></div>
-      ${ev ? `<div class="hvn-box ${ev.bad ? 'bad' : 'good'}"><b>${tr(ev.t)}</b><p>${tr(ev.x)}</p><div class="hvn-chips">${chips(extra)}</div></div>` : ''}
+      ${ev ? `<div class="hvn-box ${ev.bad ? 'bad' : 'good'}"><b>${tr(ev.t)}</b><p>${tr(ev.x)}</p><div class="hvn-chips">${chips(extra)}</div></div>` : nGt > 3600 ? `<div class="hvn-box"><b>${tr('Csendes éjszaka')}</b><p>${tr(CALM[Math.floor(Math.random() * CALM.length)])}</p></div>` : ''}
       <div class="row" style="justify-content:flex-end"><button class="btn coral" type="button" id="hvnGo">${tr('Kezdődjön a nap!')}</button></div></div>`, '', 'nightmorning');
     $('hvnGo').onclick = closeModal; busy = false; renderBar();
   }
