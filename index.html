@@ -3279,6 +3279,71 @@ function rearUI() {
   }
 })();
 
+// HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
+(function () {
+  if (/github\.io$/.test(location.hostname)) return;
+  const ERA = +((SAVE_KEY.match(/e0(\d)/) || [0, 0])[1]);
+  const g$ = id => document.getElementById(id);
+  const has = n => { try { return typeof eval(n) === 'function'; } catch (e) { return false; } };
+  const redraw = () => { try { save(); } catch (e) {} try { hud(); } catch (e) {} try { renderGuide(); } catch (e) {} try { connCache = null; } catch (e) {} };
+  const say = t => { try { toast(t); } catch (e) {} };
+  const st = document.createElement('style');
+  st.textContent = `#hvnDev{display:none!important}
+  #dvBtn{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;border:2px dashed #3A2410;border-radius:12px;background:#F6E7C4;color:#3A2410;font:800 13px Nunito,sans-serif;padding:7px 11px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+  #dvPan{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(56px + env(safe-area-inset-bottom,0px));z-index:60;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 140px);overflow:auto;padding:12px 14px;border-radius:16px;border:2px dashed #3A2410;background:#FBF1DA;color:#3A2410;font:600 13px Nunito,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+  #dvPan h4{margin:10px 0 5px;font:800 12px Nunito,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#8A4A22}
+  #dvPan h4:first-child{margin-top:0}
+  #dvPan .r{display:flex;flex-wrap:wrap;gap:5px}
+  #dvPan button{border:1.5px solid rgba(58,36,16,.35);border-radius:9px;background:#FFF8EA;color:#3A2410;font:800 12px Nunito,sans-serif;padding:5px 9px;cursor:pointer}
+  #dvPan button:hover{background:#F2D9A8}#dvPan button.on{background:#E8C46A;border-color:#8A5A10}
+  #dvPan button.warn{background:#F3D3C6;border-color:#C9472F}
+  #dvPan .i{font-size:12px;opacity:.75;margin-top:4px}`;
+  document.head.appendChild(st);
+  const b = document.createElement('button'); b.id = 'dvBtn'; b.type = 'button'; b.textContent = '🛠 Tesztpult'; document.body.appendChild(b);
+  const p = document.createElement('div'); p.id = 'dvPan'; p.hidden = true; document.body.appendChild(p);
+  b.onclick = () => { p.hidden = !p.hidden; if (!p.hidden) render(); };
+  addEventListener('keydown', e => { if (e.key === '`' || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd')) { p.hidden = !p.hidden; if (!p.hidden) render(); } });
+
+  const H = 3600;
+  const A = {
+    sp: v => { S.speed = v; redraw(); say(v + '× sebesség'); },
+    jump: s => { S.gt += s; redraw(); say('Ugrás előre ' + (s >= 86400 ? s / 86400 + ' nap' : s >= H ? s / H + ' óra' : s / 60 + ' perc')); },
+    ready: () => { S.buildings.forEach(x => { if (x.until && x.until > S.gt) x.until = S.gt; x.t0 = Math.min(x.t0 || 0, S.gt - 30 * 86400); if (x.built != null) x.built = Math.min(x.built, S.gt); }); redraw(); say('Minden épület kész és beszedhető.'); },
+    era: n => { try { localStorage.setItem('panelvar-era', String(n)); } catch (e) {} try { save(); } catch (e) {} location.href = n === 0 ? 'index.html?e0' : 'e0' + n + '.html'; },
+    rich: () => { Object.keys(RES).forEach(k => { S.res[k] = (S.res[k] || 0) + (k === 'tudas' ? 200 : k === 'kovako' || k === 'hirnev' ? 50 : 10000); }); if (S.korona != null || ERA >= 1) S.korona = (S.korona || 0) + 50; redraw(); say('+10 000 mindenből'); },
+    techs: () => { if (typeof TECH === 'undefined') return; TECH.forEach(t => { S.techs[t.id] = true; }); redraw(); say('Minden kutatás kész.'); },
+    qPrev: () => { S.quest = Math.max(0, (S.quest || 0) - 1); redraw(); say('Küldetés: ' + (S.quest + 1) + '.'); },
+    qNext: () => { S.quest = (S.quest || 0) + 1; redraw(); say('Küldetés: ' + (S.quest + 1) + '.'); },
+    mini: () => { S.mini = null; redraw(); say('A mai kalandok újra játszhatók, és újra jár értük jutalom.'); },
+    night: () => { const x = g$('hvnT1'); if (x) x.click(); },
+    ask: () => { const x = g$('hvnT2'); if (x) x.click(); },
+    tatar: () => { if (ERA !== 4) return; try { closeModal(); } catch (e) {} S.winter = null; S.rebuild = false; S.honalapito = 0; S.techs.tatar = true; S.buildings.forEach(x => { x.ruined = false; }); startRaid(); },
+    tatarWin: () => { if (!S.winter) return; S.winter.start = S.gt - WINTER_LEN; save(); try { closeModal(); } catch (e) {} tjMuhi(); },
+    honal: () => { S.rebuild = true; S.honalapito = 0; S.buildings.forEach(x => { x.ruined = false; }); save(); },
+    eraEnd: () => { if (has('showEraEnd')) { S.eraDone = false; try { closeModal(); } catch (e) {} showEraEnd(); } },
+    intro: () => { if (has('showIntro')) { try { closeModal(); } catch (e) {} showIntro(); } },
+    reset: () => { if (!has('fresh')) return; S = fresh(); try { connCache = null; } catch (e) {} save(); location.reload(); }
+  };
+  let confirmReset = false;
+  function render() {
+    const spd = S.speed || 1, w = S.winter;
+    p.innerHTML = `<h4>Idő</h4><div class="r">${[1, 10, 60, 300].map(v => `<button data-a="sp" data-v="${v}" class="${spd === v ? 'on' : ''}">${v}×</button>`).join('')}</div>
+      <div class="r" style="margin-top:5px"><button data-a="jump" data-v="600">+10 perc</button><button data-a="jump" data-v="${H}">+1 óra</button><button data-a="jump" data-v="${8 * H}">+8 óra</button><button data-a="jump" data-v="${24 * H}">+1 nap</button><button data-a="ready">Minden kész most</button></div>
+      <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
+      <div class="i">A többi korszak mentése megmarad, csak átugrasz oda.</div>
+      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
+      <div class="i">Most a(z) ${(S.quest || 0) + 1}. küldetésnél tartasz.</div>
+      <h4>Újrajátszás</h4><div class="r"><button data-a="mini">Mai kalandok újra</button>${g$('hvnT1') ? '<button data-a="night">Éjszaka / Reggel</button><button data-a="ask">Esti kérdés</button>' : ''}${has('showIntro') ? '<button data-a="intro">Bevezető újra</button>' : ''}${has('showEraEnd') ? '<button data-a="eraEnd">Korszak vége ablak</button>' : ''}</div>
+      ${ERA === 4 ? `<h4>Tatárjárás</h4><div class="r"><button data-a="tatar">Elölről</button>${w && !w.done ? '<button data-a="tatarWin">Ugrás a csatához</button>' : ''}<button data-a="honal">Második honalapító</button></div><div class="i">${w ? (w.done ? 'Lezajlott: ' + (w.outcome || '') + ', ' + (w.score || 0) + '%' : 'Folyamatban, ' + Math.max(0, Math.round((WINTER_LEN - (S.gt - w.start)) / H)) + ' óra van hátra') : 'Még nem kezdődött el.'}</div>` : ''}
+      <h4>Mentés</h4><div class="r">${confirmReset ? '<button class="warn" data-a="reset">Igen, töröld ezt a korszakot</button><button data-a="noReset">Mégse</button>' : '<button class="warn" data-a="askReset">Új játék ebben a korszakban</button>'}</div>
+      <div class="i">Gyorsbillentyű: \` vagy Ctrl+Shift+D</div>`;
+    p.querySelectorAll('[data-a]').forEach(x => x.onclick = () => { const a = x.dataset.a, v = x.dataset.v != null ? +x.dataset.v : undefined;
+      if (a === 'askReset') { confirmReset = true; render(); return; } if (a === 'noReset') { confirmReset = false; render(); return; }
+      try { A[a](v); } catch (e) { say('Ez itt most nem működik: ' + e.message); } if (['tatar', 'tatarWin', 'night', 'ask', 'intro', 'eraEnd'].includes(a)) p.hidden = true; else setTimeout(render, 300); });
+  }
+  setInterval(() => { if (!p.hidden && !p.matches(':hover')) render(); }, 5000);
+})();
+
 /*SOCIAL-END*/
 })();
 </script>
