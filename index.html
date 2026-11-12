@@ -3033,15 +3033,18 @@ function rearUI() {
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
-  if (ERA !== 'e00' && ERA !== 'e01') return;
+  if (!['e00', 'e01', 'e02', 'e03'].includes(ERA)) return;
   const DEV = !/github\.io$/.test(location.hostname);
   const g$ = id => document.getElementById(id);
   const XB = typeof X_BTN !== 'undefined' ? X_BTN : '';
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
   const day = () => { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {}, paid: {} }; return S.mini; };
-  const GAME = ERA === 'e00'
-    ? { id: 'mamut', name: 'Mamutvadászat', sub: 'Ügyességi játék, 60 másodperc', img: 'e00_mg_mamut0', play: () => playMamut() }
-    : { id: 'turul', name: 'A turul álma', sub: 'Hármat egy sorba, 25 lépés', img: 'e01_mg_t_turul', play: () => playTurul() };
+  const GAME = {
+    e00: { id: 'mamut', name: 'Mamutvadászat', sub: 'Ügyességi játék, 60 másodperc', img: 'e00_mg_mamut0', play: () => playMamut() },
+    e01: { id: 'turul', name: 'A turul álma', sub: 'Hármat egy sorba, 25 lépés', img: 'e01_mg_t_turul', play: () => playTurul() },
+    e02: { id: 'honfog', name: 'Honfoglalás', sub: 'Foglald el a Kárpát-medencét, 2 perc', img: 'e02_mg_arpad1', play: () => playHonfog() },
+    e03: { id: 'templom', name: 'Templomot minden tíz falunak', sub: 'Toronyépítő ügyességi játék', img: 'e03_mg_tp4', play: () => playTemplom() }
+  }[ERA];
   const fresh = () => !day().done[GAME.id];
 
   // ---- közös: jutalom ikonokkal ----
@@ -3060,7 +3063,7 @@ function rearUI() {
   }
   function showList() {
     const m = day();
-    modal(`${XB}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr(ERA === 'e00' ? 'Kaland a kőkorból' : 'Kaland Álmos korából')}</h2>
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr({ e00: 'Kaland a kőkorból', e01: 'Kaland Álmos korából', e02: 'Kaland a honfoglalás korából', e03: 'Kaland István korából' }[ERA])}</h2>
       <p>${tr('A kalandot naponta egyszer lehet végigjátszani, és egyszer jár érte jutalom.')}</p>
       ${DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : ''}
       <div class="mini-row"><img src="img/${GAME.img}.png?v=2" alt="" onerror="if(!this.dataset.r){this.dataset.r=1;this.src=this.src+'&r='+Date.now()}"><div class="grow"><b>${tr(GAME.name)}</b><small>${tr(GAME.sub)}</small></div>
@@ -3277,6 +3280,215 @@ function rearUI() {
       endScreen('ÉBREDÉS', trf('{0} pont', score), [tr(s >= 3 ? 'Emese mosolyogva ébred. Azt álmodta, hogy fiából nagy fejedelem lesz. A turul is elégedettnek tűnt.' : s >= 2 ? 'Szép álom volt, tele kinccsel. Emese reggel mindent elmesél a táborban.' : s ? 'Emese kicsit zavaros álmot látott, de a turul azért felbukkant benne.' : 'Az álom szétfoszlott, mielőtt a turul ideért volna. Holnap éjjel újra álmodhatsz.'),
         trf('{0} pont, {1} turulmadár.', score, turuls), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
         'Anonymus Gestája szerint Emesének, Ügyek feleségének álmában egy turulmadár jelent meg. Az álom azt jövendölte, hogy fiából nagy fejedelmek születnek. A fiút ezért nevezték Álmosnak. A turul az Árpád-ház ősmadara lett, és ma is sok helyen látható.');
+    }
+  }
+
+  // =================== HONFOGLALÁS ===================
+  function playHonfog() {
+    ['e02_mg_kmedence.jpg', 'e02_mg_kmedence_foglalt.jpg', 'e02_mg_arpad0', 'e02_mg_arpad1', 'e02_mg_arpad2', 'e02_mg_arpad3', 'e02_mg_jaror0', 'e02_mg_jaror1', 'e02_mg_jaror2'].forEach(pic);
+    modal(`${XB}<img class="hero" src="img/e02_mg_feher_lo.jpg?v=2" alt="" style="object-position:center 40%"><div class="inner"><span class="eyebrow">${tr('895 · A FEHÉR LÓ MONDÁJA')}</span><h2>${tr('Honfoglalás')}</h2>
+      <p>${tr('Árpád egy gyönyörű fehér lovat küldött Szvatopluknak arany nyereggel, és cserébe csak egy kis földet, füvet és vizet kért. Szvatopluk nevetve beleegyezett. Most rajtad a sor, hogy kiderüljön, mennyi az a kicsi!')}</p>
+      <p style="font-weight:800">${tr('Lovagolj ki a saját földedről, és kerülj vissza rá. Amit körbelovagoltál, az a tiéd lesz. Ha egy ellenséges járőr keresztezi a nyomodat, mielőtt visszaérsz, elveszik a kör. A medence háromnegyedét kell elfoglalnod.')}</p>
+      <p style="font-size:14px">${tr('Gépen a nyilakkal vagy a WASD gombokkal irányítasz. Telefonon húzd az ujjad abba az irányba, amerre lovagolnál.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="hfGo">${tr('Nyeregbe!')}</button></div></div>`, '', 'minigame');
+    g$('hfGo').onclick = () => { if (!start('honfog')) return; runHonfog(); };
+  }
+  function runHonfog() {
+    const P = { map: pic('e02_mg_kmedence.jpg'), own: pic('e02_mg_kmedence_foglalt.jpg'), a: [0, 1, 2, 3].map(k => pic('e02_mg_arpad' + k)), e: [0, 1, 2].map(k => pic('e02_mg_jaror' + k)) };
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Idő')} <b id="hfT">120</b></span><span>${tr('Föld')} <b id="hfP">0</b>% / 75%</span><span>${tr('Pont')} <b id="hfS">0</b></span><span id="hfL"></span>${devSpeed()}</div>
+      <div class="me-wrap" id="hfW" style="aspect-ratio:16/10"><canvas id="hfC"></canvas></div></div>`, '', 'minigame');
+    const wrap = g$('hfW'), cv = g$('hfC'), g = cv.getContext('2d'); let W = 0, H = 0;
+    const fit = () => { const r = wrap.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; g.setTransform(d, 0, 0, d, 0, 0); };
+    fit(); addEventListener('resize', fit);
+    let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; });
+    const GW = 64, GH = 40, OWN = 1, TRAIL = 2, cell = new Uint8Array(GW * GH), id = (x, y) => y * GW + x;
+    const BRD = 3; for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (x < BRD || y < BRD || x >= GW - BRD || y >= GH - BRD) cell[id(x, y)] = OWN;
+    // kiindulás: a Vereckei-hágó, jobb felül
+    for (let y = BRD; y < BRD + 5; y++) for (let x = GW - BRD - 8; x < GW - BRD; x++) cell[id(x, y)] = OWN;
+    const total = (GW - 2 * BRD) * (GH - 2 * BRD); const pct = () => { let n = 0; for (let y = BRD; y < GH - BRD; y++) for (let x = BRD; x < GW - BRD; x++) if (cell[id(x, y)] === OWN) n++; return Math.round(n / total * 100); };
+    const pl = { x: GW - BRD - 2, y: BRD + 1, dx: 0, dy: 0, want: null, dir: 2, acc: 0, out: false, sx: 0, sy: 0 };
+    const KINDS = [{ img: 0, v: 9, r: 0.8 }, { img: 1, v: 6, r: 0.8 }, { img: 2, v: 4.5, r: 1.1 }];
+    const foes = [];
+    const addFoe = k => { let x, y; do { x = BRD + 4 + Math.random() * (GW - 2 * BRD - 8); y = BRD + 4 + Math.random() * (GH - 2 * BRD - 8); } while (cell[id(x | 0, y | 0)]); const a = Math.random() * Math.PI * 2; foes.push({ k, x, y, vx: Math.cos(a), vy: Math.sin(a), flip: false }); };
+    addFoe(0); addFoe(1); addFoe(2);
+    let t = 0, DUR = 120, lives = 3, score = 0, done = false, last = performance.now(), mask = null, flash = 0, msg = null;
+    const lifeHTML = () => `${tr('Lovak')} ` + [0, 1, 2].map(k => `<span style="opacity:${k < lives ? 1 : .25}">🐎</span>`).join('');
+    g$('hfL').innerHTML = lifeHTML();
+    function rebuildMask() {
+      const m = document.createElement('canvas'); m.width = GW; m.height = GH; const mg = m.getContext('2d'), im = mg.createImageData(GW, GH);
+      for (let k = 0; k < cell.length; k++) { im.data[k * 4 + 3] = cell[k] === OWN ? 255 : 0; } mg.putImageData(im, 0, 0); mask = m;
+    }
+    rebuildMask();
+    if (window.__T) window.__hfOwn = () => { for (let y = 5; y < 20; y++) for (let x = 5; x < 30; x++) cell[id(x, y)] = OWN; rebuildMask(); };
+    function fill() {
+      // ami nem érhető el egy ellenségtől se, az a mienk lesz
+      const seen = new Uint8Array(GW * GH), q = [];
+      foes.forEach(f => { const k = id(f.x | 0, f.y | 0); if (!cell[k]) { q.push(k); seen[k] = 1; } });
+      while (q.length) { const k = q.pop(), x = k % GW, y = (k / GW) | 0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, b]) => { const n = id(x + a, y + b); if (x + a >= 0 && x + a < GW && y + b >= 0 && y + b < GH && !seen[n] && !cell[n]) { seen[n] = 1; q.push(n); } }); }
+      const before = pct(); let got = 0;
+      for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL || (!cell[k] && !seen[k])) { cell[k] = OWN; got++; }
+      const gain = pct() - before; score += got * 2 + gain * gain * 3; if (gain >= 8) msg = { t: 1.3, txt: trf('Szép darab! +{0}%', gain) }; else if (gain > 0) msg = { t: 0.9, txt: '+' + gain + '%' };
+      rebuildMask(); try { sfxCollect(); } catch (e) {}
+    }
+    function lose() {
+      lives--; g$('hfL').innerHTML = lifeHTML(); flash = 0.6; msg = { t: 1.3, txt: tr('Elvágták az utad! Vissza a táborba.') };
+      for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL) cell[k] = 0;
+      pl.x = pl.sx; pl.y = pl.sy; pl.dx = pl.dy = 0; pl.out = false; pl.want = null; try { sfxClick(); } catch (e) {}
+      if (lives <= 0) end();
+    }
+    const DIRS = { up: [0, -1, 0], right: [1, 0, 1], down: [0, 1, 2], left: [-1, 0, 3] };
+    const setDir = d => { pl.want = d; };
+    const keyMap = { ArrowUp: 'up', w: 'up', W: 'up', ArrowRight: 'right', d: 'right', D: 'right', ArrowDown: 'down', s: 'down', S: 'down', ArrowLeft: 'left', a: 'left', A: 'left' };
+    const kd = e => { if (!g$('hfC')) { removeEventListener('keydown', kd); return; } const d = keyMap[e.key]; if (d) { e.preventDefault(); setDir(d); } };
+    addEventListener('keydown', kd);
+    let tp = null;
+    cv.onpointerdown = e => { tp = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} };
+    cv.onpointermove = e => { if (!tp) return; const dx = e.clientX - tp.x, dy = e.clientY - tp.y; if (Math.hypot(dx, dy) < 18) return; setDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); tp = { x: e.clientX, y: e.clientY }; };
+    cv.onpointerup = () => { tp = null; };
+    function stepPlayer() {
+      if (pl.want) { const [a, b, d] = DIRS[pl.want]; if (!(pl.out && a === -pl.dx && b === -pl.dy)) { pl.dx = a; pl.dy = b; pl.dir = d; } pl.want = null; }
+      if (!pl.dx && !pl.dy) return;
+      const nx = pl.x + pl.dx, ny = pl.y + pl.dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) { pl.dx = pl.dy = 0; return; }
+      const c = cell[id(nx, ny)];
+      if (c === TRAIL) { lose(); return; }
+      if (!pl.out && c === 0) { pl.out = true; pl.sx = pl.x; pl.sy = pl.y; }
+      pl.x = nx; pl.y = ny;
+      if (pl.out) { if (c === OWN) { pl.out = false; fill(); pl.dx = pl.dy = 0; } else cell[id(nx, ny)] = TRAIL; }
+    }
+    function stepFoes(dt) {
+      foes.forEach(f => {
+        const K = KINDS[f.k], v = K.v * (1 + t / DUR * 0.6) * dt;
+        let nx = f.x + f.vx * v, ny = f.y + f.vy * v;
+        if (cell[id(nx | 0, f.y | 0)] === OWN) { f.vx *= -1; nx = f.x; } if (cell[id(f.x | 0, ny | 0)] === OWN) { f.vy *= -1; ny = f.y; }
+        f.x = nx; f.y = ny; f.flip = f.vx < 0;
+        if (cell[id(f.x | 0, f.y | 0)] === OWN) { // bekerítették: új helyen bukkan fel
+          let tries = 0; do { f.x = BRD + Math.random() * (GW - 2 * BRD); f.y = BRD + Math.random() * (GH - 2 * BRD); } while (cell[id(f.x | 0, f.y | 0)] && ++tries < 400);
+          if (tries >= 400) f.gone = true;
+        }
+        if (f.gone) return;
+        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const x = (f.x | 0) + a, y = (f.y | 0) + b; if (x >= 0 && y >= 0 && x < GW && y < GH && Math.hypot(x + 0.5 - f.x, y + 0.5 - f.y) < K.r && (cell[id(x, y)] === TRAIL || (pl.out && pl.x === x && pl.y === y))) { lose(); return; } }
+      });
+    }
+    function draw(now) {
+      const cw = W / GW, ch = H / GH;
+      if (P.map.complete && P.map.naturalWidth) g.drawImage(P.map, 0, 0, W, H); else { g.fillStyle = '#9DBA5A'; g.fillRect(0, 0, W, H); }
+      if (mask && P.own.complete && P.own.naturalWidth) {
+        if (!draw.tmp) draw.tmp = document.createElement('canvas'); const tc = draw.tmp; if (tc.width !== cv.width) { tc.width = cv.width; tc.height = cv.height; }
+        const tg = tc.getContext('2d'); tg.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, W, H); tg.drawImage(P.own, 0, 0, W, H); tg.fillStyle = 'rgba(255,196,70,0.22)'; tg.fillRect(0, 0, W, H);
+        tg.globalCompositeOperation = 'destination-in'; tg.imageSmoothingEnabled = true; tg.drawImage(mask, 0, 0, W, H);
+        g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(tc, 0, 0); g.restore();
+        // aranyszegély a saját föld szélén
+        g.save(); g.strokeStyle = 'rgba(255,214,90,.9)'; g.lineWidth = 2.5; g.beginPath();
+        for (let y = BRD; y < GH - BRD; y++) for (let x = BRD; x < GW - BRD; x++) { if (cell[id(x, y)] === OWN) { if (cell[id(x + 1, y)] !== OWN) { g.moveTo((x + 1) * cw, y * ch); g.lineTo((x + 1) * cw, (y + 1) * ch); } if (cell[id(x - 1, y)] !== OWN) { g.moveTo(x * cw, y * ch); g.lineTo(x * cw, (y + 1) * ch); } if (cell[id(x, y + 1)] !== OWN) { g.moveTo(x * cw, (y + 1) * ch); g.lineTo((x + 1) * cw, (y + 1) * ch); } if (cell[id(x, y - 1)] !== OWN) { g.moveTo(x * cw, y * ch); g.lineTo((x + 1) * cw, y * ch); } } }
+        g.stroke(); g.restore();
+      }
+      // nyom
+      g.fillStyle = 'rgba(255,210,80,.9)'; for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL) { const x = k % GW, y = (k / GW) | 0; g.beginPath(); g.arc((x + 0.5) * cw, (y + 0.5) * ch, Math.min(cw, ch) * 0.38, 0, 7); g.fill(); }
+      // ellenségek
+      foes.forEach(f => { if (f.gone) return; const im = P.e[KINDS[f.k].img]; if (!im.complete || !im.naturalWidth) return; const h = ch * (f.k === 2 ? 6.5 : 5.5), w = h * im.naturalWidth / im.naturalHeight, x = f.x * cw, y = f.y * ch + Math.sin(now / 120 + f.k) * 1.5; g.save(); g.translate(x, y); if (f.flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h * 0.7, w, h); g.restore(); });
+      // Árpád
+      const ai = P.a[pl.dir]; if (ai.complete && ai.naturalWidth) { const h = ch * 6.5, w = h * ai.naturalWidth / ai.naturalHeight; g.beginPath(); g.fillStyle = 'rgba(255,240,180,.55)'; g.ellipse((pl.x + 0.5) * cw, (pl.y + 0.5) * ch, cw * 1.6, ch * 0.9, 0, 0, 7); g.fill(); g.drawImage(ai, (pl.x + 0.5) * cw - w / 2, (pl.y + 0.5) * ch - h * 0.7 + Math.sin(now / 90) * 1.5, w, h); }
+      if (flash > 0) { g.fillStyle = `rgba(201,71,47,${flash * 0.5})`; g.fillRect(0, 0, W, H); }
+      if (msg) { g.save(); g.globalAlpha = Math.min(1, msg.t * 2); g.font = '900 22px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,20,5,.8)'; g.strokeText(msg.txt, W / 2, H * 0.15); g.fillStyle = '#FFE9A8'; g.fillText(msg.txt, W / 2, H * 0.15); g.restore(); }
+    }
+    let acc = 0;
+    function step(now) {
+      if (!g$('hfC')) { removeEventListener('keydown', kd); removeEventListener('resize', fit); return; }
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * sp; last = now;
+      if (!done) {
+        t += dt; acc += dt; const ST = 1 / 13; while (acc >= ST && !done) { acc -= ST; stepPlayer(); }
+        stepFoes(dt); if (flash > 0) flash -= dt; if (msg) { msg.t -= dt; if (msg.t <= 0) msg = null; }
+        const pc = pct(); g$('hfT').textContent = Math.max(0, Math.ceil(DUR - t)); g$('hfP').textContent = pc; g$('hfS').textContent = score;
+        if (pc >= 75) { score += Math.round((DUR - t) * 10) + lives * 200; end(true); } else if (t >= DUR) end();
+      }
+      draw(now); requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    function end(win) {
+      if (done) return; done = true; const pc = pct();
+      setTimeout(() => {
+        removeEventListener('keydown', kd); removeEventListener('resize', fit);
+        const rew = { penz: Math.min(500, Math.round(score / 6)), termeny: Math.min(300, pc * 4), tudas: 1 + (pc >= 40 ? 1 : 0) + (win ? 1 : 0), kovako: win ? 2 : pc >= 50 ? 1 : 0, korona: win && lives === 3 ? 1 : 0 };
+        const got = give('honfog', rew);
+        endScreen('A FOGLALÁS UTÁN', trf('{0}% a medencéből', pc), [tr(win ? 'Szvatopluk elsápad. A kis földből, fűből és vízből az egész Kárpát-medence lett. A fehér ló viszont nagyon jól érzi magát nála.' : pc >= 50 ? 'A medence nagyobbik fele már a miénk. Holnap folytatjuk a foglalást!' : 'Ma még csak egy kis darab lett a miénk. Szvatopluk még nevet, de nem sokáig.'),
+          trf('{0} pont.', score), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+          'A fehér ló mondáját a Képes Krónika és más középkori krónikák is elmesélik, de ez legenda. A valóságban a magyar törzsek 895 körül keltek át a Kárpátokon, és több év alatt foglalták el a medencét. A Vereckei-hágó a hagyomány szerint az egyik átkelőhely volt.');
+      }, 900);
+    }
+  }
+
+  // =================== TEMPLOMOT MINDEN TÍZ FALUNAK ===================
+  function playTemplom() {
+    ['e03_mg_eg.jpg', 'e03_mg_ko0', 'e03_mg_ko1', 'e03_mg_ko2', 'e03_mg_ko3', 'e03_mg_tp0', 'e03_mg_tp3', 'e03_mg_tp4', 'e03_mg_angyal0', 'e03_mg_angyal1'].forEach(pic);
+    modal(`${XB}<img class="hero" src="img/e03_mg_istvan_templom.jpg?v=2" alt="" style="object-position:center 30%"><div class="inner"><span class="eyebrow">${tr('1000 KÖRÜL · ISTVÁN TÖRVÉNYE')}</span><h2>${tr('Templomot minden tíz falunak')}</h2>
+      <p>${tr('István király elrendelte, hogy minden tíz falu építsen egy templomot. A kőművesek már hordják a köveket, neked kell őket egymásra rakni!')}</p>
+      <p style="font-weight:800">${tr('A kő ide-oda leng fölötted. Koppints, és leesik. Ami lelóg az alatta lévőről, az lepotyog, így a következő kő kisebb lesz. Ha pontosan ráteszed, egy angyalka énekel, és a kő mérete megmarad.')}</p>
+      <p>${tr('8 kőnél kész a falusi templom, 14-nél az apátság, 20-nál a székesfehérvári bazilika.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="tpGo">${tr('Építsünk!')}</button></div></div>`, '', 'minigame');
+    g$('tpGo').onclick = () => { if (!start('templom')) return; runTemplom(); };
+  }
+  function runTemplom() {
+    const P = { eg: pic('e03_mg_eg.jpg'), ko: [0, 1, 2, 3].map(k => pic('e03_mg_ko' + k)), door: pic('e03_mg_tp0'), roof: pic('e03_mg_tp3'), bell: pic('e03_mg_tp4'), ang: [pic('e03_mg_angyal0'), pic('e03_mg_angyal1')] };
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Kő')} <b id="tpN">0</b></span><span id="tpLv">${tr('Falusi templom')}</span><span>${tr('Pont')} <b id="tpS">0</b></span>${devSpeed()}</div>
+      <div class="me-wrap" id="tpW" style="aspect-ratio:3/4;max-height:66vh;max-width:min(100%,50vh);margin:0 auto;background:#9CCBEB"><canvas id="tpC"></canvas></div>
+      <p style="text-align:center;font-size:13px;margin-top:8px">${tr('Koppints, kattints, vagy nyomd meg a szóközt, amikor a kő az alatta lévő fölött van.')}</p></div>`, '', 'minigame');
+    const wrap = g$('tpW'), cv = g$('tpC'), g = cv.getContext('2d'); let W = 0, H = 0;
+    const fit = () => { const r = wrap.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; g.setTransform(d, 0, 0, d, 0, 0); };
+    fit(); addEventListener('resize', fit);
+    let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; });
+    const BH = () => H * 0.07, LV = [[8, 'Falusi templom kész!', 'Apátság'], [14, 'Az apátság kész!', 'Bazilika'], [20, 'Kész a bazilika!', 'Bazilika']];
+    const stack = [{ x: 0.24, w: 0.52, k: 0 }]; // a talapzat a kapuval
+    let mv = { x: 0, w: 0.52, dir: 1, v: 0.45 }, score = 0, perfect = 0, combo = 0, done = false, cam = 0, last = performance.now(), falls = [], fx = [], angel = 0, won = false;
+    const drop = () => {
+      if (done) return; const top = stack[stack.length - 1]; const L = Math.max(mv.x, top.x), R = Math.min(mv.x + mv.w, top.x + top.w);
+      if (R - L <= 0.005) { falls.push({ x: mv.x, w: mv.w, y: stack.length, vy: 0, r: 0, k: stack.length % 4 }); finish(); return; }
+      let nx = L, nw = R - L;
+      if (Math.abs(mv.x - top.x) < 0.012) { nx = top.x; nw = top.w; combo++; perfect++; angel = 1.4; score += 150 + combo * 30; fx.push({ t: 0, txt: combo > 1 ? trf('Tökéletes! ×{0}', combo) : tr('Tökéletes!') }); if (combo >= 3) { const grow = Math.min(0.04, 0.52 - nw); nx -= grow / 2; nw += grow; } try { sfxCollect(); } catch (e) {} }
+      else { combo = 0; score += 100; if (mv.x < L) falls.push({ x: mv.x, w: L - mv.x, y: stack.length, vy: 0, r: 0, k: stack.length % 4, s: -1 }); if (mv.x + mv.w > R) falls.push({ x: R, w: mv.x + mv.w - R, y: stack.length, vy: 0, r: 0, k: stack.length % 4, s: 1 }); try { sfxClick(); } catch (e) {} }
+      stack.push({ x: nx, w: nw, k: stack.length % 5 === 4 ? 3 : stack.length % 3 });
+      const n = stack.length - 1; const lv = LV.find(l => l[0] === n); if (lv) { fx.push({ t: 0, txt: tr(lv[1]), big: 1 }); score += n * 40; g$('tpLv').textContent = tr(lv[2]); if (n >= 20) { won = true; finish(); return; } }
+      g$('tpN').textContent = n; g$('tpS').textContent = score;
+      mv = { x: mv.dir > 0 ? -nw : 1, w: nw, dir: mv.dir > 0 ? 1 : -1, v: 0.45 + n * 0.028 };
+      if (Math.random() < 0.5) { mv.x = mv.x < 0 ? 1 : -nw; mv.dir *= -1; }
+    };
+    if (window.__T) window.__tpAuto = () => { const top = stack[stack.length - 1]; mv.x = top.x + 0.004; drop(); };
+    const kd = e => { if (!g$('tpC')) { removeEventListener('keydown', kd); return; } if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); drop(); } };
+    addEventListener('keydown', kd); cv.onpointerdown = e => { e.preventDefault(); drop(); };
+    const drawBlock = (x, y, w, k) => { const im = P.ko[k]; const bh = BH(); if (im.complete && im.naturalWidth) g.drawImage(im, x * W, y, w * W, bh * 1.08); else { g.fillStyle = '#E3D2AE'; g.fillRect(x * W, y, w * W, bh); } };
+    const yOf = n => H - H * 0.08 - n * BH() + cam;
+    function draw(now) {
+      const eg = P.eg; if (eg.complete && eg.naturalWidth) { const s = W / eg.naturalWidth, ih = eg.naturalHeight * s, off = Math.min(ih - H, cam * 0.35); g.drawImage(eg, 0, H - ih + off, W, ih); }
+      // talapzat: kapus fal
+      const b0 = stack[0], dw = b0.w * W, di = P.door; if (di.complete && di.naturalWidth) { const dh = dw * di.naturalHeight / di.naturalWidth; g.drawImage(di, b0.x * W, yOf(0) + BH() - dh, dw, dh); }
+      for (let n = 1; n < stack.length; n++) { const s = stack[n]; drawBlock(s.x, yOf(n), s.w, s.k); }
+      // tető és harangtorony, ha kész
+      if (done && stack.length > 1) { const s = stack[stack.length - 1], ri = P.roof, bi = P.bell, y0 = yOf(stack.length - 1); if (ri.complete && ri.naturalWidth) { const rw = s.w * W * 1.08, rh = rw * ri.naturalHeight / ri.naturalWidth; g.drawImage(ri, s.x * W - s.w * W * 0.04, y0 - rh + BH() * 0.25, rw, rh); if (won && bi.complete && bi.naturalWidth) { const bw = Math.min(s.w * W * 0.45, W * 0.16), bh2 = bw * bi.naturalHeight / bi.naturalWidth; g.drawImage(bi, s.x * W + s.w * W / 2 - bw / 2, y0 - rh - bh2 * 0.72, bw, bh2); } } }
+      if (!done) { const y = yOf(stack.length) - BH() * 0.15; drawBlock(mv.x, y, mv.w, stack.length % 5 === 4 ? 3 : stack.length % 3); g.save(); g.strokeStyle = 'rgba(80,50,20,.5)'; g.lineWidth = 2; g.beginPath(); g.moveTo((mv.x + mv.w / 2) * W, 0); g.lineTo((mv.x + mv.w / 2) * W, y); g.stroke(); g.restore(); }
+      falls.forEach(f => { g.save(); const y = yOf(f.y) + f.vy; g.translate((f.x + f.w / 2) * W, y + BH() / 2); g.rotate(f.r); g.translate(-(f.w / 2) * W, -BH() / 2); drawBlock(0, 0, f.w, f.k); g.restore(); });
+      if (angel > 0) { const im = P.ang[Math.floor(now / 300) % 2]; if (im.complete && im.naturalWidth) { const h = H * 0.18, w = h * im.naturalWidth / im.naturalHeight; g.save(); g.globalAlpha = Math.min(1, angel * 2); g.drawImage(im, W * 0.72 - w / 2, H * 0.12 + Math.sin(now / 200) * 6, w, h); g.restore(); } }
+      fx.forEach((f, fi) => { g.save(); g.globalAlpha = Math.max(0, 1 - f.t / (f.big ? 2 : 1.1)); g.font = `900 ${f.big ? 26 : 20}px Nunito,sans-serif`; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,20,5,.7)'; const y = H * (f.big ? 0.26 : 0.42) - f.t * 30 + (f.big ? 0 : fi * 4); g.strokeText(f.txt, W / 2, y); g.fillStyle = f.big ? '#FFE9A8' : '#FFFFFF'; g.fillText(f.txt, W / 2, y); g.restore(); });
+    }
+    function step(now) {
+      if (!g$('tpC')) { removeEventListener('keydown', kd); removeEventListener('resize', fit); return; }
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * sp; last = now;
+      if (!done) { mv.x += mv.dir * mv.v * dt; if (mv.x + mv.w > 1.0) { mv.x = 1 - mv.w; mv.dir = -1; } if (mv.x < 0) { mv.x = 0; mv.dir = 1; } }
+      const want = Math.max(0, (stack.length - 7) * BH()); cam += (want - cam) * Math.min(1, dt * 4);
+      falls.forEach(f => { f.vy += dt * 900 * (f.vy < 1 ? 0.3 : 1); f.r += dt * 2 * (f.s || 1); }); falls = falls.filter(f => f.vy < H * 1.5);
+      fx.forEach(f => f.t += dt); fx = fx.filter(f => f.t < (f.big ? 2 : 1.1)); if (angel > 0) angel -= dt;
+      draw(now); requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    function finish() {
+      if (done) return; done = true; const n = stack.length - 1;
+      setTimeout(() => {
+        removeEventListener('keydown', kd); removeEventListener('resize', fit);
+        const lvl = n >= 20 ? 3 : n >= 14 ? 2 : n >= 8 ? 1 : 0;
+        const rew = { penz: Math.min(500, Math.round(score / 8)), termeny: Math.min(250, n * 12), tudas: 1 + lvl, kovako: lvl >= 2 ? 1 : 0, korona: lvl >= 3 ? 1 : 0 };
+        const got = give('templom', rew);
+        endScreen('A SZENTELÉS UTÁN', trf('{0} kő, {1} pont', n, score), [tr(['A kőművesek még keresik a következő követ. Ebből egy kicsi kápolna lett, de a falu így is büszke rá.', 'Kész a falusi templom! A tíz falu népe vasárnaponként ide jár misére.', 'Felépült az apátság! A szerzetesek már másolják is a könyveket.', 'Elkészült a székesfehérvári bazilika! István király itt koronáztatja majd meg magát.'][lvl]),
+          trf('{0} tökéletes kő.', perfect), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+          'István király második törvénykönyve valóban előírta, hogy minden tíz falu építsen egy templomot, és lássa el földdel, lovakkal, ruhával. A pannonhalmi bencés apátságot még Géza fejedelem kezdte építtetni 996-ban, István pedig kiváltságokkal látta el. A székesfehérvári bazilika lett a királyok koronázó és temetkező helye.');
+      }, won ? 1600 : 900);
     }
   }
 })();

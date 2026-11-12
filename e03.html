@@ -3995,6 +3995,469 @@ function rearUI() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); else setTimeout(() => { try { check(); } catch (e) {} }, 800); });
   addEventListener('pagehide', markSeen);
 })();
+// HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
+(function () {
+  const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
+  if (!['e00', 'e01', 'e02', 'e03'].includes(ERA)) return;
+  const DEV = !/github\.io$/.test(location.hostname);
+  const g$ = id => document.getElementById(id);
+  const XB = typeof X_BTN !== 'undefined' ? X_BTN : '';
+  const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  const day = () => { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {}, paid: {} }; return S.mini; };
+  const GAME = {
+    e00: { id: 'mamut', name: 'Mamutvadászat', sub: 'Ügyességi játék, 60 másodperc', img: 'e00_mg_mamut0', play: () => playMamut() },
+    e01: { id: 'turul', name: 'A turul álma', sub: 'Hármat egy sorba, 25 lépés', img: 'e01_mg_t_turul', play: () => playTurul() },
+    e02: { id: 'honfog', name: 'Honfoglalás', sub: 'Foglald el a Kárpát-medencét, 2 perc', img: 'e02_mg_arpad1', play: () => playHonfog() },
+    e03: { id: 'templom', name: 'Templomot minden tíz falunak', sub: 'Toronyépítő ügyességi játék', img: 'e03_mg_tp4', play: () => playTemplom() }
+  }[ERA];
+  const fresh = () => !day().done[GAME.id];
+
+  // ---- közös: jutalom ikonokkal ----
+  const rewChips = rew => '<span class="mrw">' + Object.entries(rew).filter(([, v]) => v > 0).map(([k, v]) => { const r = RES[k], nm = tr(k === 'korona' ? 'Korona' : (r && r.name) || k); const ic = k === 'korona' ? '<svg viewBox="0 0 24 24" style="width:30px;height:30px"><path d="M3 18h18l1-11-5 4-5-7-5 7-5-4z" fill="#F2C14E" stroke="#8A5A10" stroke-width="1.4" stroke-linejoin="round"/><rect x="3" y="18" width="18" height="3" rx="1" fill="#D9A23A" stroke="#8A5A10" stroke-width="1.2"/></svg>' : `<img src="img/${r.file || r.icon + '.png'}" alt="">`; return `<span class="mrw-i">${ic}<b>+${v}</b><i>${nm}</i></span>`; }).join('') + '</span>';
+  function give(id, rew) {
+    const m = day(); if (m.paid[id]) return false; m.paid[id] = true;
+    Object.entries(rew).forEach(([k, v]) => { if (!v) return; if (k === 'korona') S.korona = (S.korona == null ? 25 : S.korona) + v; else S.res[k] = (S.res[k] || 0) + v; });
+    save(); try { hud(); } catch (e) {} return true;
+  }
+  function start(id) { const m = day(); if (DEV) return true; if (m.done[id]) { toast(tr('Ezt a kalandot ma már végigjátszottad. Holnap újra jöhet!')); return false; } m.done[id] = true; save(); return true; }
+  function endScreen(eyebrow, title, lines, fact) {
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr(eyebrow)}</span><h2>${title}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
+      <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr(fact)}</p></div>
+      <div class="row"><button class="btn coral" type="button" id="meBack">${tr('Vissza a kalandokhoz')}</button></div></div>`, '', 'miniend');
+    g$('meBack').onclick = showList;
+  }
+  function showList() {
+    const m = day();
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr({ e00: 'Kaland a kőkorból', e01: 'Kaland Álmos korából', e02: 'Kaland a honfoglalás korából', e03: 'Kaland István korából' }[ERA])}</h2>
+      <p>${tr('A kalandot naponta egyszer lehet végigjátszani, és egyszer jár érte jutalom.')}</p>
+      ${DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : ''}
+      <div class="mini-row"><img src="img/${GAME.img}.png?v=2" alt="" onerror="if(!this.dataset.r){this.dataset.r=1;this.src=this.src+'&r='+Date.now()}"><div class="grow"><b>${tr(GAME.name)}</b><small>${tr(GAME.sub)}</small></div>
+      ${m.done[GAME.id] && !DEV ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" id="meGo">${tr('Indulás')}</button>`}</div></div>`, '', 'mini');
+    const b = g$('meGo'); if (b) b.onclick = GAME.play;
+  }
+  // gomb a bal felső sarokban
+  const st = document.createElement('style');
+  st.textContent = `#btnMiniE{position:absolute!important;left:calc(16px + env(safe-area-inset-left,0px));top:calc(var(--toph,72px) + ${g$('btnDaily') ? 70 : 16}px);z-index:7;width:auto;height:44px;padding:0 14px 0 10px;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;display:flex;align-items:center;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+  #btnMiniE .newdot{position:absolute;top:-9px;right:-12px}
+  .mini-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:rgba(255,248,232,.6);border:2px solid rgba(110,68,34,.15)}.mini-row img{width:64px;height:64px;object-fit:contain}.mini-row .grow{flex:1;min-width:0}.mini-row small{display:block}
+  .mg-devnote{font-size:13px;font-weight:700;padding:6px 10px;border-radius:10px;border:2px dashed rgba(60,40,20,.4);background:#F6E7C4}
+  .mrw{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-weight:400}.mrw-i{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;background:rgba(255,248,232,.75);border:2px solid rgba(110,68,34,.18)}.mrw-i img{width:30px;height:30px;object-fit:contain}.mrw-i b{font-size:17px;color:#2F6B2A}.mrw-i i{font-style:normal;font-weight:700;font-size:14px;color:#5A3A1E}
+  .me-wrap{position:relative;width:100%;aspect-ratio:16/10;max-height:62vh;border-radius:16px;overflow:hidden;background:#C9A86A;touch-action:none;user-select:none}
+  .me-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .me-hud{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-weight:800;margin:8px 0}
+  .me-dev{display:flex;gap:6px;align-items:center;font-size:12px}.me-dev button{border:2px dashed rgba(60,40,20,.5);border-radius:8px;background:#F6E7C4;font:inherit;font-weight:800;padding:2px 8px;cursor:pointer}.me-dev button.on{background:#E8C46A}
+  .tu-board{position:relative;margin:0 auto;width:min(100%,520px,58vh);aspect-ratio:1;border-radius:18px;overflow:hidden;background:rgba(30,20,60,.55);box-shadow:inset 0 0 0 3px rgba(255,230,160,.35);touch-action:none;user-select:none}
+  .tu-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,#5B3E8E 0%,#2E1F55 55%,#1B1238 100%)}.tu-bg::after{content:'';position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 72% 12%,#fff8,transparent),radial-gradient(1.5px 1.5px at 40% 66%,#fff6,transparent),radial-gradient(1px 1px at 88% 78%,#fff7,transparent),radial-gradient(1px 1px at 22% 88%,#fff6,transparent)}
+  .tu-t{position:absolute;display:flex;align-items:center;justify-content:center;transition:transform .22s ease-in,opacity .22s;will-change:transform}
+  .tu-t::before{content:'';position:absolute;inset:7%;border-radius:30%;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 55%,#fff) 0%,var(--c) 55%,color-mix(in srgb,var(--c) 70%,#000) 100%);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.35)}.tu-t img{position:relative;width:80%;height:80%;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));pointer-events:none;transition:transform .15s}
+  .tu-t.sel img{transform:scale(1.14);filter:drop-shadow(0 0 8px rgba(255,236,150,.95))}
+  .tu-t.pop{opacity:0;transform:scale(.2)!important}
+  .tu-t.tur img{animation:tuGlow 1.2s ease-in-out infinite}
+  @keyframes tuGlow{0%,100%{filter:drop-shadow(0 0 4px rgba(255,220,100,.7))}50%{filter:drop-shadow(0 0 14px rgba(255,240,170,1))}}
+  .tu-cell{position:absolute;border-radius:12px;background:rgba(255,250,235,.06)}
+  .tu-fly{position:absolute;pointer-events:none;transition:transform .55s ease-in-out,opacity .55s;z-index:5}
+  .tu-pts{position:absolute;pointer-events:none;font:900 22px Nunito,sans-serif;color:#FFE9A8;text-shadow:0 2px 4px rgba(0,0,0,.7);transition:transform .8s,opacity .8s;z-index:6}`;
+  document.head.appendChild(st);
+  const btn = document.createElement('button'); btn.className = 'ibtn wood'; btn.type = 'button'; btn.id = 'btnMiniE';
+  btn.innerHTML = `<span class="newdot" id="bMiniE" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/></svg><span>${tr('Kaland')}</span>`;
+  (g$('app') || document.body).appendChild(btn); btn.onclick = () => { try { hideInfo(); } catch (e) {} showList(); };
+  setInterval(() => { try { g$('bMiniE').hidden = !fresh(); } catch (e) {} }, 2000);
+  const pic = n => { const im = new Image(); im.src = 'img/' + n + (n.includes('.') ? '' : '.png') + '?v=2'; return im; };
+  const devSpeed = (onSet) => DEV ? `<span class="me-dev">Teszt: ${[1, 2, 4].map(v => `<button type="button" data-sp="${v}" class="${v === 1 ? 'on' : ''}">${v}×</button>`).join('')}</span>` : '';
+  const wireSpeed = (root, set) => root.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { root.querySelectorAll('[data-sp]').forEach(x => x.classList.toggle('on', x === b)); set(+b.dataset.sp); });
+
+  // =================== MAMUTVADÁSZAT ===================
+  function playMamut() {
+    const P = { bg: pic('e00_mg_puszta.jpg'), m: [0, 1, 2, 3].map(k => pic('e00_mg_mamut' + k)), h: [0, 1, 2, 3].map(k => pic('e00_mg_vadasz' + k)) };
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr('KŐKOR · JÉGKORSZAKI PUSZTA')}</span><h2>${tr('Mamutvadászat')}</h2>
+      <p>${tr('A törzs éhes, Samu szerint egy mamut az egész telet kitartja. Állj a mamut alá, és dobd el a lándzsát! Ne feledd, a lándzsa repül egy darabig, ezért egy kicsit a mamut elé célozz.')}</p>
+      <p style="font-weight:800">${tr('Három találat, és a mamut elfut. Ha a mamut feldühödik és nekiront a törzsnek, ugorj félre! Háromszor bírod ki, hogy elsodor.')}</p>
+      <p style="font-size:14px">${tr('Gépen a nyilakkal vagy az egérrel mozogsz, és szóközzel vagy kattintással dobsz. Telefonon húzd az ujjad, és koppints a dobáshoz.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="mmGo">${tr('Vadászatra!')}</button></div></div>`, '', 'minigame');
+    g$('mmGo').onclick = () => { if (!start('mamut')) return; runMamut(P); };
+  }
+  function runMamut(P) {
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Idő')} <b id="mmT">60</b></span><span>${tr('Mamut')} <b id="mmN">0</b></span><span>${tr('Pont')} <b id="mmS">0</b></span><span id="mmL"></span>${devSpeed()}</div>
+      <div class="me-wrap" id="mmW"><canvas id="mmC"></canvas></div></div>`, '', 'minigame');
+    const wrap = g$('mmW'), cv = g$('mmC'), g = cv.getContext('2d'); let W = 0, H = 0, dpr = 1;
+    const fit = () => { const r = wrap.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    fit(); addEventListener('resize', fit);
+    let spd = 1; wireSpeed(document.getElementById('modalRoot'), v => { spd = v; });
+    const DUR = 60; let t = 0, score = 0, kills = 0, lives = 3, hits = 0, done = false, last = performance.now();
+    const hero = { x: 0.5, tx: 0.5, pose: 0, poseT: 0, flip: false };
+    const mam = { x: 0.15, dir: 1, v: 0.16, hp: 3, state: 'walk', st: 0, y: 0, anim: 0 };
+    const spears = [], fx = [], keys = {};
+    const lvls = () => kills;
+    const newMam = () => { Object.assign(mam, { x: Math.random() < 0.5 ? -0.12 : 1.12, hp: 3, state: 'walk', st: 0, y: 0 }); mam.dir = mam.x < 0 ? 1 : -1; mam.v = 0.15 + 0.035 * lvls(); };
+    newMam(); mam.x = 0.2; mam.dir = 1;
+    const lifeHTML = () => `${tr('Bátorság')} ` + [0, 1, 2].map(k => `<span style="opacity:${k < lives ? 1 : .25}">❤</span>`).join('');
+    g$('mmL').innerHTML = lifeHTML();
+    const throwS = () => { if (done || hero.pose === 2) return; if (spears.length >= 2) return; spears.push({ x: hero.x, y: 0.82, vy: -1.25 }); hero.pose = 1; hero.poseT = 0.32; try { sfxClick(); } catch (e) {} };
+    const px = e => { const r = cv.getBoundingClientRect(); return (e.clientX - r.left) / r.width; };
+    cv.onpointerdown = e => { hero.tx = Math.max(0.06, Math.min(0.94, px(e))); throwS(); };
+    cv.onpointermove = e => { if (e.pointerType === 'mouse' || e.buttons) hero.tx = Math.max(0.06, Math.min(0.94, px(e))); };
+    const kd = e => { if (!g$('mmC')) { removeEventListener('keydown', kd); removeEventListener('keyup', ku); return; } keys[e.key] = true; if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); throwS(); } };
+    const ku = e => { keys[e.key] = false; };
+    addEventListener('keydown', kd); addEventListener('keyup', ku);
+    const GYm = () => H * 0.48, GYh = () => H * 0.96;
+    function draw(now) {
+      const bg = P.bg; if (bg.complete && bg.naturalWidth) { const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight); g.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s); } else { g.fillStyle = '#D9B870'; g.fillRect(0, 0, W, H); }
+      // mamut
+      const fr = mam.state === 'flee' ? 3 : mam.state === 'angry' || mam.state === 'charge' ? 2 : (Math.floor(mam.anim * 4) % 2), im = P.m[fr];
+      const depth = mam.state === 'charge' ? mam.y : 0, mh = H * (0.3 + 0.28 * depth), my = GYm() + (GYh() - H * 0.05 - GYm()) * depth;
+      if (im.complete && im.naturalWidth) { const mw = mh * im.naturalWidth / im.naturalHeight, xx = mam.x * W; g.save(); g.translate(xx, my); if (mam.dir < 0) g.scale(-1, 1); g.drawImage(im, -mw / 2, -mh, mw, mh); g.restore(); }
+      if (mam.state === 'angry') { g.fillStyle = '#C9472F'; g.beginPath(); g.arc(mam.x * W, my - mh - 16, 14, 0, 7); g.fill(); g.fillStyle = '#fff'; g.font = '900 20px Nunito,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', mam.x * W, my - mh - 15); }
+      if (mam.state === 'angry' || mam.state === 'charge') { g.save(); g.globalAlpha = 0.28 + 0.12 * Math.sin(now / 80); g.fillStyle = '#C9472F'; g.fillRect(mam.x * W - W * 0.09, GYh() - H * 0.2, W * 0.18, H * 0.2); g.restore(); }
+      // hp pöttyök
+      if (mam.state === 'walk') for (let k = 0; k < 3; k++) { g.fillStyle = k < mam.hp ? '#F2C14E' : 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(mam.x * W - 18 + k * 18, GYm() - H * 0.32, 6, 0, 7); g.fill(); }
+      // lándzsák
+      spears.forEach(s => { g.save(); g.translate(s.x * W, s.y * H); g.strokeStyle = '#7A4E2C'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 46); g.stroke(); g.fillStyle = '#B8B2A6'; g.beginPath(); g.moveTo(0, -12); g.lineTo(-6, 2); g.lineTo(6, 2); g.closePath(); g.fill(); g.restore(); });
+      // vadász
+      const hi = P.h[hero.pose]; if (hi.complete && hi.naturalWidth) { const hh = H * 0.34, hw = hh * hi.naturalWidth / hi.naturalHeight; g.save(); g.translate(hero.x * W, GYh() - (hero.pose === 2 ? H * 0.04 : 0)); if (hero.flip) g.scale(-1, 1); g.drawImage(hi, -hw / 2, -hh, hw, hh); g.restore(); }
+      fx.forEach(f => { g.globalAlpha = Math.max(0, 1 - f.t / 1.1); g.fillStyle = f.c; g.font = '900 22px Nunito,sans-serif'; g.textAlign = 'center'; g.fillText(f.txt, f.x * W, f.y * H - f.t * 40); g.globalAlpha = 1; });
+    }
+    function step(now) {
+      if (!g$('mmC')) return; let dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * spd; last = now;
+      if (!done) {
+        t += dt;
+        const mv = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0); if (mv) hero.tx = Math.max(0.06, Math.min(0.94, hero.x + mv * 0.08));
+        const dx = hero.tx - hero.x; hero.x += Math.sign(dx) * Math.min(Math.abs(dx), 0.75 * dt); if (Math.abs(dx) > 0.002) hero.flip = dx < 0;
+        if (hero.poseT > 0) { hero.poseT -= dt; if (hero.poseT <= 0) hero.pose = 0; }
+        mam.anim += dt * (mam.state === 'flee' ? 3 : 1.4);
+        if (mam.state === 'walk') { mam.x += mam.dir * mam.v * dt; if (mam.x > 0.92) mam.dir = -1; if (mam.x < 0.08) mam.dir = 1; mam.st += dt; if (mam.st > 3.2 && Math.random() < dt * (0.35 + 0.08 * kills)) { mam.state = 'angry'; mam.st = 0; } }
+        else if (mam.state === 'angry') { mam.st += dt; if (mam.st > 0.9) { mam.state = 'charge'; mam.st = 0; mam.y = 0; } }
+        else if (mam.state === 'charge') { mam.y += dt * 1.7; if (mam.y >= 1) { if (Math.abs(hero.x - mam.x) < 0.1) { lives--; hero.pose = 2; hero.poseT = 0.9; fx.push({ x: hero.x, y: 0.55, t: 0, txt: tr('Hoppá, elsodort!'), c: '#FF8A6E' }); g$('mmL').innerHTML = lifeHTML(); } else fx.push({ x: hero.x, y: 0.55, t: 0, txt: tr('Ügyes ugrás!'), c: '#CFE5B4' }); mam.state = 'back'; } }
+        else if (mam.state === 'back') { mam.y -= dt * 1.4; if (mam.y <= 0) { mam.y = 0; mam.state = 'walk'; mam.st = 0; } }
+        else if (mam.state === 'flee') { mam.x += mam.dir * 0.6 * dt; if (mam.x < -0.2 || mam.x > 1.2) newMam(); }
+        // ha közeleg a roham, a vadász megijed
+        if (mam.state === 'charge' && mam.y > 0.6 && Math.abs(hero.x - mam.x) < 0.1 && hero.pose !== 2) { hero.pose = 2; hero.poseT = 0.5; }
+        spears.forEach(s => { s.y += s.vy * dt; if (!s.hit && mam.state === 'walk' && s.y < 0.32 && Math.abs(s.x - mam.x) < 0.075) { s.hit = true; mam.hp--; hits++; score += 100; fx.push({ x: mam.x, y: 0.2, t: 0, txt: '+100', c: '#FFE9A8' }); try { sfxCollect(); } catch (e) {} if (mam.hp <= 0) { kills++; score += 300; mam.state = 'flee'; mam.dir = mam.x < 0.5 ? -1 : 1; hero.pose = 3; hero.poseT = 1.2; fx.push({ x: mam.x, y: 0.15, t: 0, txt: tr('Elfutott! +300'), c: '#CFE5B4' }); } } });
+        for (let k = spears.length - 1; k >= 0; k--) if (spears[k].hit || spears[k].y < -0.1) spears.splice(k, 1);
+        fx.forEach(f => f.t += dt); for (let k = fx.length - 1; k >= 0; k--) if (fx[k].t > 1.1) fx.splice(k, 1);
+        g$('mmT').textContent = Math.max(0, Math.ceil(DUR - t)); g$('mmS').textContent = score; g$('mmN').textContent = kills;
+        if (t >= DUR || lives <= 0) { done = true; setTimeout(() => finish(lives > 0), 900); }
+      }
+      draw(now); requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    function finish(ok) {
+      removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('resize', fit);
+      const rew = { termeny: Math.min(400, Math.round(score / 3)), penz: Math.min(250, Math.round(score / 6)), tudas: Math.min(3, 1 + kills), kovako: kills >= 2 ? 1 : 0 };
+      const got = give('mamut', rew);
+      endScreen('A VADÁSZAT UTÁN', trf('{0} pont', score), [tr(kills >= 3 ? 'Samu szerint ilyen vadászat még nem volt a törzs emlékezete óta. Igaz, a törzs csak három telet emlékszik vissza.' : kills ? 'A törzs ma este jóllakik. A mamut ugyan elfutott, de egy kicsit azért megtépáztátok.' : ok ? 'A mamut most megúszta, de holnap újra próbálkozhatsz.' : 'A mamut ma győzött. Samu szerint holnap jobban megy majd, csak előbb kialussza magát.'),
+        trf('{0} találat, {1} elkergetett mamut.', hits, kills), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+        'A jégkorszakban a Kárpát-medencében is éltek gyapjas mamutok, csontjaik sok helyen előkerültek. A vértesszőlősi Samu idejében még ősi elefántok éltek itt. Az ősemberek csapatban vadásztak, és a nagy állatok húsát, bőrét, csontját is felhasználták.');
+    }
+  }
+
+  // =================== A TURUL ÁLMA ===================
+  const TT = ['ij', 'tarsoly', 'patko', 'kumisz', 'jurta', 'szablya'], TUR = 'turul';
+  const TCOL = { ij: '#D2553C', tarsoly: '#7E5BC4', patko: '#3E86C9', kumisz: '#3FA27C', jurta: '#E7A63A', szablya: '#C24A86', turul: '#F6D35A' };
+  function playTurul() {
+    [...TT, TUR].forEach(n => pic('e01_mg_t_' + n));
+    modal(`${XB}<img class="hero" src="img/e01_mg_emese_alma.jpg?v=2" alt="" style="object-position:center 62%"><div class="inner"><span class="eyebrow">${tr('EMESE ÁLMA')}</span><h2>${tr('A turul álma')}</h2>
+      <p>${tr('Emese álmában kincsek kavarognak. Cserélj meg két szomszédos kincset, hogy három vagy több egyforma kerüljön egy sorba, vagy négy egyforma egy kis négyzetbe!')}</p>
+      <p style="font-weight:800">${tr('Ha egyszerre ötöt sikerül, megjelenik a turulmadár. Cseréld meg bármelyik szomszédjával, és elrepül, egy egész sort eltüntetve. 25 lépésed van.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="tuGo">${tr('Álmodjunk!')}</button></div></div>`, '', 'minigame');
+    g$('tuGo').onclick = () => { if (!start('turul')) return; runTurul(); };
+  }
+  function runTurul() {
+    const N = 7, MOVES = 25;
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Lépés')} <b id="tuM">${MOVES}</b></span><span>${tr('Pont')} <b id="tuS">0</b></span><span id="tuStar"></span>${devSpeed()}</div>
+      <div class="tu-board" id="tuB"><div class="tu-bg"></div></div>
+      <p style="text-align:center;font-size:13px;margin-top:8px">${tr('Húzd a kincset a szomszédja felé, vagy koppints kettőre egymás után.')}</p></div>`, '', 'minigame');
+    const B = g$('tuB'); let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; B.querySelectorAll('.tu-t').forEach(e => e.style.transitionDuration = (0.22 / v) + 's'); });
+    const wait = ms => new Promise(r => setTimeout(r, ms / sp));
+    let grid = [], els = [], moves = MOVES, score = 0, busy = false, sel = null, turuls = 0, done = false;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const cell = document.createElement('div'); cell.className = 'tu-cell'; Object.assign(cell.style, { left: (c / N * 100 + 0.4) + '%', top: (r / N * 100 + 0.4) + '%', width: (100 / N - 0.8) + '%', height: (100 / N - 0.8) + '%' }); B.appendChild(cell); }
+    const rnd = () => TT[Math.floor(Math.random() * TT.length)];
+    const mk = (r, c, k, fromRow) => { const e = document.createElement('div'); e.className = 'tu-t' + (k === TUR ? ' tur' : ''); Object.assign(e.style, { left: '0', top: '0', width: (100 / N) + '%', height: (100 / N) + '%' }); e.innerHTML = `<img src="img/e01_mg_t_${k}.png?v=2" alt="">`; e.style.setProperty('--c', TCOL[k]); e.style.transitionDuration = (0.22 / sp) + 's'; place(e, fromRow != null ? fromRow : r, c, true); B.appendChild(e); e.onpointerdown = ev => down(ev, e); return e; };
+    const place = (e, r, c, instant) => { if (instant) { const d = e.style.transitionDuration; e.style.transition = 'none'; e.style.transform = `translate(${c * 100}%,${r * 100}%)`; e.offsetWidth; e.style.transition = ''; e.style.transitionDuration = d; } else e.style.transform = `translate(${c * 100}%,${r * 100}%)`; e.dataset.r = r; e.dataset.c = c; };
+    // kezdő tábla egyezések nélkül
+    for (let r = 0; r < N; r++) { grid[r] = []; els[r] = []; for (let c = 0; c < N; c++) { let k; do { k = rnd(); } while ((c >= 2 && grid[r][c - 1] === k && grid[r][c - 2] === k) || (r >= 2 && grid[r - 1][c] === k && grid[r - 2][c] === k) || (r >= 1 && c >= 1 && grid[r][c - 1] === k && grid[r - 1][c] === k && grid[r - 1][c - 1] === k)); grid[r][c] = k; els[r][c] = mk(r, c, k); } }
+    const stars = () => { const s = score >= 6000 ? 3 : score >= 3500 ? 2 : score >= 1500 ? 1 : 0; g$('tuStar').innerHTML = [0, 1, 2].map(k => `<span style="color:${k < s ? '#E8B830' : 'rgba(0,0,0,.2)'};font-size:20px">★</span>`).join(''); return s; };
+    stars();
+    function findMatches() {
+      const m = new Set(), groups = [];
+      for (let r = 0; r < N; r++) { let c = 0; while (c < N) { let e = c; while (e + 1 < N && grid[r][e + 1] === grid[r][c] && grid[r][c] !== TUR && grid[r][c]) e++; if (e - c >= 2) { const g = []; for (let x = c; x <= e; x++) { m.add(r * N + x); g.push([r, x]); } groups.push(g); } c = e + 1; } }
+      for (let c = 0; c < N; c++) { let r = 0; while (r < N) { let e = r; while (e + 1 < N && grid[e + 1][c] === grid[r][c] && grid[r][c] !== TUR && grid[r][c]) e++; if (e - r >= 2) { const g = []; for (let y = r; y <= e; y++) { m.add(y * N + c); g.push([y, c]); } groups.push(g); } r = e + 1; } }
+      for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) { const k = grid[r][c]; if (k && k !== TUR && grid[r][c + 1] === k && grid[r + 1][c] === k && grid[r + 1][c + 1] === k) { [[r, c], [r, c + 1], [r + 1, c], [r + 1, c + 1]].forEach(([y, x]) => m.add(y * N + x)); groups.push([[r, c], [r, c + 1], [r + 1, c], [r + 1, c + 1]]); } }
+      return { m, groups };
+    }
+    const ptsAt = (r, c, v) => { const p = document.createElement('div'); p.className = 'tu-pts'; p.textContent = '+' + v; Object.assign(p.style, { left: ((c + 0.2) / N * 100) + '%', top: ((r + 0.2) / N * 100) + '%' }); B.appendChild(p); requestAnimationFrame(() => { p.style.transform = 'translateY(-40px)'; p.style.opacity = '0'; }); setTimeout(() => p.remove(), 900); };
+    async function clearSet(set, mult, spawnTurul) {
+      set.forEach(idx => { const r = Math.floor(idx / N), c = idx % N; if (els[r][c]) els[r][c].classList.add('pop'); });
+      const gain = set.size * 20 * mult; score += gain; const f = [...set][0]; ptsAt(Math.floor(f / N), f % N, gain);
+      await wait(230);
+      set.forEach(idx => { const r = Math.floor(idx / N), c = idx % N; if (els[r][c]) els[r][c].remove(); els[r][c] = null; grid[r][c] = null; });
+      spawnTurul.forEach(([r, c]) => { grid[r][c] = TUR; els[r][c] = mk(r, c, TUR); turuls++; });
+    }
+    async function gravity() {
+      for (let c = 0; c < N; c++) { let w = N - 1; for (let r = N - 1; r >= 0; r--) if (grid[r][c]) { if (w !== r) { grid[w][c] = grid[r][c]; els[w][c] = els[r][c]; grid[r][c] = null; els[r][c] = null; place(els[w][c], w, c); } w--; }
+        let k = 0; for (let r = w; r >= 0; r--) { const t = rnd(); grid[r][c] = t; els[r][c] = mk(r, c, t, -1 - k); k++; } }
+      await wait(30); for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) place(els[r][c], r, c);
+      await wait(260);
+    }
+    async function resolve() {
+      let mult = 1;
+      for (let guard = 0; guard < 30; guard++) {
+        const { m, groups } = findMatches(); if (!m.size) break;
+        const sp5 = groups.filter(g => g.length >= 5).map(g => g[Math.floor(g.length / 2)]);
+        sp5.forEach(([r, c]) => m.delete(r * N + c));
+        groups.filter(g => g.length === 4).forEach(() => { score += 60; });
+        await clearSet(m, mult, sp5); g$('tuS').textContent = score; stars(); await gravity(); mult++;
+      }
+    }
+    async function flyTurul(r, c, other) {
+      // a turul elrepül a során, mindent eltüntet
+      const e = els[r][c]; const set = new Set(); for (let x = 0; x < N; x++) set.add(r * N + x);
+      if (other) set.add(other[0] * N + other[1]);
+      e.classList.add('tu-fly'); e.style.transform = `translate(${N * 100}%,${r * 100}%) scale(1.4)`; e.style.opacity = '0';
+      els[r][c] = null; grid[r][c] = null; set.delete(r * N + c);
+      await wait(250); score += 150; await clearSet(set, 2, []); e.remove(); g$('tuS').textContent = score; stars(); await gravity(); await resolve();
+    }
+    const adj = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
+    async function trySwap(a, b) {
+      if (busy || done || !adj(a, b)) return; busy = true; sel = null; B.querySelectorAll('.sel').forEach(x => x.classList.remove('sel'));
+      const [ar, ac] = a, [br, bc] = b; const sw = () => { [grid[ar][ac], grid[br][bc]] = [grid[br][bc], grid[ar][ac]]; [els[ar][ac], els[br][bc]] = [els[br][bc], els[ar][ac]]; place(els[ar][ac], ar, ac); place(els[br][bc], br, bc); };
+      sw(); await wait(230);
+      const ta = grid[ar][ac] === TUR, tb = grid[br][bc] === TUR;
+      if (ta || tb) { moves--; g$('tuM').textContent = moves; if (ta) await flyTurul(ar, ac, null); if (tb && grid[br][bc] === TUR) await flyTurul(br, bc, null); }
+      else if (findMatches().m.size) { moves--; g$('tuM').textContent = moves; await resolve(); }
+      else { sw(); await wait(230); }
+      if (!hasMove()) await shuffle();
+      busy = false; if (moves <= 0) { done = true; setTimeout(finish, 600 / sp); }
+    }
+    function hasMove() {
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { if (grid[r][c] === TUR) return true; for (const [dr, dc] of [[0, 1], [1, 0]]) { const r2 = r + dr, c2 = c + dc; if (r2 >= N || c2 >= N) continue; [grid[r][c], grid[r2][c2]] = [grid[r2][c2], grid[r][c]]; const ok = findMatches().m.size > 0; [grid[r][c], grid[r2][c2]] = [grid[r2][c2], grid[r][c]]; if (ok) return true; } }
+      return false;
+    }
+    async function shuffle() { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const t = rnd(); grid[r][c] = t; els[r][c].remove(); els[r][c] = mk(r, c, t); } await resolve(); if (!hasMove()) await shuffle(); }
+    let drag = null;
+    function down(ev, e) { if (busy || done) return; ev.preventDefault(); const p = [+e.dataset.r, +e.dataset.c]; drag = { p, x: ev.clientX, y: ev.clientY, moved: false };
+      const mv = m => { if (!drag) return; const dx = m.clientX - drag.x, dy = m.clientY - drag.y, th = B.clientWidth / N * 0.35; if (Math.max(Math.abs(dx), Math.abs(dy)) > th) { drag.moved = true; const q = Math.abs(dx) > Math.abs(dy) ? [p[0], p[1] + Math.sign(dx)] : [p[0] + Math.sign(dy), p[1]]; cleanup(); if (q[0] >= 0 && q[0] < N && q[1] >= 0 && q[1] < N) trySwap(p, q); } };
+      const up = () => { if (drag && !drag.moved) { if (sel && adj(sel, p)) { const s = sel; trySwap(s, p); } else { B.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')); if (sel && sel[0] === p[0] && sel[1] === p[1]) sel = null; else { sel = p; e.classList.add('sel'); } } } cleanup(); };
+      const cleanup = () => { drag = null; removeEventListener('pointermove', mv); removeEventListener('pointerup', up); };
+      addEventListener('pointermove', mv); addEventListener('pointerup', up); }
+    function finish() {
+      const s = stars(); const rew = { penz: Math.min(500, Math.round(score / 12)), termeny: Math.min(300, Math.round(score / 20)), tudas: 1 + s, kovako: s >= 2 ? 1 : 0, korona: s >= 3 ? 1 : 0 };
+      const got = give('turul', rew);
+      endScreen('ÉBREDÉS', trf('{0} pont', score), [tr(s >= 3 ? 'Emese mosolyogva ébred. Azt álmodta, hogy fiából nagy fejedelem lesz. A turul is elégedettnek tűnt.' : s >= 2 ? 'Szép álom volt, tele kinccsel. Emese reggel mindent elmesél a táborban.' : s ? 'Emese kicsit zavaros álmot látott, de a turul azért felbukkant benne.' : 'Az álom szétfoszlott, mielőtt a turul ideért volna. Holnap éjjel újra álmodhatsz.'),
+        trf('{0} pont, {1} turulmadár.', score, turuls), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+        'Anonymus Gestája szerint Emesének, Ügyek feleségének álmában egy turulmadár jelent meg. Az álom azt jövendölte, hogy fiából nagy fejedelmek születnek. A fiút ezért nevezték Álmosnak. A turul az Árpád-ház ősmadara lett, és ma is sok helyen látható.');
+    }
+  }
+
+  // =================== HONFOGLALÁS ===================
+  function playHonfog() {
+    ['e02_mg_kmedence.jpg', 'e02_mg_kmedence_foglalt.jpg', 'e02_mg_arpad0', 'e02_mg_arpad1', 'e02_mg_arpad2', 'e02_mg_arpad3', 'e02_mg_jaror0', 'e02_mg_jaror1', 'e02_mg_jaror2'].forEach(pic);
+    modal(`${XB}<img class="hero" src="img/e02_mg_feher_lo.jpg?v=2" alt="" style="object-position:center 40%"><div class="inner"><span class="eyebrow">${tr('895 · A FEHÉR LÓ MONDÁJA')}</span><h2>${tr('Honfoglalás')}</h2>
+      <p>${tr('Árpád egy gyönyörű fehér lovat küldött Szvatopluknak arany nyereggel, és cserébe csak egy kis földet, füvet és vizet kért. Szvatopluk nevetve beleegyezett. Most rajtad a sor, hogy kiderüljön, mennyi az a kicsi!')}</p>
+      <p style="font-weight:800">${tr('Lovagolj ki a saját földedről, és kerülj vissza rá. Amit körbelovagoltál, az a tiéd lesz. Ha egy ellenséges járőr keresztezi a nyomodat, mielőtt visszaérsz, elveszik a kör. A medence háromnegyedét kell elfoglalnod.')}</p>
+      <p style="font-size:14px">${tr('Gépen a nyilakkal vagy a WASD gombokkal irányítasz. Telefonon húzd az ujjad abba az irányba, amerre lovagolnál.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="hfGo">${tr('Nyeregbe!')}</button></div></div>`, '', 'minigame');
+    g$('hfGo').onclick = () => { if (!start('honfog')) return; runHonfog(); };
+  }
+  function runHonfog() {
+    const P = { map: pic('e02_mg_kmedence.jpg'), own: pic('e02_mg_kmedence_foglalt.jpg'), a: [0, 1, 2, 3].map(k => pic('e02_mg_arpad' + k)), e: [0, 1, 2].map(k => pic('e02_mg_jaror' + k)) };
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Idő')} <b id="hfT">120</b></span><span>${tr('Föld')} <b id="hfP">0</b>% / 75%</span><span>${tr('Pont')} <b id="hfS">0</b></span><span id="hfL"></span>${devSpeed()}</div>
+      <div class="me-wrap" id="hfW" style="aspect-ratio:16/10"><canvas id="hfC"></canvas></div></div>`, '', 'minigame');
+    const wrap = g$('hfW'), cv = g$('hfC'), g = cv.getContext('2d'); let W = 0, H = 0;
+    const fit = () => { const r = wrap.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; g.setTransform(d, 0, 0, d, 0, 0); };
+    fit(); addEventListener('resize', fit);
+    let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; });
+    const GW = 64, GH = 40, OWN = 1, TRAIL = 2, cell = new Uint8Array(GW * GH), id = (x, y) => y * GW + x;
+    const BRD = 3; for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (x < BRD || y < BRD || x >= GW - BRD || y >= GH - BRD) cell[id(x, y)] = OWN;
+    // kiindulás: a Vereckei-hágó, jobb felül
+    for (let y = BRD; y < BRD + 5; y++) for (let x = GW - BRD - 8; x < GW - BRD; x++) cell[id(x, y)] = OWN;
+    const total = (GW - 2 * BRD) * (GH - 2 * BRD); const pct = () => { let n = 0; for (let y = BRD; y < GH - BRD; y++) for (let x = BRD; x < GW - BRD; x++) if (cell[id(x, y)] === OWN) n++; return Math.round(n / total * 100); };
+    const pl = { x: GW - BRD - 2, y: BRD + 1, dx: 0, dy: 0, want: null, dir: 2, acc: 0, out: false, sx: 0, sy: 0 };
+    const KINDS = [{ img: 0, v: 9, r: 0.8 }, { img: 1, v: 6, r: 0.8 }, { img: 2, v: 4.5, r: 1.1 }];
+    const foes = [];
+    const addFoe = k => { let x, y; do { x = BRD + 4 + Math.random() * (GW - 2 * BRD - 8); y = BRD + 4 + Math.random() * (GH - 2 * BRD - 8); } while (cell[id(x | 0, y | 0)]); const a = Math.random() * Math.PI * 2; foes.push({ k, x, y, vx: Math.cos(a), vy: Math.sin(a), flip: false }); };
+    addFoe(0); addFoe(1); addFoe(2);
+    let t = 0, DUR = 120, lives = 3, score = 0, done = false, last = performance.now(), mask = null, flash = 0, msg = null;
+    const lifeHTML = () => `${tr('Lovak')} ` + [0, 1, 2].map(k => `<span style="opacity:${k < lives ? 1 : .25}">🐎</span>`).join('');
+    g$('hfL').innerHTML = lifeHTML();
+    function rebuildMask() {
+      const m = document.createElement('canvas'); m.width = GW; m.height = GH; const mg = m.getContext('2d'), im = mg.createImageData(GW, GH);
+      for (let k = 0; k < cell.length; k++) { im.data[k * 4 + 3] = cell[k] === OWN ? 255 : 0; } mg.putImageData(im, 0, 0); mask = m;
+    }
+    rebuildMask();
+    if (window.__T) window.__hfOwn = () => { for (let y = 5; y < 20; y++) for (let x = 5; x < 30; x++) cell[id(x, y)] = OWN; rebuildMask(); };
+    function fill() {
+      // ami nem érhető el egy ellenségtől se, az a mienk lesz
+      const seen = new Uint8Array(GW * GH), q = [];
+      foes.forEach(f => { const k = id(f.x | 0, f.y | 0); if (!cell[k]) { q.push(k); seen[k] = 1; } });
+      while (q.length) { const k = q.pop(), x = k % GW, y = (k / GW) | 0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, b]) => { const n = id(x + a, y + b); if (x + a >= 0 && x + a < GW && y + b >= 0 && y + b < GH && !seen[n] && !cell[n]) { seen[n] = 1; q.push(n); } }); }
+      const before = pct(); let got = 0;
+      for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL || (!cell[k] && !seen[k])) { cell[k] = OWN; got++; }
+      const gain = pct() - before; score += got * 2 + gain * gain * 3; if (gain >= 8) msg = { t: 1.3, txt: trf('Szép darab! +{0}%', gain) }; else if (gain > 0) msg = { t: 0.9, txt: '+' + gain + '%' };
+      rebuildMask(); try { sfxCollect(); } catch (e) {}
+    }
+    function lose() {
+      lives--; g$('hfL').innerHTML = lifeHTML(); flash = 0.6; msg = { t: 1.3, txt: tr('Elvágták az utad! Vissza a táborba.') };
+      for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL) cell[k] = 0;
+      pl.x = pl.sx; pl.y = pl.sy; pl.dx = pl.dy = 0; pl.out = false; pl.want = null; try { sfxClick(); } catch (e) {}
+      if (lives <= 0) end();
+    }
+    const DIRS = { up: [0, -1, 0], right: [1, 0, 1], down: [0, 1, 2], left: [-1, 0, 3] };
+    const setDir = d => { pl.want = d; };
+    const keyMap = { ArrowUp: 'up', w: 'up', W: 'up', ArrowRight: 'right', d: 'right', D: 'right', ArrowDown: 'down', s: 'down', S: 'down', ArrowLeft: 'left', a: 'left', A: 'left' };
+    const kd = e => { if (!g$('hfC')) { removeEventListener('keydown', kd); return; } const d = keyMap[e.key]; if (d) { e.preventDefault(); setDir(d); } };
+    addEventListener('keydown', kd);
+    let tp = null;
+    cv.onpointerdown = e => { tp = { x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} };
+    cv.onpointermove = e => { if (!tp) return; const dx = e.clientX - tp.x, dy = e.clientY - tp.y; if (Math.hypot(dx, dy) < 18) return; setDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); tp = { x: e.clientX, y: e.clientY }; };
+    cv.onpointerup = () => { tp = null; };
+    function stepPlayer() {
+      if (pl.want) { const [a, b, d] = DIRS[pl.want]; if (!(pl.out && a === -pl.dx && b === -pl.dy)) { pl.dx = a; pl.dy = b; pl.dir = d; } pl.want = null; }
+      if (!pl.dx && !pl.dy) return;
+      const nx = pl.x + pl.dx, ny = pl.y + pl.dy; if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) { pl.dx = pl.dy = 0; return; }
+      const c = cell[id(nx, ny)];
+      if (c === TRAIL) { lose(); return; }
+      if (!pl.out && c === 0) { pl.out = true; pl.sx = pl.x; pl.sy = pl.y; }
+      pl.x = nx; pl.y = ny;
+      if (pl.out) { if (c === OWN) { pl.out = false; fill(); pl.dx = pl.dy = 0; } else cell[id(nx, ny)] = TRAIL; }
+    }
+    function stepFoes(dt) {
+      foes.forEach(f => {
+        const K = KINDS[f.k], v = K.v * (1 + t / DUR * 0.6) * dt;
+        let nx = f.x + f.vx * v, ny = f.y + f.vy * v;
+        if (cell[id(nx | 0, f.y | 0)] === OWN) { f.vx *= -1; nx = f.x; } if (cell[id(f.x | 0, ny | 0)] === OWN) { f.vy *= -1; ny = f.y; }
+        f.x = nx; f.y = ny; f.flip = f.vx < 0;
+        if (cell[id(f.x | 0, f.y | 0)] === OWN) { // bekerítették: új helyen bukkan fel
+          let tries = 0; do { f.x = BRD + Math.random() * (GW - 2 * BRD); f.y = BRD + Math.random() * (GH - 2 * BRD); } while (cell[id(f.x | 0, f.y | 0)] && ++tries < 400);
+          if (tries >= 400) f.gone = true;
+        }
+        if (f.gone) return;
+        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const x = (f.x | 0) + a, y = (f.y | 0) + b; if (x >= 0 && y >= 0 && x < GW && y < GH && Math.hypot(x + 0.5 - f.x, y + 0.5 - f.y) < K.r && (cell[id(x, y)] === TRAIL || (pl.out && pl.x === x && pl.y === y))) { lose(); return; } }
+      });
+    }
+    function draw(now) {
+      const cw = W / GW, ch = H / GH;
+      if (P.map.complete && P.map.naturalWidth) g.drawImage(P.map, 0, 0, W, H); else { g.fillStyle = '#9DBA5A'; g.fillRect(0, 0, W, H); }
+      if (mask && P.own.complete && P.own.naturalWidth) {
+        if (!draw.tmp) draw.tmp = document.createElement('canvas'); const tc = draw.tmp; if (tc.width !== cv.width) { tc.width = cv.width; tc.height = cv.height; }
+        const tg = tc.getContext('2d'); tg.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, W, H); tg.drawImage(P.own, 0, 0, W, H); tg.fillStyle = 'rgba(255,196,70,0.22)'; tg.fillRect(0, 0, W, H);
+        tg.globalCompositeOperation = 'destination-in'; tg.imageSmoothingEnabled = true; tg.drawImage(mask, 0, 0, W, H);
+        g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(tc, 0, 0); g.restore();
+        // aranyszegély a saját föld szélén
+        g.save(); g.strokeStyle = 'rgba(255,214,90,.9)'; g.lineWidth = 2.5; g.beginPath();
+        for (let y = BRD; y < GH - BRD; y++) for (let x = BRD; x < GW - BRD; x++) { if (cell[id(x, y)] === OWN) { if (cell[id(x + 1, y)] !== OWN) { g.moveTo((x + 1) * cw, y * ch); g.lineTo((x + 1) * cw, (y + 1) * ch); } if (cell[id(x - 1, y)] !== OWN) { g.moveTo(x * cw, y * ch); g.lineTo(x * cw, (y + 1) * ch); } if (cell[id(x, y + 1)] !== OWN) { g.moveTo(x * cw, (y + 1) * ch); g.lineTo((x + 1) * cw, (y + 1) * ch); } if (cell[id(x, y - 1)] !== OWN) { g.moveTo(x * cw, y * ch); g.lineTo((x + 1) * cw, y * ch); } } }
+        g.stroke(); g.restore();
+      }
+      // nyom
+      g.fillStyle = 'rgba(255,210,80,.9)'; for (let k = 0; k < cell.length; k++) if (cell[k] === TRAIL) { const x = k % GW, y = (k / GW) | 0; g.beginPath(); g.arc((x + 0.5) * cw, (y + 0.5) * ch, Math.min(cw, ch) * 0.38, 0, 7); g.fill(); }
+      // ellenségek
+      foes.forEach(f => { if (f.gone) return; const im = P.e[KINDS[f.k].img]; if (!im.complete || !im.naturalWidth) return; const h = ch * (f.k === 2 ? 6.5 : 5.5), w = h * im.naturalWidth / im.naturalHeight, x = f.x * cw, y = f.y * ch + Math.sin(now / 120 + f.k) * 1.5; g.save(); g.translate(x, y); if (f.flip) g.scale(-1, 1); g.drawImage(im, -w / 2, -h * 0.7, w, h); g.restore(); });
+      // Árpád
+      const ai = P.a[pl.dir]; if (ai.complete && ai.naturalWidth) { const h = ch * 6.5, w = h * ai.naturalWidth / ai.naturalHeight; g.beginPath(); g.fillStyle = 'rgba(255,240,180,.55)'; g.ellipse((pl.x + 0.5) * cw, (pl.y + 0.5) * ch, cw * 1.6, ch * 0.9, 0, 0, 7); g.fill(); g.drawImage(ai, (pl.x + 0.5) * cw - w / 2, (pl.y + 0.5) * ch - h * 0.7 + Math.sin(now / 90) * 1.5, w, h); }
+      if (flash > 0) { g.fillStyle = `rgba(201,71,47,${flash * 0.5})`; g.fillRect(0, 0, W, H); }
+      if (msg) { g.save(); g.globalAlpha = Math.min(1, msg.t * 2); g.font = '900 22px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,20,5,.8)'; g.strokeText(msg.txt, W / 2, H * 0.15); g.fillStyle = '#FFE9A8'; g.fillText(msg.txt, W / 2, H * 0.15); g.restore(); }
+    }
+    let acc = 0;
+    function step(now) {
+      if (!g$('hfC')) { removeEventListener('keydown', kd); removeEventListener('resize', fit); return; }
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * sp; last = now;
+      if (!done) {
+        t += dt; acc += dt; const ST = 1 / 13; while (acc >= ST && !done) { acc -= ST; stepPlayer(); }
+        stepFoes(dt); if (flash > 0) flash -= dt; if (msg) { msg.t -= dt; if (msg.t <= 0) msg = null; }
+        const pc = pct(); g$('hfT').textContent = Math.max(0, Math.ceil(DUR - t)); g$('hfP').textContent = pc; g$('hfS').textContent = score;
+        if (pc >= 75) { score += Math.round((DUR - t) * 10) + lives * 200; end(true); } else if (t >= DUR) end();
+      }
+      draw(now); requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    function end(win) {
+      if (done) return; done = true; const pc = pct();
+      setTimeout(() => {
+        removeEventListener('keydown', kd); removeEventListener('resize', fit);
+        const rew = { penz: Math.min(500, Math.round(score / 6)), termeny: Math.min(300, pc * 4), tudas: 1 + (pc >= 40 ? 1 : 0) + (win ? 1 : 0), kovako: win ? 2 : pc >= 50 ? 1 : 0, korona: win && lives === 3 ? 1 : 0 };
+        const got = give('honfog', rew);
+        endScreen('A FOGLALÁS UTÁN', trf('{0}% a medencéből', pc), [tr(win ? 'Szvatopluk elsápad. A kis földből, fűből és vízből az egész Kárpát-medence lett. A fehér ló viszont nagyon jól érzi magát nála.' : pc >= 50 ? 'A medence nagyobbik fele már a miénk. Holnap folytatjuk a foglalást!' : 'Ma még csak egy kis darab lett a miénk. Szvatopluk még nevet, de nem sokáig.'),
+          trf('{0} pont.', score), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+          'A fehér ló mondáját a Képes Krónika és más középkori krónikák is elmesélik, de ez legenda. A valóságban a magyar törzsek 895 körül keltek át a Kárpátokon, és több év alatt foglalták el a medencét. A Vereckei-hágó a hagyomány szerint az egyik átkelőhely volt.');
+      }, 900);
+    }
+  }
+
+  // =================== TEMPLOMOT MINDEN TÍZ FALUNAK ===================
+  function playTemplom() {
+    ['e03_mg_eg.jpg', 'e03_mg_ko0', 'e03_mg_ko1', 'e03_mg_ko2', 'e03_mg_ko3', 'e03_mg_tp0', 'e03_mg_tp3', 'e03_mg_tp4', 'e03_mg_angyal0', 'e03_mg_angyal1'].forEach(pic);
+    modal(`${XB}<img class="hero" src="img/e03_mg_istvan_templom.jpg?v=2" alt="" style="object-position:center 30%"><div class="inner"><span class="eyebrow">${tr('1000 KÖRÜL · ISTVÁN TÖRVÉNYE')}</span><h2>${tr('Templomot minden tíz falunak')}</h2>
+      <p>${tr('István király elrendelte, hogy minden tíz falu építsen egy templomot. A kőművesek már hordják a köveket, neked kell őket egymásra rakni!')}</p>
+      <p style="font-weight:800">${tr('A kő ide-oda leng fölötted. Koppints, és leesik. Ami lelóg az alatta lévőről, az lepotyog, így a következő kő kisebb lesz. Ha pontosan ráteszed, egy angyalka énekel, és a kő mérete megmarad.')}</p>
+      <p>${tr('8 kőnél kész a falusi templom, 14-nél az apátság, 20-nál a székesfehérvári bazilika.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="tpGo">${tr('Építsünk!')}</button></div></div>`, '', 'minigame');
+    g$('tpGo').onclick = () => { if (!start('templom')) return; runTemplom(); };
+  }
+  function runTemplom() {
+    const P = { eg: pic('e03_mg_eg.jpg'), ko: [0, 1, 2, 3].map(k => pic('e03_mg_ko' + k)), door: pic('e03_mg_tp0'), roof: pic('e03_mg_tp3'), bell: pic('e03_mg_tp4'), ang: [pic('e03_mg_angyal0'), pic('e03_mg_angyal1')] };
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Kő')} <b id="tpN">0</b></span><span id="tpLv">${tr('Falusi templom')}</span><span>${tr('Pont')} <b id="tpS">0</b></span>${devSpeed()}</div>
+      <div class="me-wrap" id="tpW" style="aspect-ratio:3/4;max-height:66vh;max-width:min(100%,50vh);margin:0 auto;background:#9CCBEB"><canvas id="tpC"></canvas></div>
+      <p style="text-align:center;font-size:13px;margin-top:8px">${tr('Koppints, kattints, vagy nyomd meg a szóközt, amikor a kő az alatta lévő fölött van.')}</p></div>`, '', 'minigame');
+    const wrap = g$('tpW'), cv = g$('tpC'), g = cv.getContext('2d'); let W = 0, H = 0;
+    const fit = () => { const r = wrap.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; g.setTransform(d, 0, 0, d, 0, 0); };
+    fit(); addEventListener('resize', fit);
+    let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; });
+    const BH = () => H * 0.07, LV = [[8, 'Falusi templom kész!', 'Apátság'], [14, 'Az apátság kész!', 'Bazilika'], [20, 'Kész a bazilika!', 'Bazilika']];
+    const stack = [{ x: 0.24, w: 0.52, k: 0 }]; // a talapzat a kapuval
+    let mv = { x: 0, w: 0.52, dir: 1, v: 0.45 }, score = 0, perfect = 0, combo = 0, done = false, cam = 0, last = performance.now(), falls = [], fx = [], angel = 0, won = false;
+    const drop = () => {
+      if (done) return; const top = stack[stack.length - 1]; const L = Math.max(mv.x, top.x), R = Math.min(mv.x + mv.w, top.x + top.w);
+      if (R - L <= 0.005) { falls.push({ x: mv.x, w: mv.w, y: stack.length, vy: 0, r: 0, k: stack.length % 4 }); finish(); return; }
+      let nx = L, nw = R - L;
+      if (Math.abs(mv.x - top.x) < 0.012) { nx = top.x; nw = top.w; combo++; perfect++; angel = 1.4; score += 150 + combo * 30; fx.push({ t: 0, txt: combo > 1 ? trf('Tökéletes! ×{0}', combo) : tr('Tökéletes!') }); if (combo >= 3) { const grow = Math.min(0.04, 0.52 - nw); nx -= grow / 2; nw += grow; } try { sfxCollect(); } catch (e) {} }
+      else { combo = 0; score += 100; if (mv.x < L) falls.push({ x: mv.x, w: L - mv.x, y: stack.length, vy: 0, r: 0, k: stack.length % 4, s: -1 }); if (mv.x + mv.w > R) falls.push({ x: R, w: mv.x + mv.w - R, y: stack.length, vy: 0, r: 0, k: stack.length % 4, s: 1 }); try { sfxClick(); } catch (e) {} }
+      stack.push({ x: nx, w: nw, k: stack.length % 5 === 4 ? 3 : stack.length % 3 });
+      const n = stack.length - 1; const lv = LV.find(l => l[0] === n); if (lv) { fx.push({ t: 0, txt: tr(lv[1]), big: 1 }); score += n * 40; g$('tpLv').textContent = tr(lv[2]); if (n >= 20) { won = true; finish(); return; } }
+      g$('tpN').textContent = n; g$('tpS').textContent = score;
+      mv = { x: mv.dir > 0 ? -nw : 1, w: nw, dir: mv.dir > 0 ? 1 : -1, v: 0.45 + n * 0.028 };
+      if (Math.random() < 0.5) { mv.x = mv.x < 0 ? 1 : -nw; mv.dir *= -1; }
+    };
+    if (window.__T) window.__tpAuto = () => { const top = stack[stack.length - 1]; mv.x = top.x + 0.004; drop(); };
+    const kd = e => { if (!g$('tpC')) { removeEventListener('keydown', kd); return; } if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); drop(); } };
+    addEventListener('keydown', kd); cv.onpointerdown = e => { e.preventDefault(); drop(); };
+    const drawBlock = (x, y, w, k) => { const im = P.ko[k]; const bh = BH(); if (im.complete && im.naturalWidth) g.drawImage(im, x * W, y, w * W, bh * 1.08); else { g.fillStyle = '#E3D2AE'; g.fillRect(x * W, y, w * W, bh); } };
+    const yOf = n => H - H * 0.08 - n * BH() + cam;
+    function draw(now) {
+      const eg = P.eg; if (eg.complete && eg.naturalWidth) { const s = W / eg.naturalWidth, ih = eg.naturalHeight * s, off = Math.min(ih - H, cam * 0.35); g.drawImage(eg, 0, H - ih + off, W, ih); }
+      // talapzat: kapus fal
+      const b0 = stack[0], dw = b0.w * W, di = P.door; if (di.complete && di.naturalWidth) { const dh = dw * di.naturalHeight / di.naturalWidth; g.drawImage(di, b0.x * W, yOf(0) + BH() - dh, dw, dh); }
+      for (let n = 1; n < stack.length; n++) { const s = stack[n]; drawBlock(s.x, yOf(n), s.w, s.k); }
+      // tető és harangtorony, ha kész
+      if (done && stack.length > 1) { const s = stack[stack.length - 1], ri = P.roof, bi = P.bell, y0 = yOf(stack.length - 1); if (ri.complete && ri.naturalWidth) { const rw = s.w * W * 1.08, rh = rw * ri.naturalHeight / ri.naturalWidth; g.drawImage(ri, s.x * W - s.w * W * 0.04, y0 - rh + BH() * 0.25, rw, rh); if (won && bi.complete && bi.naturalWidth) { const bw = Math.min(s.w * W * 0.45, W * 0.16), bh2 = bw * bi.naturalHeight / bi.naturalWidth; g.drawImage(bi, s.x * W + s.w * W / 2 - bw / 2, y0 - rh - bh2 * 0.72, bw, bh2); } } }
+      if (!done) { const y = yOf(stack.length) - BH() * 0.15; drawBlock(mv.x, y, mv.w, stack.length % 5 === 4 ? 3 : stack.length % 3); g.save(); g.strokeStyle = 'rgba(80,50,20,.5)'; g.lineWidth = 2; g.beginPath(); g.moveTo((mv.x + mv.w / 2) * W, 0); g.lineTo((mv.x + mv.w / 2) * W, y); g.stroke(); g.restore(); }
+      falls.forEach(f => { g.save(); const y = yOf(f.y) + f.vy; g.translate((f.x + f.w / 2) * W, y + BH() / 2); g.rotate(f.r); g.translate(-(f.w / 2) * W, -BH() / 2); drawBlock(0, 0, f.w, f.k); g.restore(); });
+      if (angel > 0) { const im = P.ang[Math.floor(now / 300) % 2]; if (im.complete && im.naturalWidth) { const h = H * 0.18, w = h * im.naturalWidth / im.naturalHeight; g.save(); g.globalAlpha = Math.min(1, angel * 2); g.drawImage(im, W * 0.72 - w / 2, H * 0.12 + Math.sin(now / 200) * 6, w, h); g.restore(); } }
+      fx.forEach((f, fi) => { g.save(); g.globalAlpha = Math.max(0, 1 - f.t / (f.big ? 2 : 1.1)); g.font = `900 ${f.big ? 26 : 20}px Nunito,sans-serif`; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = 'rgba(40,20,5,.7)'; const y = H * (f.big ? 0.26 : 0.42) - f.t * 30 + (f.big ? 0 : fi * 4); g.strokeText(f.txt, W / 2, y); g.fillStyle = f.big ? '#FFE9A8' : '#FFFFFF'; g.fillText(f.txt, W / 2, y); g.restore(); });
+    }
+    function step(now) {
+      if (!g$('tpC')) { removeEventListener('keydown', kd); removeEventListener('resize', fit); return; }
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * sp; last = now;
+      if (!done) { mv.x += mv.dir * mv.v * dt; if (mv.x + mv.w > 1.0) { mv.x = 1 - mv.w; mv.dir = -1; } if (mv.x < 0) { mv.x = 0; mv.dir = 1; } }
+      const want = Math.max(0, (stack.length - 7) * BH()); cam += (want - cam) * Math.min(1, dt * 4);
+      falls.forEach(f => { f.vy += dt * 900 * (f.vy < 1 ? 0.3 : 1); f.r += dt * 2 * (f.s || 1); }); falls = falls.filter(f => f.vy < H * 1.5);
+      fx.forEach(f => f.t += dt); fx = fx.filter(f => f.t < (f.big ? 2 : 1.1)); if (angel > 0) angel -= dt;
+      draw(now); requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    function finish() {
+      if (done) return; done = true; const n = stack.length - 1;
+      setTimeout(() => {
+        removeEventListener('keydown', kd); removeEventListener('resize', fit);
+        const lvl = n >= 20 ? 3 : n >= 14 ? 2 : n >= 8 ? 1 : 0;
+        const rew = { penz: Math.min(500, Math.round(score / 8)), termeny: Math.min(250, n * 12), tudas: 1 + lvl, kovako: lvl >= 2 ? 1 : 0, korona: lvl >= 3 ? 1 : 0 };
+        const got = give('templom', rew);
+        endScreen('A SZENTELÉS UTÁN', trf('{0} kő, {1} pont', n, score), [tr(['A kőművesek még keresik a következő követ. Ebből egy kicsi kápolna lett, de a falu így is büszke rá.', 'Kész a falusi templom! A tíz falu népe vasárnaponként ide jár misére.', 'Felépült az apátság! A szerzetesek már másolják is a könyveket.', 'Elkészült a székesfehérvári bazilika! István király itt koronáztatja majd meg magát.'][lvl]),
+          trf('{0} tökéletes kő.', perfect), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+          'István király második törvénykönyve valóban előírta, hogy minden tíz falu építsen egy templomot, és lássa el földdel, lovakkal, ruhával. A pannonhalmi bencés apátságot még Géza fejedelem kezdte építtetni 996-ban, István pedig kiváltságokkal látta el. A székesfehérvári bazilika lett a királyok koronázó és temetkező helye.');
+      }, won ? 1600 : 900);
+    }
+  }
+})();
+
 // HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
 (function () {
   if (/github\.io$/.test(location.hostname)) return;
