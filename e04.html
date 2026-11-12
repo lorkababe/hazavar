@@ -464,7 +464,7 @@ const trf = (x, ...a) => tr(x).replace(/\{(\d)\}/g, (_, i) => a[i]);
 const BGW = 3200, BGH = 1600, TW = 120, TH = 60, N = 20, OX = 1600, OY = 215;
 const SAVE_KEY = 'panelvar-e04-v1';
 const GRASS = 8;
-const TERM_CAP = 1500, TUDAS_CAP = 40, TUDAS_EVERY = 60, WINTER_LEN = 24 * 3600;
+const TERM_CAP = 1500, TUDAS_CAP = 40, TUDAS_EVERY = 60, WINTER_LEN = 72 * 3600;
 
 const RES = {
   penz: { name: 'Pénz', icon: 'e03_ikon_penz' },
@@ -3080,13 +3080,190 @@ function playGesta() {
   intro();
 }
 
+// ---------- A tatárjárás íve: előjelek, Kötöny, véres kard, Muhi, pusztítás, újjáépítés ----------
+const TJ_KARD_MAX = 10, TJ_KARD_CD = 4 * 3600, TJ_IDLE = 10 * 3600;
+const TJ_MEGYE = ['Pest', 'Nógrád', 'Heves', 'Borsod', 'Fejér', 'Veszprém', 'Somogy', 'Bihar', 'Csanád', 'Zala'];
+let TJ_MUHI = false;
+const tjPic = n => { const im = new Image(); im.src = 'img/' + n + (n.includes('.') ? '' : '.png'); return im; };
+const TJ_IMG = { lovas: tjPic('e04_tj_tatar_lovas'), kunok: tjPic('e04_tj_kunok') };
+
+// a felkészültség öt részből áll, mindegyik 20%, Muhi még hozzátesz
+prep = function () {
+  const w = S.winter || {};
+  const vedelem = Math.min(1, Math.max(0, defPts()) / defNeed());
+  const kovarak = Math.min(1, (count('kovar') + (count('visegrad') ? 2 : 0)) / 2);
+  const elelem = Math.min(1, S.res.termeny / 2500);
+  const kincstar = Math.min(1, S.res.penz / 6000);
+  const kun = w.kun === 'be' ? (w.kunGone ? 0.1 : 0.2) : 0;
+  const sereg = Math.min(1, (w.kard || 0) / TJ_KARD_MAX + kun);
+  const muhi = w.muhi != null ? Math.round(15 * w.muhi) : 0;
+  const total = Math.min(100, Math.max(0, Math.round(20 * (vedelem + kovarak + elelem + kincstar + sereg)) + muhi));
+  return { total, vedelem, kovarak, elelem, kincstar, sereg, muhi };
+};
+tips = function () {
+  const p = prep(), w = S.winter || {}, out = [];
+  if (p.sereg < 1) out.push({ text: trf('Hordoztasd körbe a véres kardot! {0} megye áll már hadba a {1}-ből.', w.kard || 0, TJ_KARD_MAX), gain: Math.round(20 * (1 - p.sereg)), build: null, img: 'e04_tj_veres_kard' });
+  if (p.vedelem < 1) out.push({ text: trf('Több Védelem kell. Kővár, kőfal, lakótorony, tornatér, vagy a kunok törvénye (most {0} a {1}-ből)', Math.max(0, defPts()), defNeed()), gain: Math.round(20 * (1 - p.vedelem)), build: unlocked('fal') ? 'fal' : unlocked('kovar') ? 'kovar' : null, img: 'e04_fal_egyenes' });
+  if (p.kovarak < 1) out.push({ text: trf('Legalább két Kővár kell, most {0} van. A kőfalat a tatár nem tudja felgyújtani.', count('kovar')), gain: Math.round(20 * (1 - p.kovarak)), build: unlocked('kovar') ? 'kovar' : null, img: 'e04_kovar' });
+  if (p.elelem < 1) out.push({ text: trf('Teli magtár kell, most {0} Termény van a 2500-ból. Verem is kellhet hozzá.', fmt(S.res.termeny)), gain: Math.round(20 * (1 - p.elelem)), build: termCap() < 2500 ? 'verem' : null, img: 'ikon_termeny' });
+  if (p.kincstar < 1) out.push({ text: trf('Tölts meg a kincstárat, most {0} Pénz van a 6000-ből', fmt(S.res.penz)), gain: Math.round(20 * (1 - p.kincstar)), build: null, img: 'e03_ikon_penz' });
+  return out.sort((a, b) => b.gain - a.gain).slice(0, 3);
+};
+// aki napokig nem néz be, annak megáll az óra: a tatár nem tör rá, amíg alszik
+function tjPause() {
+  const w = S.winter; if (!w || w.done) return;
+  if (w.seen != null && S.gt - w.seen > TJ_IDLE) w.start += S.gt - w.seen - TJ_IDLE;
+  w.seen = S.gt;
+}
+// a kunok ellenszenve: amíg itt vannak, a bárók morognak
+const _hangSumT = hangSum;
+hangSum = function () { const w = S.winter; return _hangSumT() - (w && !w.done && w.kun === 'be' && !w.kunGone ? 3 : 0); };
+
+// ---- előjelek: Julianus hírt hoz, aztán jön Kötöny ----
+const _startRaidT = startRaid;
+startRaid = function () {
+  if (S.winter) return; S.winter = { start: S.gt, done: false, kard: 0, seen: S.gt }; save(); checkQuest(); renderGuide(); hud();
+  tjNews();
+};
+function tjNews() {
+  modal(`<img class="hero" src="img/e04_tj_hir.jpg" alt="${tr('Julianus barát levelet ad át IV. Bélának')}"><div class="inner"><span class="eyebrow">${tr('1240 · HÍR KELETRŐL')}</span><h2>${tr('Julianus barát hazaért')}</h2>
+    <p>${tr('Julianus barát poros csuhában tér haza, és egy levelet hoz. A tatár kán írta, és azt követeli, hogy Béla hódoljon be neki. A bárók nevetnek, szerintük ez csak üres fenyegetés.')}</p>
+    <div class="samu-say"><img src="img/e04_bela_aggodik.png" alt=""><div class="bubble"><b>IV. Béla</b>${tr('Én nem nevetek. Három napunk van, talán négy. Készüljünk fel, ahogy csak tudunk.')}</div></div>
+    <div class="row"><button class="btn coral" type="button" id="tjN">${tr('Tovább')}</button></div></div>`, '', 'tjnews');
+  $('tjN').onclick = tjKotony;
+}
+function tjKotony() {
+  modal(`<div class="inner"><span class="eyebrow">${tr('1239 · MENEDÉKET KÉRNEK')}</span><h2>${tr('Kötöny és a kunok')}</h2>
+    <div class="samu-say"><img src="img/e04_tj_kotony.png" alt="${tr('Kötöny, a kunok fejedelme')}"><div class="bubble"><b>${tr('Kötöny fejedelem')}</b>${tr('A tatárok elől menekülünk. Negyvenezren vagyunk, lovasok és családok. Fogadj be minket, és harcolni fogunk melletted!')}</div></div>
+    <img src="img/e04_tj_kunok.png" alt="" style="display:block;width:min(320px,80%);margin:4px auto 10px">
+    <div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+      <div class="opt"><b>${tr('Befogadjuk őket')}</b><p>${tr('Erős lovasok jönnek, a sereged sokkal nagyobb lesz. A bárók viszont nem szeretik a kunokat, morogni fognak.')}</p><button class="btn coral" type="button" id="tjBe">${tr('Jöjjenek!')}</button></div>
+      <div class="opt"><b>${tr('Továbbküldjük őket')}</b><p>${tr('Nyugalom lesz a bárókkal, de a kunok lovasai nélkül kell szembenézned a tatárral.')}</p><button class="btn ghost" type="button" id="tjKi">${tr('Menjenek tovább')}</button></div>
+    </div></div>`, '', 'tjkun');
+  const pick = v => { S.winter.kun = v; save(); closeModal(); toast(tr(v === 'be' ? 'A kunok letelepedtek a város szélén. A bárók már most morognak.' : 'Kötöny népe továbbvonult délre. A bárók megkönnyebbültek.')); showWinter(true); };
+  $('tjBe').onclick = () => pick('be'); $('tjKi').onclick = () => pick('ki');
+}
+
+// ---- véres kard: minden benézéskor újabb megyék állnak hadba ----
+function tjKardReady() { const w = S.winter; return w && !w.done && (w.kard || 0) < TJ_KARD_MAX && (w.kardAt == null || S.gt - w.kardAt >= TJ_KARD_CD); }
+function tjKard() {
+  if (!tjKardReady()) return; const w = S.winter, n = Math.min(TJ_KARD_MAX - (w.kard || 0), w.kard ? 1 : 2), from = w.kard || 0;
+  w.kard = from + n; w.kardAt = S.gt; save(); sfxCollect();
+  toast(trf('Hadba állt {0}! Még {1} megyét kell felrázni.', TJ_MEGYE.slice(from, from + n).join(', '), TJ_KARD_MAX - w.kard));
+  if (openModal === 'winter') renderWinterBody(false);
+}
+const _renderWB = renderWinterBody;
+renderWinterBody = function (first) {
+  _renderWB(first); const el = $('wBody'); if (!el || !S.winter) return;
+  let box = el.querySelector('.tj-kard'); if (!box) { box = document.createElement('div'); box.className = 'tj-kard'; const tips = el.querySelector('.tips'); el.insertBefore(box, tips); }
+  const w = S.winter, k = w.kard || 0, ready = tjKardReady(), wait = w.kardAt != null ? TJ_KARD_CD - (S.gt - w.kardAt) : 0;
+  const sig = k + '|' + ready + '|' + (w.kun || '');
+  if (box.dataset.sig === sig) { const t = box.querySelector('.tj-w'); if (t && !ready) t.textContent = dur(Math.max(0, wait) / S.speed); return; } box.dataset.sig = sig;
+  box.innerHTML = `<img src="img/e04_tj_veres_kard.png" alt=""><div class="grow"><b>${tr('A véres kard')}</b><small>${k >= TJ_KARD_MAX ? tr('Az egész ország hadba állt!') : ready ? tr('Küldj lovasokat a véres karddal a következő megyékbe!') : tr('A lovasok úton vannak. Újra küldhetsz') + ' <span class="tj-w">' + dur(Math.max(0, wait) / S.speed) + '</span> ' + tr('múlva.')}</small>
+    <div class="tj-megye">${TJ_MEGYE.map((m, i) => `<span class="${i < k ? 'on' : ''}">${m}</span>`).join('')}</div>${w.kun === 'be' ? `<small class="tj-kun">${tr(w.kunGone ? 'A kunok fele maradt, a többiek elvonultak.' : 'Kötöny kunjai is veled tartanak.')}</small>` : ''}</div>
+    ${k < TJ_KARD_MAX ? `<button class="btn coral" type="button" id="tjK" ${ready ? '' : 'disabled'}>${tr('Körbehordozzuk')}</button>` : ''}`;
+  const b = box.querySelector('#tjK'); if (b) b.onclick = tjKard;
+  // Muhi gomb a „Jöhetnek” helyett
+  const now = $('wNow'); if (now) { now.textContent = tr('Csatába!'); now.onclick = () => { closeModal(); tjMuhi(); }; }
+};
+
+// ---- Muhi: a Sajó hídja kaland a csúcspont ----
+const _miniStartT = miniStart; miniStart = function (id) { return TJ_MUHI && id === 'muhi' ? true : _miniStartT(id); };
+const _miniGiveT = miniGive;
+miniGive = function (id, rew) { if (TJ_MUHI && id === 'muhi' && S.winter && !S.winter.done) { S.winter.muhi = Math.max(0, Math.min(1, (rew.penz || 0) / 1.1 / 1200)); save(); } return _miniGiveT(id, rew); };
+const _miniEndT = miniEnd;
+miniEnd = function (eyebrow, title, lines, fact) {
+  _miniEndT(eyebrow, title, lines, fact);
+  if (TJ_MUHI && eyebrow === 'A CSATA UTÁN') { TJ_MUHI = false; const b = $('mgBack'); if (b) { b.textContent = tr('Mi lett a sorsunk?'); b.onclick = () => { closeModal(); resolveWinter(); }; } const x = $('modalRoot').querySelector('.close'); if (x) x.onclick = () => { closeModal(); resolveWinter(); }; }
+};
+function tjMuhi() {
+  const w = S.winter; if (!w || w.done) return;
+  let kunNote = '';
+  if (w.kun === 'be' && !w.kunGone) { w.kunGone = true; save(); kunNote = `<div class="tip"><img src="img/e04_tj_kotony.png" alt="" style="width:34px;height:38px;object-fit:contain"><span>${tr('Rossz hír! Pesten a feldühödött tömeg megölte Kötönyt. A kunok fele bosszúból elvonult, és útközben kifosztott pár falut.')}</span></div>`; S.res.termeny = Math.floor(S.res.termeny * 0.92); }
+  modal(`<img class="hero" src="img/e04_ill_muhi.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('1241. ÁPRILIS 11. · MUHI')}</span><h2>${tr('A Sajó hídjánál')}</h2>
+    <p>${tr('A tatár sereg a Sajó túlpartján táborozik. A híd az egyetlen átkelő. Ha jól véded, a csata is jobban alakul.')}</p>
+    ${kunNote ? `<div class="tips">${kunNote}</div>` : ''}
+    <div class="samu-say"><img src="img/e04_bela_elszant.png" alt=""><div class="bubble"><b>IV. Béla</b>${tr('Itt a nap. Kálmán öcsém és Ugrin érsek a hídnál áll. Segíts nekik!')}</div></div>
+    <div class="row" style="gap:10px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" type="button" id="tjSkip">${tr('Kálmánra bízom')}</button><button class="btn coral" type="button" id="tjFight">${tr('Védem a hidat!')}</button></div></div>`, '', 'tjmuhi');
+  $('tjFight').onclick = () => { TJ_MUHI = true; playMuhi(); };
+  $('tjSkip').onclick = () => { if (S.winter.muhi == null) S.winter.muhi = 0.3; save(); closeModal(); resolveWinter(); };
+}
+// az idő lejártakor nem rögtön jön a vég, hanem előbb Muhi
+let tjAsked = false;
+function tjTick() {
+  const w = S.winter; if (!w || w.done) return; tjPause();
+  if (S.gt - w.start >= WINTER_LEN && !tjAsked && !openModal) { tjAsked = true; tjMuhi(); }
+}
+
+// ---- pusztítás: a csata után ----
+const _resolveT = resolveWinter;
+resolveWinter = function () {
+  const w = S.winter; if (!w || w.done) return;
+  if (w.muhi == null) w.muhi = 0.3;
+  _resolveT();
+  const fx = S.winter.fx || [];
+  fx.unshift(trf('A Sajó hídjánál {0}.', tr(w.muhi >= 0.8 ? 'hősiesen helytálltatok, a tatár sokáig nem jutott át' : w.muhi >= 0.4 ? 'derekasan harcoltatok' : 'a tatár gyorsan átjutott')));
+  if (w.kard >= TJ_KARD_MAX) fx.push(tr('Az egész ország hadba állt a véres kard szavára. Ez sokat segített.'));
+  save(); if (openModal === 'outcome') showOutcome();
+};
+const _showOutT = showOutcome;
+showOutcome = function () { _showOutT(); const h = $('modalRoot').querySelector('img.hero'); if (h) h.src = 'img/e04_tj_muhi_utan.jpg'; };
+
+// ---- újjáépítés: ha minden rom újra áll és van kővár, Béla a második honalapító ----
+function tjHonalapito() {
+  if (!S.rebuild || S.honalapito || openModal) return;
+  if (S.buildings.some(b => b.ruined) || count('kovar') < 1) return;
+  S.honalapito = 1; give({ penz: 1500, tudas: 5 }); S.res.hirnev = (S.res.hirnev || 0) + 20; save();
+  modal(`<img class="hero" src="img/e04_tj_ujjaepites.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('1242 UTÁN · ÚJJÁÉPÍTÉS')}</span><h2>${tr('A második honalapító')}</h2>
+    <div class="samu-say"><img src="img/e04_bela_elszant.png" alt=""><div class="bubble"><b>IV. Béla</b>${tr('Minden rom újra áll, a dombon kővár őrködik. A krónikások azt írják, hogy újra megalapítottam az országot. Én csak azt mondom, köszönöm a segítséget!')}</div></div>
+    <p>${tr('Jutalom')}: ${miniRewText({ penz: 1500, tudas: 5, hirnev: 20 })}</p>
+    <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('A tatárjárás után IV. Béla kővárakat építtetett, és a nemeseket is erre biztatta. Német, olasz és más telepeseket hívott a kipusztult vidékekre, a kunokat pedig visszahívta. Ezért nevezik második honalapítónak.')}</p></div>
+    <div class="row"><button class="btn coral" type="button" id="tjH">${tr('Éljen a király!')}</button></div></div>`, '', 'tjhon');
+  $('tjH').onclick = closeModal;
+}
+setInterval(() => { try { tjTick(); tjHonalapito(); } catch (e) { noteErr(e); } }, 2000);
+
+// ---- a térképen: tatár lovasok a határon, kunok tábora ----
+const _drawT = draw;
+draw = function (now) {
+  _drawT(now);
+  const w = S && S.winter; if (!w || w.done) return;
+  try {
+    ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR);
+    const k = Math.min(1, (S.gt - w.start) / WINTER_LEN), n = 1 + Math.floor(k * 4), im = TJ_IMG.lovas;
+    if (im.complete && im.naturalWidth) for (let r = 0; r < n; r++) {
+      const f = ((now / 26000) + r * 0.23) % 1, j = -2 + f * 24, i = 24 + (r % 2) * 1.5, [x, y] = tileTop(i, j), sw = 200, sh = sw * im.naturalHeight / im.naturalWidth;
+      ctx.globalAlpha = Math.min(1, Math.min(f, 1 - f) * 8); ctx.drawImage(im, x - sw / 2, y - sh + 10 + Math.sin(now / 90 + r) * 2, sw, sh);
+    }
+    ctx.globalAlpha = 1;
+    const ku = TJ_IMG.kunok;
+    if (w.kun === 'be' && ku.complete && ku.naturalWidth) { const [x, y] = tileTop(27, 4), sw = 380, sh = sw * ku.naturalHeight / ku.naturalWidth; ctx.globalAlpha = w.kunGone ? 0.55 : 1; ctx.drawImage(ku, x - sw / 2, y - sh * 0.75, sw, sh); }
+    ctx.restore();
+  } catch (e) {}
+};
+(function () { const st = document.createElement('style'); st.textContent = `.tj-kard{display:flex;align-items:center;gap:12px;padding:10px 12px;margin:10px 0;border-radius:14px;background:rgba(255,240,225,.7);border:2px solid rgba(160,50,30,.25)}.tj-kard>img{width:54px;height:54px;object-fit:contain}.tj-kard .grow{flex:1;min-width:0}.tj-kard small{display:block;margin-top:2px}.tj-megye{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.tj-megye span{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;background:rgba(110,68,34,.12);color:#7A5A3A}.tj-megye span.on{background:#C9472F;color:#fff}.tj-kun{color:#2F6B2A;font-weight:700}`; document.head.appendChild(st); })();
+// ---- teszteszközök, csak a Claude teszt szerveren ----
+if (MG_DEV) setTimeout(() => {
+  const dv = document.getElementById('hvnDev') || document.body, b = document.createElement('button'); b.type = 'button'; b.textContent = 'Teszt · Tatárjárás';
+  if (!document.getElementById('hvnDev')) b.style.cssText = 'position:fixed;right:16px;top:200px;z-index:6';
+  b.onclick = () => { if (openModal) closeModal(); if (!S.winter || S.winter.done) { S.winter = null; S.techs.tatar = true; startRaid(); } else showWinter(false); };
+  dv.appendChild(b);
+}, 1500);
+const _renderWB2 = renderWinterBody;
+renderWinterBody = function (first) {
+  _renderWB2(first); if (!MG_DEV) return; const el = $('wBody'); if (!el || el.querySelector('.tj-dev')) return;
+  const d = document.createElement('p'); d.className = 'mg-devnote tj-dev'; d.innerHTML = 'Teszt: <button class="btn ghost" type="button" data-t="12">+12 óra</button> <button class="btn ghost" type="button" data-t="k">Kard most</button> <button class="btn ghost" type="button" data-t="c">Csata most</button>';
+  el.appendChild(d);
+  d.querySelectorAll('button').forEach(x => x.onclick = () => { const t = x.dataset.t, w = S.winter; if (t === '12') { w.start -= 12 * 3600; } if (t === 'k') { w.kardAt = null; } save(); if (t === 'c') { closeModal(); tjMuhi(); return; } el.dataset.sig = ''; renderWinterBody(false); });
+};
+
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;
 function tick(dt) {
   const g = dt * S.speed; S.gt += g;
   S.tudasT += g; while (S.tudasT >= TUDAS_EVERY) { S.tudasT -= TUDAS_EVERY; if (S.res.tudas < TUDAS_CAP) S.res.tudas++; }
   S.buildings.forEach(b => { if (b.type === 'taltos' && working(b) && S.gt - b.t0 >= DEF.taltos.time) { b.t0 = S.gt; if (S.res.tudas < TUDAS_CAP) { S.res.tudas++; const [x, y] = tileTop(b.i + .5, b.j + .5); floatText(x, y - 60, '+1 ' + RES.tudas.name, '#7FE0D2'); } } });
-  if (S.winter && !S.winter.done && S.gt - S.winter.start >= WINTER_LEN) resolveWinter();
+  // a tatárjárás végét a Muhi-csata zárja le (e04_tatar.js)
   qTimer += dt; if (qTimer > 0.4) { qTimer = 0; checkQuest(); hud(); }
   saveTimer += dt; if (saveTimer > 4) { saveTimer = 0; save(); }
   grumbleT -= dt; if (grumbleT <= 0) { grumbleT = 180 + Math.random() * 120; grumble(); }

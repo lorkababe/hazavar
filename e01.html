@@ -3569,6 +3569,255 @@ function rearUI() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); else setTimeout(() => { try { check(); } catch (e) {} }, 800); });
   addEventListener('pagehide', markSeen);
 })();
+// HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
+(function () {
+  const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
+  if (ERA !== 'e00' && ERA !== 'e01') return;
+  const DEV = !/github\.io$/.test(location.hostname);
+  const g$ = id => document.getElementById(id);
+  const XB = typeof X_BTN !== 'undefined' ? X_BTN : '';
+  const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  const day = () => { if (!S.mini || S.mini.day !== today()) S.mini = { day: today(), done: {}, paid: {} }; return S.mini; };
+  const GAME = ERA === 'e00'
+    ? { id: 'mamut', name: 'Mamutvadászat', sub: 'Ügyességi játék, 60 másodperc', img: 'e00_mg_mamut0', play: () => playMamut() }
+    : { id: 'turul', name: 'A turul álma', sub: 'Hármat egy sorba, 25 lépés', img: 'e01_mg_t_turul', play: () => playTurul() };
+  const fresh = () => !day().done[GAME.id];
+
+  // ---- közös: jutalom ikonokkal ----
+  const rewChips = rew => '<span class="mrw">' + Object.entries(rew).filter(([, v]) => v > 0).map(([k, v]) => { const r = RES[k], nm = tr(k === 'korona' ? 'Korona' : (r && r.name) || k); const ic = k === 'korona' ? '<svg viewBox="0 0 24 24" style="width:30px;height:30px"><path d="M3 18h18l1-11-5 4-5-7-5 7-5-4z" fill="#F2C14E" stroke="#8A5A10" stroke-width="1.4" stroke-linejoin="round"/><rect x="3" y="18" width="18" height="3" rx="1" fill="#D9A23A" stroke="#8A5A10" stroke-width="1.2"/></svg>' : `<img src="img/${r.file || r.icon + '.png'}" alt="">`; return `<span class="mrw-i">${ic}<b>+${v}</b><i>${nm}</i></span>`; }).join('') + '</span>';
+  function give(id, rew) {
+    const m = day(); if (m.paid[id]) return false; m.paid[id] = true;
+    Object.entries(rew).forEach(([k, v]) => { if (!v) return; if (k === 'korona') S.korona = (S.korona == null ? 25 : S.korona) + v; else S.res[k] = (S.res[k] || 0) + v; });
+    save(); try { hud(); } catch (e) {} return true;
+  }
+  function start(id) { const m = day(); if (DEV) return true; if (m.done[id]) { toast(tr('Ezt a kalandot ma már végigjátszottad. Holnap újra jöhet!')); return false; } m.done[id] = true; save(); return true; }
+  function endScreen(eyebrow, title, lines, fact) {
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr(eyebrow)}</span><h2>${title}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
+      <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr(fact)}</p></div>
+      <div class="row"><button class="btn coral" type="button" id="meBack">${tr('Vissza a kalandokhoz')}</button></div></div>`, '', 'miniend');
+    g$('meBack').onclick = showList;
+  }
+  function showList() {
+    const m = day();
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr('KALANDOK')}</span><h2>${tr(ERA === 'e00' ? 'Kaland a kőkorból' : 'Kaland Álmos korából')}</h2>
+      <p>${tr('A kalandot naponta egyszer lehet végigjátszani, és egyszer jár érte jutalom.')}</p>
+      ${DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : ''}
+      <div class="mini-row"><img src="img/${GAME.img}.png" alt=""><div class="grow"><b>${tr(GAME.name)}</b><small>${tr(GAME.sub)}</small></div>
+      ${m.done[GAME.id] && !DEV ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" id="meGo">${tr('Indulás')}</button>`}</div></div>`, '', 'mini');
+    const b = g$('meGo'); if (b) b.onclick = GAME.play;
+  }
+  // gomb a bal felső sarokban
+  const st = document.createElement('style');
+  st.textContent = `#btnMiniE{position:absolute!important;left:calc(16px + env(safe-area-inset-left,0px));top:calc(var(--toph,72px) + ${g$('btnDaily') ? 70 : 16}px);z-index:7;width:auto;height:44px;padding:0 14px 0 10px;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;display:flex;align-items:center;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+  #btnMiniE .newdot{position:absolute;top:-9px;right:-12px}
+  .mini-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:rgba(255,248,232,.6);border:2px solid rgba(110,68,34,.15)}.mini-row img{width:64px;height:64px;object-fit:contain}.mini-row .grow{flex:1;min-width:0}.mini-row small{display:block}
+  .mg-devnote{font-size:13px;font-weight:700;padding:6px 10px;border-radius:10px;border:2px dashed rgba(60,40,20,.4);background:#F6E7C4}
+  .mrw{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-weight:400}.mrw-i{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;background:rgba(255,248,232,.75);border:2px solid rgba(110,68,34,.18)}.mrw-i img{width:30px;height:30px;object-fit:contain}.mrw-i b{font-size:17px;color:#2F6B2A}.mrw-i i{font-style:normal;font-weight:700;font-size:14px;color:#5A3A1E}
+  .me-wrap{position:relative;width:100%;aspect-ratio:16/10;max-height:62vh;border-radius:16px;overflow:hidden;background:#C9A86A;touch-action:none;user-select:none}
+  .me-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .me-hud{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-weight:800;margin:8px 0}
+  .me-dev{display:flex;gap:6px;align-items:center;font-size:12px}.me-dev button{border:2px dashed rgba(60,40,20,.5);border-radius:8px;background:#F6E7C4;font:inherit;font-weight:800;padding:2px 8px;cursor:pointer}.me-dev button.on{background:#E8C46A}
+  .tu-board{position:relative;margin:0 auto;width:min(100%,460px);aspect-ratio:1;border-radius:18px;overflow:hidden;background:rgba(30,20,60,.55);box-shadow:inset 0 0 0 3px rgba(255,230,160,.35);touch-action:none;user-select:none}
+  .tu-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.55) saturate(1.1)}
+  .tu-t{position:absolute;display:flex;align-items:center;justify-content:center;transition:transform .22s ease-in,opacity .22s;will-change:transform}
+  .tu-t img{width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35));pointer-events:none;transition:transform .15s}
+  .tu-t.sel img{transform:scale(1.14);filter:drop-shadow(0 0 8px rgba(255,236,150,.95))}
+  .tu-t.pop{opacity:0;transform:scale(.2)!important}
+  .tu-t.tur img{animation:tuGlow 1.2s ease-in-out infinite}
+  @keyframes tuGlow{0%,100%{filter:drop-shadow(0 0 4px rgba(255,220,100,.7))}50%{filter:drop-shadow(0 0 14px rgba(255,240,170,1))}}
+  .tu-cell{position:absolute;border-radius:10px;background:rgba(255,250,235,.07)}
+  .tu-fly{position:absolute;pointer-events:none;transition:transform .55s ease-in-out,opacity .55s;z-index:5}
+  .tu-pts{position:absolute;pointer-events:none;font:900 22px Nunito,sans-serif;color:#FFE9A8;text-shadow:0 2px 4px rgba(0,0,0,.7);transition:transform .8s,opacity .8s;z-index:6}`;
+  document.head.appendChild(st);
+  const btn = document.createElement('button'); btn.className = 'ibtn wood'; btn.type = 'button'; btn.id = 'btnMiniE';
+  btn.innerHTML = `<span class="newdot" id="bMiniE" hidden>!</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/></svg><span>${tr('Kaland')}</span>`;
+  (g$('app') || document.body).appendChild(btn); btn.onclick = () => { try { hideInfo(); } catch (e) {} showList(); };
+  setInterval(() => { try { g$('bMiniE').hidden = !fresh(); } catch (e) {} }, 2000);
+  const pic = n => { const im = new Image(); im.src = 'img/' + n + (n.includes('.') ? '' : '.png'); return im; };
+  const devSpeed = (onSet) => DEV ? `<span class="me-dev">Teszt: ${[1, 2, 4].map(v => `<button type="button" data-sp="${v}" class="${v === 1 ? 'on' : ''}">${v}×</button>`).join('')}</span>` : '';
+  const wireSpeed = (root, set) => root.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { root.querySelectorAll('[data-sp]').forEach(x => x.classList.toggle('on', x === b)); set(+b.dataset.sp); });
+
+  // =================== MAMUTVADÁSZAT ===================
+  function playMamut() {
+    const P = { bg: pic('e00_mg_puszta.jpg'), m: [0, 1, 2, 3].map(k => pic('e00_mg_mamut' + k)), h: [0, 1, 2, 3].map(k => pic('e00_mg_vadasz' + k)) };
+    modal(`${XB}<div class="inner"><span class="eyebrow">${tr('KŐKOR · JÉGKORSZAKI PUSZTA')}</span><h2>${tr('Mamutvadászat')}</h2>
+      <p>${tr('A törzs éhes, Samu szerint egy mamut az egész telet kitartja. Állj a mamut alá, és dobd el a lándzsát! Ne feledd, a lándzsa repül egy darabig, ezért egy kicsit a mamut elé célozz.')}</p>
+      <p style="font-weight:800">${tr('Három találat, és a mamut elfut. Ha a mamut feldühödik és nekiront a törzsnek, ugorj félre! Háromszor bírod ki, hogy elsodor.')}</p>
+      <p style="font-size:14px">${tr('Gépen a nyilakkal vagy az egérrel mozogsz, és szóközzel vagy kattintással dobsz. Telefonon húzd az ujjad, és koppints a dobáshoz.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="mmGo">${tr('Vadászatra!')}</button></div></div>`, '', 'minigame');
+    g$('mmGo').onclick = () => { if (!start('mamut')) return; runMamut(P); };
+  }
+  function runMamut(P) {
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Idő')} <b id="mmT">60</b></span><span>${tr('Mamut')} <b id="mmN">0</b></span><span>${tr('Pont')} <b id="mmS">0</b></span><span id="mmL"></span>${devSpeed()}</div>
+      <div class="me-wrap" id="mmW"><canvas id="mmC"></canvas></div></div>`, '', 'minigame');
+    const wrap = g$('mmW'), cv = g$('mmC'), g = cv.getContext('2d'); let W = 0, H = 0, dpr = 1;
+    const fit = () => { const r = wrap.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    fit(); addEventListener('resize', fit);
+    let spd = 1; wireSpeed(document.getElementById('modalRoot'), v => { spd = v; });
+    const DUR = 60; let t = 0, score = 0, kills = 0, lives = 3, hits = 0, done = false, last = performance.now();
+    const hero = { x: 0.5, tx: 0.5, pose: 0, poseT: 0, flip: false };
+    const mam = { x: 0.15, dir: 1, v: 0.16, hp: 3, state: 'walk', st: 0, y: 0, anim: 0 };
+    const spears = [], fx = [], keys = {};
+    const lvls = () => kills;
+    const newMam = () => { Object.assign(mam, { x: Math.random() < 0.5 ? -0.12 : 1.12, hp: 3, state: 'walk', st: 0, y: 0 }); mam.dir = mam.x < 0 ? 1 : -1; mam.v = 0.15 + 0.035 * lvls(); };
+    newMam(); mam.x = 0.2; mam.dir = 1;
+    const lifeHTML = () => `${tr('Bátorság')} ` + [0, 1, 2].map(k => `<span style="opacity:${k < lives ? 1 : .25}">❤</span>`).join('');
+    g$('mmL').innerHTML = lifeHTML();
+    const throwS = () => { if (done || hero.pose === 2) return; if (spears.length >= 2) return; spears.push({ x: hero.x, y: 0.82, vy: -1.25 }); hero.pose = 1; hero.poseT = 0.32; try { sfxClick(); } catch (e) {} };
+    const px = e => { const r = cv.getBoundingClientRect(); return (e.clientX - r.left) / r.width; };
+    cv.onpointerdown = e => { hero.tx = Math.max(0.06, Math.min(0.94, px(e))); throwS(); };
+    cv.onpointermove = e => { if (e.pointerType === 'mouse' || e.buttons) hero.tx = Math.max(0.06, Math.min(0.94, px(e))); };
+    const kd = e => { if (!g$('mmC')) { removeEventListener('keydown', kd); removeEventListener('keyup', ku); return; } keys[e.key] = true; if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); throwS(); } };
+    const ku = e => { keys[e.key] = false; };
+    addEventListener('keydown', kd); addEventListener('keyup', ku);
+    const GYm = () => H * 0.48, GYh = () => H * 0.96;
+    function draw(now) {
+      const bg = P.bg; if (bg.complete && bg.naturalWidth) { const s = Math.max(W / bg.naturalWidth, H / bg.naturalHeight); g.drawImage(bg, (W - bg.naturalWidth * s) / 2, (H - bg.naturalHeight * s) / 2, bg.naturalWidth * s, bg.naturalHeight * s); } else { g.fillStyle = '#D9B870'; g.fillRect(0, 0, W, H); }
+      // mamut
+      const fr = mam.state === 'flee' ? 3 : mam.state === 'angry' || mam.state === 'charge' ? 2 : (Math.floor(mam.anim * 4) % 2), im = P.m[fr];
+      const depth = mam.state === 'charge' ? mam.y : 0, mh = H * (0.3 + 0.28 * depth), my = GYm() + (GYh() - H * 0.05 - GYm()) * depth;
+      if (im.complete && im.naturalWidth) { const mw = mh * im.naturalWidth / im.naturalHeight, xx = mam.x * W; g.save(); g.translate(xx, my); if (mam.dir < 0) g.scale(-1, 1); g.drawImage(im, -mw / 2, -mh, mw, mh); g.restore(); }
+      if (mam.state === 'angry') { g.fillStyle = '#C9472F'; g.beginPath(); g.arc(mam.x * W, my - mh - 16, 14, 0, 7); g.fill(); g.fillStyle = '#fff'; g.font = '900 20px Nunito,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', mam.x * W, my - mh - 15); }
+      if (mam.state === 'angry' || mam.state === 'charge') { g.save(); g.globalAlpha = 0.28 + 0.12 * Math.sin(now / 80); g.fillStyle = '#C9472F'; g.fillRect(mam.x * W - W * 0.09, GYh() - H * 0.2, W * 0.18, H * 0.2); g.restore(); }
+      // hp pöttyök
+      if (mam.state === 'walk') for (let k = 0; k < 3; k++) { g.fillStyle = k < mam.hp ? '#F2C14E' : 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(mam.x * W - 18 + k * 18, GYm() - H * 0.32, 6, 0, 7); g.fill(); }
+      // lándzsák
+      spears.forEach(s => { g.save(); g.translate(s.x * W, s.y * H); g.strokeStyle = '#7A4E2C'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 46); g.stroke(); g.fillStyle = '#B8B2A6'; g.beginPath(); g.moveTo(0, -12); g.lineTo(-6, 2); g.lineTo(6, 2); g.closePath(); g.fill(); g.restore(); });
+      // vadász
+      const hi = P.h[hero.pose]; if (hi.complete && hi.naturalWidth) { const hh = H * 0.34, hw = hh * hi.naturalWidth / hi.naturalHeight; g.save(); g.translate(hero.x * W, GYh() - (hero.pose === 2 ? H * 0.04 : 0)); if (hero.flip) g.scale(-1, 1); g.drawImage(hi, -hw / 2, -hh, hw, hh); g.restore(); }
+      fx.forEach(f => { g.globalAlpha = Math.max(0, 1 - f.t / 1.1); g.fillStyle = f.c; g.font = '900 22px Nunito,sans-serif'; g.textAlign = 'center'; g.fillText(f.txt, f.x * W, f.y * H - f.t * 40); g.globalAlpha = 1; });
+    }
+    function step(now) {
+      if (!g$('mmC')) return; let dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * spd; last = now;
+      if (!done) {
+        t += dt;
+        const mv = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0); if (mv) hero.tx = Math.max(0.06, Math.min(0.94, hero.x + mv * 0.08));
+        const dx = hero.tx - hero.x; hero.x += Math.sign(dx) * Math.min(Math.abs(dx), 0.75 * dt); if (Math.abs(dx) > 0.002) hero.flip = dx < 0;
+        if (hero.poseT > 0) { hero.poseT -= dt; if (hero.poseT <= 0) hero.pose = 0; }
+        mam.anim += dt * (mam.state === 'flee' ? 3 : 1.4);
+        if (mam.state === 'walk') { mam.x += mam.dir * mam.v * dt; if (mam.x > 0.92) mam.dir = -1; if (mam.x < 0.08) mam.dir = 1; mam.st += dt; if (mam.st > 3.2 && Math.random() < dt * (0.35 + 0.08 * kills)) { mam.state = 'angry'; mam.st = 0; } }
+        else if (mam.state === 'angry') { mam.st += dt; if (mam.st > 0.9) { mam.state = 'charge'; mam.st = 0; mam.y = 0; } }
+        else if (mam.state === 'charge') { mam.y += dt * 1.7; if (mam.y >= 1) { if (Math.abs(hero.x - mam.x) < 0.1) { lives--; hero.pose = 2; hero.poseT = 0.9; fx.push({ x: hero.x, y: 0.55, t: 0, txt: tr('Hoppá, elsodort!'), c: '#FF8A6E' }); g$('mmL').innerHTML = lifeHTML(); } else fx.push({ x: hero.x, y: 0.55, t: 0, txt: tr('Ügyes ugrás!'), c: '#CFE5B4' }); mam.state = 'back'; } }
+        else if (mam.state === 'back') { mam.y -= dt * 1.4; if (mam.y <= 0) { mam.y = 0; mam.state = 'walk'; mam.st = 0; } }
+        else if (mam.state === 'flee') { mam.x += mam.dir * 0.6 * dt; if (mam.x < -0.2 || mam.x > 1.2) newMam(); }
+        // ha közeleg a roham, a vadász megijed
+        if (mam.state === 'charge' && mam.y > 0.6 && Math.abs(hero.x - mam.x) < 0.1 && hero.pose !== 2) { hero.pose = 2; hero.poseT = 0.5; }
+        spears.forEach(s => { s.y += s.vy * dt; if (!s.hit && mam.state === 'walk' && s.y < 0.32 && Math.abs(s.x - mam.x) < 0.075) { s.hit = true; mam.hp--; hits++; score += 100; fx.push({ x: mam.x, y: 0.2, t: 0, txt: '+100', c: '#FFE9A8' }); try { sfxCollect(); } catch (e) {} if (mam.hp <= 0) { kills++; score += 300; mam.state = 'flee'; mam.dir = mam.x < 0.5 ? -1 : 1; hero.pose = 3; hero.poseT = 1.2; fx.push({ x: mam.x, y: 0.15, t: 0, txt: tr('Elfutott! +300'), c: '#CFE5B4' }); } } });
+        for (let k = spears.length - 1; k >= 0; k--) if (spears[k].hit || spears[k].y < -0.1) spears.splice(k, 1);
+        fx.forEach(f => f.t += dt); for (let k = fx.length - 1; k >= 0; k--) if (fx[k].t > 1.1) fx.splice(k, 1);
+        g$('mmT').textContent = Math.max(0, Math.ceil(DUR - t)); g$('mmS').textContent = score; g$('mmN').textContent = kills;
+        if (t >= DUR || lives <= 0) { done = true; setTimeout(() => finish(lives > 0), 900); }
+      }
+      draw(now); requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    function finish(ok) {
+      removeEventListener('keydown', kd); removeEventListener('keyup', ku); removeEventListener('resize', fit);
+      const rew = { termeny: Math.min(400, Math.round(score / 3)), penz: Math.min(250, Math.round(score / 6)), tudas: Math.min(3, 1 + kills), kovako: kills >= 2 ? 1 : 0 };
+      const got = give('mamut', rew);
+      endScreen('A VADÁSZAT UTÁN', trf('{0} pont', score), [tr(kills >= 3 ? 'Samu szerint ilyen vadászat még nem volt a törzs emlékezete óta. Igaz, a törzs csak három telet emlékszik vissza.' : kills ? 'A törzs ma este jóllakik. A mamut ugyan elfutott, de egy kicsit azért megtépáztátok.' : ok ? 'A mamut most megúszta, de holnap újra próbálkozhatsz.' : 'A mamut ma győzött. Samu szerint holnap jobban megy majd, csak előbb kialussza magát.'),
+        trf('{0} találat, {1} elkergetett mamut.', hits, kills), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+        'A jégkorszakban a Kárpát-medencében is éltek gyapjas mamutok, csontjaik sok helyen előkerültek. A vértesszőlősi Samu idejében még ősi elefántok éltek itt. Az ősemberek csapatban vadásztak, és a nagy állatok húsát, bőrét, csontját is felhasználták.');
+    }
+  }
+
+  // =================== A TURUL ÁLMA ===================
+  const TT = ['ij', 'tarsoly', 'patko', 'kumisz', 'jurta', 'szablya'], TUR = 'turul';
+  function playTurul() {
+    [...TT, TUR].forEach(n => pic('e01_mg_t_' + n));
+    modal(`${XB}<img class="hero" src="img/e01_mg_emese_alma.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('EMESE ÁLMA')}</span><h2>${tr('A turul álma')}</h2>
+      <p>${tr('Emese álmában kincsek kavarognak. Cserélj meg két szomszédos kincset, hogy három vagy több egyforma kerüljön egy sorba!')}</p>
+      <p style="font-weight:800">${tr('Ha egyszerre ötöt sikerül, megjelenik a turulmadár. Cseréld meg bármelyik szomszédjával, és elrepül, egy egész sort eltüntetve. 25 lépésed van.')}</p>
+      <div class="row"><button class="btn coral" type="button" id="tuGo">${tr('Álmodjunk!')}</button></div></div>`, '', 'minigame');
+    g$('tuGo').onclick = () => { if (!start('turul')) return; runTurul(); };
+  }
+  function runTurul() {
+    const N = 7, MOVES = 25;
+    modal(`<div class="inner"><div class="me-hud"><span>${tr('Lépés')} <b id="tuM">${MOVES}</b></span><span>${tr('Pont')} <b id="tuS">0</b></span><span id="tuStar"></span>${devSpeed()}</div>
+      <div class="tu-board" id="tuB"><div class="tu-bg" style="background-image:url(img/e01_mg_emese_alma.jpg)"></div></div>
+      <p style="text-align:center;font-size:13px;margin-top:8px">${tr('Húzd a kincset a szomszédja felé, vagy koppints kettőre egymás után.')}</p></div>`, '', 'minigame');
+    const B = g$('tuB'); let sp = 1; wireSpeed(document.getElementById('modalRoot'), v => { sp = v; B.querySelectorAll('.tu-t').forEach(e => e.style.transitionDuration = (0.22 / v) + 's'); });
+    const wait = ms => new Promise(r => setTimeout(r, ms / sp));
+    let grid = [], els = [], moves = MOVES, score = 0, busy = false, sel = null, turuls = 0, done = false;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const cell = document.createElement('div'); cell.className = 'tu-cell'; Object.assign(cell.style, { left: (c / N * 100 + 0.4) + '%', top: (r / N * 100 + 0.4) + '%', width: (100 / N - 0.8) + '%', height: (100 / N - 0.8) + '%' }); B.appendChild(cell); }
+    const rnd = () => TT[Math.floor(Math.random() * TT.length)];
+    const mk = (r, c, k, fromRow) => { const e = document.createElement('div'); e.className = 'tu-t' + (k === TUR ? ' tur' : ''); Object.assign(e.style, { left: '0', top: '0', width: (100 / N) + '%', height: (100 / N) + '%' }); e.innerHTML = `<img src="img/e01_mg_t_${k}.png" alt="">`; e.style.transitionDuration = (0.22 / sp) + 's'; place(e, fromRow != null ? fromRow : r, c, true); B.appendChild(e); e.onpointerdown = ev => down(ev, e); return e; };
+    const place = (e, r, c, instant) => { if (instant) { const d = e.style.transitionDuration; e.style.transition = 'none'; e.style.transform = `translate(${c * 100}%,${r * 100}%)`; e.offsetWidth; e.style.transition = ''; e.style.transitionDuration = d; } else e.style.transform = `translate(${c * 100}%,${r * 100}%)`; e.dataset.r = r; e.dataset.c = c; };
+    // kezdő tábla egyezések nélkül
+    for (let r = 0; r < N; r++) { grid[r] = []; els[r] = []; for (let c = 0; c < N; c++) { let k; do { k = rnd(); } while ((c >= 2 && grid[r][c - 1] === k && grid[r][c - 2] === k) || (r >= 2 && grid[r - 1][c] === k && grid[r - 2][c] === k)); grid[r][c] = k; els[r][c] = mk(r, c, k); } }
+    const stars = () => { const s = score >= 6000 ? 3 : score >= 3500 ? 2 : score >= 1500 ? 1 : 0; g$('tuStar').innerHTML = [0, 1, 2].map(k => `<span style="color:${k < s ? '#E8B830' : 'rgba(0,0,0,.2)'};font-size:20px">★</span>`).join(''); return s; };
+    stars();
+    function findMatches() {
+      const m = new Set(), groups = [];
+      for (let r = 0; r < N; r++) { let c = 0; while (c < N) { let e = c; while (e + 1 < N && grid[r][e + 1] === grid[r][c] && grid[r][c] !== TUR && grid[r][c]) e++; if (e - c >= 2) { const g = []; for (let x = c; x <= e; x++) { m.add(r * N + x); g.push([r, x]); } groups.push(g); } c = e + 1; } }
+      for (let c = 0; c < N; c++) { let r = 0; while (r < N) { let e = r; while (e + 1 < N && grid[e + 1][c] === grid[r][c] && grid[r][c] !== TUR && grid[r][c]) e++; if (e - r >= 2) { const g = []; for (let y = r; y <= e; y++) { m.add(y * N + c); g.push([y, c]); } groups.push(g); } r = e + 1; } }
+      return { m, groups };
+    }
+    const ptsAt = (r, c, v) => { const p = document.createElement('div'); p.className = 'tu-pts'; p.textContent = '+' + v; Object.assign(p.style, { left: ((c + 0.2) / N * 100) + '%', top: ((r + 0.2) / N * 100) + '%' }); B.appendChild(p); requestAnimationFrame(() => { p.style.transform = 'translateY(-40px)'; p.style.opacity = '0'; }); setTimeout(() => p.remove(), 900); };
+    async function clearSet(set, mult, spawnTurul) {
+      set.forEach(idx => { const r = Math.floor(idx / N), c = idx % N; if (els[r][c]) els[r][c].classList.add('pop'); });
+      const gain = set.size * 20 * mult; score += gain; const f = [...set][0]; ptsAt(Math.floor(f / N), f % N, gain);
+      await wait(230);
+      set.forEach(idx => { const r = Math.floor(idx / N), c = idx % N; if (els[r][c]) els[r][c].remove(); els[r][c] = null; grid[r][c] = null; });
+      spawnTurul.forEach(([r, c]) => { grid[r][c] = TUR; els[r][c] = mk(r, c, TUR); turuls++; });
+    }
+    async function gravity() {
+      for (let c = 0; c < N; c++) { let w = N - 1; for (let r = N - 1; r >= 0; r--) if (grid[r][c]) { if (w !== r) { grid[w][c] = grid[r][c]; els[w][c] = els[r][c]; grid[r][c] = null; els[r][c] = null; place(els[w][c], w, c); } w--; }
+        let k = 0; for (let r = w; r >= 0; r--) { const t = rnd(); grid[r][c] = t; els[r][c] = mk(r, c, t, -1 - k); k++; } }
+      await wait(30); for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) place(els[r][c], r, c);
+      await wait(260);
+    }
+    async function resolve() {
+      let mult = 1;
+      for (let guard = 0; guard < 30; guard++) {
+        const { m, groups } = findMatches(); if (!m.size) break;
+        const sp5 = groups.filter(g => g.length >= 5).map(g => g[Math.floor(g.length / 2)]);
+        sp5.forEach(([r, c]) => m.delete(r * N + c));
+        groups.filter(g => g.length === 4).forEach(() => { score += 60; });
+        await clearSet(m, mult, sp5); g$('tuS').textContent = score; stars(); await gravity(); mult++;
+      }
+    }
+    async function flyTurul(r, c, other) {
+      // a turul elrepül a során, mindent eltüntet
+      const e = els[r][c]; const set = new Set(); for (let x = 0; x < N; x++) set.add(r * N + x);
+      if (other) set.add(other[0] * N + other[1]);
+      e.classList.add('tu-fly'); e.style.transform = `translate(${N * 100}%,${r * 100}%) scale(1.4)`; e.style.opacity = '0';
+      els[r][c] = null; grid[r][c] = null; set.delete(r * N + c);
+      await wait(250); score += 150; await clearSet(set, 2, []); e.remove(); g$('tuS').textContent = score; stars(); await gravity(); await resolve();
+    }
+    const adj = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
+    async function trySwap(a, b) {
+      if (busy || done || !adj(a, b)) return; busy = true; sel = null; B.querySelectorAll('.sel').forEach(x => x.classList.remove('sel'));
+      const [ar, ac] = a, [br, bc] = b; const sw = () => { [grid[ar][ac], grid[br][bc]] = [grid[br][bc], grid[ar][ac]]; [els[ar][ac], els[br][bc]] = [els[br][bc], els[ar][ac]]; place(els[ar][ac], ar, ac); place(els[br][bc], br, bc); };
+      sw(); await wait(230);
+      const ta = grid[ar][ac] === TUR, tb = grid[br][bc] === TUR;
+      if (ta || tb) { moves--; g$('tuM').textContent = moves; if (ta) await flyTurul(ar, ac, null); if (tb && grid[br][bc] === TUR) await flyTurul(br, bc, null); }
+      else if (findMatches().m.size) { moves--; g$('tuM').textContent = moves; await resolve(); }
+      else { sw(); await wait(230); }
+      if (!hasMove()) await shuffle();
+      busy = false; if (moves <= 0) { done = true; setTimeout(finish, 600 / sp); }
+    }
+    function hasMove() {
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { if (grid[r][c] === TUR) return true; for (const [dr, dc] of [[0, 1], [1, 0]]) { const r2 = r + dr, c2 = c + dc; if (r2 >= N || c2 >= N) continue; [grid[r][c], grid[r2][c2]] = [grid[r2][c2], grid[r][c]]; const ok = findMatches().m.size > 0; [grid[r][c], grid[r2][c2]] = [grid[r2][c2], grid[r][c]]; if (ok) return true; } }
+      return false;
+    }
+    async function shuffle() { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { const t = rnd(); grid[r][c] = t; els[r][c].remove(); els[r][c] = mk(r, c, t); } await resolve(); if (!hasMove()) await shuffle(); }
+    let drag = null;
+    function down(ev, e) { if (busy || done) return; ev.preventDefault(); const p = [+e.dataset.r, +e.dataset.c]; drag = { p, x: ev.clientX, y: ev.clientY, moved: false };
+      const mv = m => { if (!drag) return; const dx = m.clientX - drag.x, dy = m.clientY - drag.y, th = B.clientWidth / N * 0.35; if (Math.max(Math.abs(dx), Math.abs(dy)) > th) { drag.moved = true; const q = Math.abs(dx) > Math.abs(dy) ? [p[0], p[1] + Math.sign(dx)] : [p[0] + Math.sign(dy), p[1]]; cleanup(); if (q[0] >= 0 && q[0] < N && q[1] >= 0 && q[1] < N) trySwap(p, q); } };
+      const up = () => { if (drag && !drag.moved) { if (sel && adj(sel, p)) { const s = sel; trySwap(s, p); } else { B.querySelectorAll('.sel').forEach(x => x.classList.remove('sel')); if (sel && sel[0] === p[0] && sel[1] === p[1]) sel = null; else { sel = p; e.classList.add('sel'); } } } cleanup(); };
+      const cleanup = () => { drag = null; removeEventListener('pointermove', mv); removeEventListener('pointerup', up); };
+      addEventListener('pointermove', mv); addEventListener('pointerup', up); }
+    function finish() {
+      const s = stars(); const rew = { penz: Math.min(500, Math.round(score / 12)), termeny: Math.min(300, Math.round(score / 20)), tudas: 1 + s, kovako: s >= 2 ? 1 : 0, korona: s >= 3 ? 1 : 0 };
+      const got = give('turul', rew);
+      endScreen('ÉBREDÉS', trf('{0} pont', score), [tr(s >= 3 ? 'Emese mosolyogva ébred. Azt álmodta, hogy fiából nagy fejedelem lesz. A turul is elégedettnek tűnt.' : s >= 2 ? 'Szép álom volt, tele kinccsel. Emese reggel mindent elmesél a táborban.' : s ? 'Emese kicsit zavaros álmot látott, de a turul azért felbukkant benne.' : 'Az álom szétfoszlott, mielőtt a turul ideért volna. Holnap éjjel újra álmodhatsz.'),
+        trf('{0} pont, {1} turulmadár.', score, turuls), got ? `<b>${tr('Jutalom')}:</b>${rewChips(rew)}` : `<b>${tr('Ma már kaptál jutalmat ezért a kalandért.')}</b>`],
+        'Anonymus Gestája szerint Emesének, Ügyek feleségének álmában egy turulmadár jelent meg. Az álom azt jövendölte, hogy fiából nagy fejedelmek születnek. A fiút ezért nevezték Álmosnak. A turul az Árpád-ház ősmadara lett, és ma is sok helyen látható.');
+    }
+  }
+})();
+
 /*SOCIAL-END*/
 })();
 </script>
