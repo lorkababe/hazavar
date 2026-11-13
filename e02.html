@@ -1228,7 +1228,7 @@ function takeSurp(x) {
   if (t.id === 'rovas') { S.surpTaken = (S.surpTaken || 0) + 1; dailyHit('meglep'); const [cx, cy] = surpPos(x); if (!gainRune(cx, cy)) give({ penz: 40 }); sfxCollect(); save(); return; }
   Object.entries(t.give).forEach(([k, v]) => { if (k === 'tudas') S.res.tudas = Math.min(TUDAS_CAP, S.res.tudas + v); else give({ [k]: v }); if (k === 'kovako') S.stats.kovako += v; });
   const [cx, cy] = surpPos(x); floatText(cx, cy - 30, Object.entries(t.give).map(([k, v]) => '+' + v + ' ' + RES[k].name).join(' '), '#F5C542');
-  sfxCollect(); toast(tr(t.name) + '!'); save();
+  S.surpTaken = (S.surpTaken || 0) + 1; dailyHit('meglep'); sfxCollect(); toast(tr(t.name) + '!'); save();
 }
 function drawSurprises(now) {
   (S.surp || []).forEach(x => {
