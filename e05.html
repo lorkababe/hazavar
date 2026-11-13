@@ -3595,7 +3595,9 @@ function klapka() {
 }
 
 // ---------- a kiskirályok várai ----------
-const BAR_IMG = {}; ['csak', 'aba', 'koszegi', 'rom'].forEach(k => { const im = new Image(); im.src = 'img/e05_var_' + k + '.png'; BAR_IMG[k] = im; });
+const BAR_IMG = {}; ['csak', 'aba', 'koszegi', 'rom', 'rom_csak', 'rom_aba', 'rom_koszegi'].forEach(k => { const im = new Image(); im.src = 'img/e05_var_' + k + '.png'; BAR_IMG[k] = im; });
+// a várak leomlása Rozgony után: sorban, rázkódással, porfelhővel
+let COLL = null;
 // a vár saját füves alapja a széleken elhalványul, így beleolvad a térképbe
 const BAR_SOFT = {};
 function barSoft(k) {
@@ -3605,6 +3607,24 @@ function barSoft(k) {
   mg.save(); mg.translate(w / 2, h * 0.66); mg.scale(1, 0.52); const gr = mg.createRadialGradient(0, 0, 0, 0, 0, w * 0.5); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.8, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); mg.fillStyle = gr; mg.beginPath(); mg.arc(0, 0, w * 0.5, 0, 7); mg.fill(); mg.restore();
   g.globalCompositeOperation = 'destination-in'; g.drawImage(m, 0, 0); return (BAR_SOFT[k] = c);
 }
+function collFx(b, p, x0, yb, w, cx, cy, now) {
+  const old = barSoft(b.id), rom = barSoft('rom_' + b.id) || barSoft('rom');
+  const shake = p < 0.5 ? Math.sin(now / 28) * 7 * Math.min(1, p * 4) : Math.sin(now / 40) * 3 * (1 - p);
+  if (rom && p > 0.35) { const h = w * rom.height / rom.width; ctx.save(); ctx.globalAlpha = Math.min(1, (p - 0.35) / 0.35); ctx.drawImage(rom, x0, yb - h + 6, w, h); ctx.restore(); }
+  if (old && p < 0.75) { const h = w * old.height / old.width, sink = p < 0.3 ? 0 : (p - 0.3) / 0.45 * h * 0.55;
+    ctx.save(); ctx.beginPath(); ctx.rect(x0 - 40, yb - h - 200, w + 80, h + 200 - 4); ctx.clip(); ctx.globalAlpha = p < 0.3 ? 1 : Math.max(0, 1 - (p - 0.3) / 0.45); ctx.drawImage(old, x0 + shake, yb - h + 6 + sink, w, h); ctx.restore(); }
+  // porfelhő
+  if (p > 0.2) { const q = Math.min(1, (p - 0.2) / 0.8); ctx.save();
+    for (let i = 0; i < 26; i++) { const a = i * 2.4 + b.i, rr = w * (0.12 + 0.42 * q) * (0.5 + (i % 5) / 8), x = cx + Math.cos(a) * rr, y = cy + 20 + Math.sin(a) * rr * 0.4 - q * 70 * ((i % 3) / 2);
+      ctx.globalAlpha = 0.5 * (1 - q) * (0.6 + (i % 4) / 10); ctx.fillStyle = i % 2 ? '#C9B79A' : '#9E8F78'; ctx.beginPath(); ctx.arc(x, y, 26 + q * 60 + (i % 4) * 8, 0, 7); ctx.fill(); }
+    ctx.restore(); }
+  if (p > 0.55 && !COLL['t' + b.id]) { COLL['t' + b.id] = 1; try { floatText(cx, cy - w * 0.35, trf('{0} vára leomlott!', BAR_WHO[b.id]), '#FFE9B8'); } catch (e) {} }
+}
+function startCollapse() {
+  COLL = { t0: performance.now() }; const tot = BARONS.length * 3200 + 600;
+  BARONS.forEach((b, n) => setTimeout(() => { try { const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); scale = Math.max(minS, Math.min(scale, 0.9)); camX = x - W / 2 / scale; camY = y - H / 2 / scale; clampCam(); } catch (e) {} }, n * 3200));
+  setTimeout(() => { COLL = null; toast(tr('A kiskirályok várai romokban hevernek. Éljen a király!')); }, tot);
+}
 const BAR_WHO = { csak: 'Csák Máté', aba: 'Aba Amadé', koszegi: 'Kőszegi Henrik' };
 const BAR_NAME = { csak: 'Csák Máté vára', aba: 'Aba Amadé vára', koszegi: 'Kőszegi Henrik vára' };
 const _drawB = draw;
@@ -3613,8 +3633,10 @@ draw = function (now) {
   try {
     ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR);
     BARONS.forEach(b => {
-      const k = S.rozgony ? 'rom' : b.id, im = barSoft(k); if (!im) return;
+      const n = BARONS.indexOf(b), cp = COLL ? (now - COLL.t0 - n * 3200) / 2600 : 2;
+      const k = !S.rozgony || cp < 0.45 ? b.id : (barSoft('rom_' + b.id) ? 'rom_' + b.id : 'rom'), im = barSoft(k); if (!im) return;
       const [x0] = tileTop(b.i, b.j + 5), [x1] = tileTop(b.i + 5, b.j), [, yb] = tileTop(b.i + 5, b.j + 5), w = x1 - x0, h = w * im.height / im.width, [cx0, cy0] = tileTop(b.i + 2.5, b.j + 2.5);
+      if (S.rozgony && cp >= 0 && cp < 1) { collFx(b, cp, x0, yb, w, cx0, cy0, now); return; }
       ctx.save(); const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); sg.addColorStop(0, 'rgba(30,25,10,.38)'); sg.addColorStop(1, 'rgba(30,25,10,0)'); ctx.translate(cx0, cy0 + 40); ctx.scale(w * 0.46, w * 0.2); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 7); ctx.fill(); ctx.restore();
       ctx.drawImage(im, x0, yb - h + 6, w, h);
       if (!S.rozgony) { ctx.font = '800 20px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,8,.8)'; ctx.fillStyle = '#FFE9B8'; const [cx] = tileTop(b.i + 2.5, b.j + 2.5); ctx.strokeText(tr(BAR_NAME[b.id]), cx, yb - h + 2); ctx.fillText(tr(BAR_NAME[b.id]), cx, yb - h + 2); }
@@ -3654,16 +3676,16 @@ function showRozgony() {
 }
 function rozBattle(sum) {
   const big = sum >= 70, rew = { penz: 800 + sum * 25, hirnev: 5 + Math.round(sum / 10), tudas: 2 + Math.round(sum / 25) };
-  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; if (b.exLot) { const [w, h] = dimsB(b); LOTS2.forEach(l => { if (b.i < l.i + l.w && b.i + w > l.i && b.j < l.j + l.h && b.j + h > l.j && !(S.lots || []).includes(l.id)) { S.lots = S.lots || []; S.lots.push(l.id); } }); } } }); S.rozgony = { at: S.gt, pct: sum, back }; try { autoRoads(S, true); roadCache = null; connCache = null; } catch (e) {} Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
+  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; if (b.exLot) { const [w, h] = dimsB(b); LOTS2.forEach(l => { if (b.i < l.i + l.w && b.i + w > l.i && b.j < l.j + l.h && b.j + h > l.j && !(S.lots || []).includes(l.id)) { S.lots = S.lots || []; S.lots.push(l.id); } }); } } }); S.rozgony = { at: S.gt, pct: sum, back }; COLL = { t0: Infinity }; try { autoRoads(S, true); roadCache = null; connCache = null; } catch (e) {} Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
   save(); hud();
   modal(`<img class="hero" src="img/e05_rozgony_utan.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('A GYŐZELEM')}</span><h2>${tr(big ? 'Fényes diadal Rozgonynál!' : 'Győztünk, ha nehezen is')}</h2>
     <p>${tr(big ? 'A kiskirályok serege szétfutott. Aba Amadé fiai elmenekültek, a várak kapui kinyíltak. Ma Károly Róbert lett az ország igazi királya.' : 'A csata nehéz volt, de a királyi sereg győzött. A kiskirályok hatalma megtört, bár Csák Máté még morog a Vág mentén.')}</p>
-    <p>${tr('A kiskirályok várai leomlottak. A helyükön rom áll, hogy senki ne felejtse el, mi lesz a gőg vége.')}</p>
+    <p>${tr('A győzelem hírére a kiskirályok várai sorra összeomlanak. Nézd csak!')}</p>
     ${back ? `<p><b>${trf('{0} elcsaklizott épület visszakerült hozzád, és mostantól neked termel.', back)}</b></p>` : ''}
     <p><b>${tr('Jutalom')}:</b> ${miniRewText(rew)}</p>
     <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('1312. június 15-én Rozgonynál Károly Róbert legyőzte az Aba fiakat és Csák Máté csapatait. A szepesi szászok is a király oldalán harcoltak. A csata után a kiskirályok hatalma lassan összeomlott, Csák Máté 1321-ben halt meg.')}</p></div>
     <div class="row"><button class="btn coral" type="button" id="rzOk">${tr('Éljen a király!')}</button></div></div>`, '', 'rozgony');
-  $('rzOk').onclick = () => { closeModal(); checkQuest(); renderGuide(); };
+  $('rzOk').onclick = () => { closeModal(); checkQuest(); renderGuide(); startCollapse(); };
 }
 // ---------- a visegrádi királytalálkozó, 1335 ----------
 function showKiraly() {
