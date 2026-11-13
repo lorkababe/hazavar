@@ -6054,7 +6054,7 @@ function miniHTML(id) {
 }
 function showCard(id) {
   const g = GBC[id];
-  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('NEVEZETES ÉPÜLET')}</span><div class="gbbig"><img src="img/${imgOf(id)}.png" alt=""><div><h2>${g.name}</h2><p>${tr(g.desc)}</p></div></div>${cardHTML(id)}</div>`, '', 'gbcard');
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('NEVEZETES ÉPÜLET')}</span><div class="gbbig"><img src="img/${imgOf(id)}.png" alt=""><div><h2>${g.name}</h2><p>${tr(g.desc)}</p></div></div>${cardHTML(id)}</div>`, '', 'gbmodal');
   const root = $('modalRoot'); root.querySelectorAll('[data-gbi]').forEach(x => x.onclick = () => { invest(id, +x.dataset.gbi); showCard(id); });
 }
 window.gbShowCard = showCard;
@@ -6159,7 +6159,7 @@ window.showGb = showGb;
 const st = document.createElement('style');
 st.textContent = `#btnGb{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));z-index:7;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:8px;border-radius:14px;border:0;background:rgba(58,36,16,.88);color:#FFF4DF;font:800 15px Nunito,system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25)}
   #btnGb img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}#btnGb .gbd{background:#C9472F;border-radius:999px;padding:0 7px;font-size:12px}
-  #info>*{flex-shrink:0}.gbbig{display:flex;gap:14px;align-items:center}.gbbig img{width:150px;height:150px;object-fit:contain;flex:none}.gbbig h2{margin:0 0 4px}
+  #info>*{flex-shrink:0}.gbmodal{max-width:min(860px,calc(100vw - 24px))}.gbmodal .inner{min-width:0}.gbbig{display:flex;gap:14px;align-items:center;min-width:0}.gbbig>div{min-width:0;flex:1}.gbtop table{table-layout:fixed}.gbtop td{overflow:hidden;text-overflow:ellipsis}.gbtop td:first-child{width:2.5em}.gbtop td:nth-child(3){width:7em}.gbtop td:nth-child(4){width:3.5em}.gbtop td:nth-child(5){width:4.5em}.gbbig img{width:150px;height:150px;object-fit:contain;flex:none}.gbbig h2{margin:0 0 4px}
   .gbtop{display:block!important;margin-top:10px}.gbtop table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.gbtop td{padding:4px 6px;border-bottom:1px dashed rgba(90,55,25,.25);color:#3A2410!important;background:none}.gbtop tr.me{font-weight:900;background:rgba(226,179,60,.25)}.gbtop td:nth-child(3),.gbtop td:nth-child(4){text-align:right;white-space:nowrap}.gbtop td:last-child{color:#2F7A3A!important;font-weight:800;font-size:12px}.gbtop p{margin:4px 0;font-size:13px}
   @media (max-width:560px){.gbbig img{width:90px;height:90px}}
   #info{max-height:calc(100vh - var(--toph,72px) - 140px - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
