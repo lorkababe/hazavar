@@ -3884,6 +3884,7 @@ function rearUI() {
   const st = document.createElement('style');
   st.textContent = `#btnMiniE{position:absolute!important;left:calc(16px + env(safe-area-inset-left,0px));top:calc(var(--toph,72px) + ${g$('btnDaily') ? 70 : 16}px);z-index:7;width:auto;height:44px;padding:0 14px 0 10px;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;display:flex;align-items:center;box-shadow:0 4px 0 rgba(0,0,0,.3)}
   #btnMiniE .newdot{position:absolute;top:-9px;right:-12px}
+  @media (max-width:760px){#btnMiniE{top:calc(var(--toph,72px) + ${g$('btnDaily') ? 70 : 62}px)}}
   .mini-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:rgba(255,248,232,.6);border:2px solid rgba(110,68,34,.15)}.mini-row img{width:64px;height:64px;object-fit:contain}.mini-row .grow{flex:1;min-width:0}.mini-row small{display:block}
   .mg-devnote{font-size:13px;font-weight:700;padding:6px 10px;border-radius:10px;border:2px dashed rgba(60,40,20,.4);background:#F6E7C4}
   .mrw{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-weight:400}.mrw-i{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;background:rgba(255,248,232,.75);border:2px solid rgba(110,68,34,.18)}.mrw-i img{width:30px;height:30px;object-fit:contain}.mrw-i b{font-size:17px;color:#2F6B2A}.mrw-i i{font-style:normal;font-weight:700;font-size:14px;color:#5A3A1E}
