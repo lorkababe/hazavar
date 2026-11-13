@@ -4363,7 +4363,7 @@ function rearUI() {
   const N = 28, ROUNDS = 15, VALS = [1, 2, 3, 5];
   // mezők: start, menedék, újra, előre, vissza, nyersanyag, pénz, vám
   const F = Array(N).fill('');
-  Object.entries({ 0: 'startp', 14: 'starta', 7: 'safe', 21: 'safe', 4: 'again', 18: 'again', 10: 'fwd', 24: 'fwd', 12: 'back', 26: 'back', 5: 'minus', 19: 'minus', 9: 'penz', 23: 'penz', 2: 'res0', 16: 'res1', 11: 'res2', 25: 'res3', 6: 'portal', 20: 'portal', 13: 'gift', 27: 'gift', 8: 'star', 22: 'star' }).forEach(([i, t]) => F[i] = t);
+  Object.entries({ 0: 'startp', 14: 'starta', 7: 'safe', 21: 'safe', 4: 'again', 18: 'again', 10: 'fwd', 24: 'fwd', 13: 'back', 27: 'back', 5: 'minus', 19: 'minus', 9: 'penz', 23: 'penz', 2: 'res0', 16: 'res1', 11: 'res2', 25: 'res3', 6: 'portal', 20: 'portal', 12: 'gift', 26: 'gift', 8: 'star', 22: 'star' }).forEach(([i, t]) => F[i] = t);
   const EM = { again: '🎲', fwd: '⏩', back: '⏪', safe: '🛡️', startp: '🏠', starta: '🏠', minus: '💸', portal: '🌀', gift: '🎁', star: '⭐' };
   const SAFE = i => F[i] === 'safe' || F[i] === 'startp' || F[i] === 'starta';
   const resOf = t => { const L = TM.res.filter(k => typeof RES !== 'undefined' && RES[k]); return L[(+t.slice(3)) % L.length]; };
@@ -4475,6 +4475,7 @@ function rearUI() {
     if (!pa && !aa && G.round <= ROUNDS) return false;
     G.over = true; G.phase = 'over'; G.win = aa || (!pa && G.sc.p > G.sc.a); G.tie = !aa && !pa && G.sc.p === G.sc.a; finish(); return true;
   }
+  const fmtN = v => typeof fmt === 'function' ? fmt(v) : v;
   function finish() {
     const d = day(), rew = Object.assign({}, G.pot);
     if (G.win) { rew.penz = (rew.penz || 0) + Math.round(120 * TM.scale); rew.tudas = (rew.tudas || 0) + 1; if (RES.hirnev) rew.hirnev = (rew.hirnev || 0) + Math.max(2, Math.round(2 * TM.scale)); }
@@ -4482,7 +4483,8 @@ function rearUI() {
     let paid = false;
     if (!d.paid) { d.paid = 1; Object.entries(rew).forEach(([k, v]) => { if (v > 0 && RES[k]) S.res[k] = (S.res[k] || 0) + v; }); paid = true; save(); try { hud(); } catch (e) {} }
     const head = G.win ? (G.a.every(x => x.out) ? tr('Mindet leütötted, tiéd a tábla!') : tr('Nyertél!')) : G.tie ? tr('Döntetlen') : trf('Most {0} nyert', TM.foe);
-    const rt = typeof miniRewText === 'function' ? miniRewText(rew) : Object.entries(rew).filter(([, v]) => v > 0).map(([k, v]) => `+${v} ${RES[k] ? RES[k].name : k}`).join(', ');
+    const RL = Object.entries(rew).filter(([k, v]) => v > 0 && RES[k]);
+    const rt = RL.length ? '<div class="tbrew">' + RL.map(([k, v]) => `<span><img src="img/${RES[k].file || RES[k].icon + '.png'}" alt="" onerror="this.remove()"><b>+${fmtN(v)}</b><i>${RES[k].name}</i></span>`).join('') + '</div>' : '';
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><h2>${head}</h2>
       <p>${trf('Te {0} pontot ütöttél le, {1} {2} pontot.', G.sc.p, TM.foe, G.sc.a)}</p>
       ${paid ? `<p>${tr('A jutalmad')}</p>${rt || `<p>${tr('Most üres maradt a zsák, de holnap újra próbálhatod.')}</p>`}` : `<p>${tr('A mai jutalmat már megkaptad. Holnap újra jár.')}</p>`}
@@ -4637,6 +4639,7 @@ function rearUI() {
   .tblog{font-size:14px;font-weight:700}.tblog p{margin:2px 0}.tblog p:first-child{color:var(--ink);font-weight:900}.tblog p:not(:first-child){opacity:.6}
   .tbintro{display:flex;gap:12px;align-items:center}.tbintro img{width:110px;height:auto;flex:none}.tbintro .bub{flex:1;min-width:0;background:rgba(255,248,232,.85);border-radius:14px;padding:10px 14px;font-weight:800;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
   @media (max-width:520px){.tbintro img{width:76px}.tbface{width:44px}.tbme{width:44px;font-size:28px}.tbpts{font-size:17px}}
+  .tbrew{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}.tbrew span{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;background:rgba(255,248,232,.8);border:2px solid rgba(110,68,34,.18)}.tbrew img{width:30px;height:30px;object-fit:contain}.tbrew b{font-size:17px}.tbrew i{font-style:normal;font-weight:700;opacity:.75;font-size:13px}
   .tbleg{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-weight:700;font-size:14px}.tbleg b{display:inline-block;min-width:2em}`;
   document.head.appendChild(st);
 })();
