@@ -3654,6 +3654,9 @@ function rearUI() {
   x.onclick = e => { e.stopPropagation(); set(true); };
   setInterval(() => { const p = document.getElementById('evPct'); if (p) pct.textContent = p.textContent; }, 700);
 })();
+
+// eseményképek: mindig a teljes kép látszik, vágás és elmosott szél nélkül
+(function () { const st = document.createElement('style'); st.textContent = '.modal .hero{aspect-ratio:auto!important;height:auto!important;max-height:none!important;object-fit:contain!important}.herow{height:auto!important;aspect-ratio:auto!important;background:none!important}.herow .bg{display:none!important}.herow .fg{height:auto!important;filter:none!important}'; document.head.appendChild(st); })();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
@@ -4334,6 +4337,24 @@ function rearUI() {
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><div id="tbWrap"></div></div>`, '', 'tabla'); draw();
   }
   window.tablaOpen = start;
+  // a Kalandok listájában is megjelenik
+  const hostB = () => S.buildings.find(b => TM.host.includes(b.type) && !b.ruined && !(b.until && S.gt < b.until));
+  if (typeof modal === 'function') {
+    const _md = modal;
+    modal = function (html, cls, id) {
+      const r = _md.apply(this, arguments);
+      if (id === 'mini') try {
+        const rows = $('modalRoot').querySelectorAll('.mini-row'), last = rows[rows.length - 1]; if (!last) return r;
+        const hb = hostB(), hn = (DEF[TM.host[0]] && DEF[TM.host[0]].name) || TM.host[0], d = day();
+        const row = document.createElement('div'); row.className = 'mini-row';
+        row.innerHTML = `<img src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()"><div class="grow"><b>${tr(TM.game)}</b><small>${hb ? trf('Táblajáték {0} ellen, {1}', TM.foe, tr(TM.where)) : trf('Építs egy {0} épületet, ott ülhetsz le játszani.', hn)}</small></div>`
+          + (!hb ? `<button class="btn ghost" type="button" disabled>${tr('Nincs még')}</button>` : (!DEV && d.played && !(G && !G.over)) ? `<button class="btn ghost" type="button" disabled>${tr('Holnap újra')}</button>` : `<button class="btn coral" type="button" id="tbMini">${G && !G.over ? tr('Folytatom') : tr('Indulás')}</button>`);
+        last.parentNode.insertBefore(row, last.nextSibling);
+        const b = row.querySelector('#tbMini'); if (b) b.onclick = start;
+      } catch (e) {}
+      return r;
+    };
+  }
   window.__tbDev = { get G() { return G; }, set fast(v) { fast = v; }, F, aiPick, hitChance };
   if (typeof showInfo === 'function') {
     const _si = showInfo;
