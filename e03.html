@@ -4568,11 +4568,11 @@ const GBC = {
     desc: 'A tatárjárás után épült fellegvár a Duna fölött. Védelmet és Terményt ad, szintenként egyre többet.' },
   palota1: { era: 5, name: 'Visegrádi királyi palota', img: 'e05_palota1', stages: ['e05_palota1', 'e05_palota2', 'e05_palota3'], size: 5, cat: 'hang', faith: 'ker', cost: { penz: 4000, fa: 150, vas: 30 }, base: { hang: 12, pop: 10, prod: { hirnev: 2 } }, per: { hang: 4, pop: 3, add: { hirnev: 1 } }, time: H, free: ['palota', 3],
     desc: 'Károly Róbert székhelye, Nagy Lajos fényes udvara. Hírnevet termel, amivel a többi nevezetes épületet is szintezheted.' },
-  pecs: { era: 5, name: 'Pécsi egyetem', img: 'e05_pecsi_egyetem', alt: 'e04_ciszterci_apatsag', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 3000, fa: 80, forint: 10 }, base: { hang: 6, pop: 4, prod: { tudas: 2 } }, per: { hang: 2, add: { tudas: 1 } }, time: H,
+  pecs: { era: 5, name: 'Pécsi egyetem', img: 'e05_pecsi_egyetem', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 3000, fa: 80, forint: 10 }, base: { hang: 6, pop: 4, prod: { tudas: 2 } }, per: { hang: 2, add: { tudas: 1 } }, time: H,
     desc: 'Az első magyar egyetem, Nagy Lajos alapította 1367-ben. Tudást ad, szintenként egyre többet.' },
-  diosgyor: { era: 5, name: 'Diósgyőri vár', img: 'e05_diosgyori_var', alt: 'e04_visegrad_3', size: 3, cat: 'ved', faith: 'ker', cost: { penz: 3500, fa: 100, vas: 30 }, base: { def: 8, hang: 4, prod: { vas: 4 } }, per: { def: 3, add: { vas: 2 } }, time: H,
+  diosgyor: { era: 5, name: 'Diósgyőri vár', img: 'e05_diosgyori_var', size: 3, cat: 'ved', faith: 'ker', cost: { penz: 3500, fa: 100, vas: 30 }, base: { def: 8, hang: 4, prod: { vas: 4 } }, per: { def: 3, add: { vas: 2 } }, time: H,
     desc: 'Nagy Lajos kedvenc vára, négy saroktoronnyal. Védelmet és Vasat ad, szintenként egyre többet.' },
-  kormoc: { era: 5, name: 'Körmöci aranybánya', img: 'e05_kormoci_banya', alt: 'e05_aranybanya3', size: 3, cat: 'term', terrain: 'hill', cost: { penz: 3000, fa: 120, vas: 20 }, base: { prod: { arany: 6 } }, per: { add: { arany: 3 } }, time: H,
+  kormoc: { era: 5, name: 'Körmöci aranybánya', img: 'e05_kormoci_banya', size: 3, cat: 'term', terrain: 'hill', cost: { penz: 3000, fa: 120, vas: 20 }, base: { prod: { arany: 6 } }, per: { add: { arany: 3 } }, time: H,
     desc: 'Európa leggazdagabb aranybányája. Aranyat ad, szintenként egyre többet, és kiváltja a kis bányákat.' }
 };
 const MINE = Object.keys(GBC).filter(k => GBC[k].era <= CUR_ERA);
