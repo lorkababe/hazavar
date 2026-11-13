@@ -4037,6 +4037,26 @@ function rearUI() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) markSeen(); else setTimeout(() => { try { check(); } catch (e) {} }, 800); });
   addEventListener('pagehide', markSeen);
 })();
+
+// ---------- a közelgő esemény kártyája kicsi, koppintásra nyílik ki ----------
+(function () {
+  const ev = document.getElementById('event'); if (!ev) return;
+  const st = document.createElement('style');
+  st.textContent = `#event.mini{width:auto!important;min-width:0!important;padding:6px 12px 6px 6px!important;cursor:pointer}
+    #event.mini .prep-row,#event.mini .prep,#event.mini #btnPrep{display:none!important}
+    #event.mini .ev-head{margin:0!important;gap:8px}#event.mini .ev-ico{width:34px;height:34px}
+    #event.mini .ev-head b{font-size:14px}#event .ev-mini-pct{display:none;font-weight:900;color:var(--ochre-dark);margin-left:4px}#event.mini .ev-mini-pct{display:inline}
+    #event .ev-x{position:absolute;right:8px;top:6px;border:0;background:none;font-size:18px;font-weight:900;color:var(--ink-soft);cursor:pointer}#event.mini .ev-x{display:none}`;
+  document.head.appendChild(st);
+  let mini = true; try { mini = localStorage.getItem('hv-ev-mini') !== '0'; } catch (e) {}
+  const head = ev.querySelector('.ev-head b'); const pct = document.createElement('span'); pct.className = 'ev-mini-pct'; if (head) head.after(pct);
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'ev-x'; x.textContent = '–'; x.setAttribute('aria-label', 'Kicsinyítés'); ev.style.position = ev.style.position || ''; ev.appendChild(x);
+  const set = m => { mini = m; ev.classList.toggle('mini', m); try { localStorage.setItem('hv-ev-mini', m ? '1' : '0'); } catch (e) {} };
+  set(mini);
+  ev.addEventListener('click', e => { if (mini) { e.stopPropagation(); set(false); } }, true);
+  x.onclick = e => { e.stopPropagation(); set(true); };
+  setInterval(() => { const p = document.getElementById('evPct'); if (p) pct.textContent = p.textContent; }, 700);
+})();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
