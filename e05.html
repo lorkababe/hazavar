@@ -3441,7 +3441,7 @@ function carryCity(s, d) {
     else { refund += Math.round(((DEF[t].cost || {}).penz || 100) * 0.6); }
   });
   Object.keys(d.roads || {}).forEach(k => { const [i, j] = k.split(',').map(Number); if (i >= 0 && j >= 0 && i < N && j < N && !occ[k] && okTile(k) && !ROUGH[k]) s.roads[k] = d.roads[k]; });
-  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); autoRoads(s); s.layoutV = 1;
+  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); autoRoads(s); s.layoutV = 2;
   return s.carried;
 }
 
@@ -3484,27 +3484,40 @@ function baroMove(s) {
   });
 }
 // ---------- utak: a főépülettől minden épülethez, ami utat kér ----------
-function autoRoads(s) {
-  const fo = s.buildings.find(b => b.type === 'fo'); if (!fo) return; s.roads = {};
+function autoRoads(s, keep) {
+  // utat épít minden épülethez: a saját épületeket a főépülethez, a bárók elcsaklizott épületeit a báró várához köti
+  const fo = s.buildings.find(b => b.type === 'fo'); if (!fo) return; if (!keep || !s.roads) s.roads = {};
   const occ = {}; s.buildings.forEach(b => { const [w, h] = dimsT(b.type, b.rot || 0); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[(b.i + a) + ',' + (b.j + c)] = 1; });
   const own = new Set(); (s.lots || []).forEach(id => { const l = LOTS2.find(x => x.id === id); if (l) for (let a = 0; a < l.w; a++) for (let c = 0; c < l.h; c++) own.add((l.i + a) + ',' + (l.j + c)); });
-  const walk = (i, j) => { const k = i + ',' + j; return ((i >= 0 && j >= 0 && i < N && j < N) || own.has(k)) && !occ[k] && !BLOCKED.has(k) && !T_BANK.has(k) && !BARON_TILES.has(k); };
-  const ring = b => { const [w, h] = dimsT(b.type, b.rot || 0), out = []; for (let a = 0; a < w; a++) { out.push([b.i + a, b.j - 1], [b.i + a, b.j + h]); } for (let c = 0; c < h; c++) { out.push([b.i - 1, b.j + c], [b.i + w, b.j + c]); } return out; };
-  const net = new Set(), foR = new Set(ring(fo).map(([i, j]) => i + ',' + j));
-  const need = s.buildings.filter(b => b !== fo && !b.baro && !b.exLot && DEF[b.type] && DEF[b.type].road)
-    .sort((a, b) => Math.hypot(a.i - fo.i, a.j - fo.j) - Math.hypot(b.i - fo.i, b.j - fo.j));
-  need.forEach(b => {
-    const start = ring(b).filter(([i, j]) => walk(i, j)); if (!start.length) return;
-    if (start.some(([i, j]) => net.has(i + ',' + j))) return;
+  const base = k => !occ[k] && !BLOCKED.has(k) && !T_BANK.has(k) && !BARON_TILES.has(k);
+  const walkIn = (i, j) => { const k = i + ',' + j; return ((i >= 0 && j >= 0 && i < N && j < N) || own.has(k)) && base(k); };
+  const walkOut = (i, j) => { const k = i + ',' + j; return (LANDSET.has(k) || (i >= 0 && j >= 0 && i < N && j < N) || own.has(k)) && base(k); };
+  const ring = (bi, bj, w, h) => { const out = []; for (let a = 0; a < w; a++) { out.push([bi + a, bj - 1], [bi + a, bj + h]); } for (let c = 0; c < h; c++) { out.push([bi - 1, bj + c], [bi + w, bj + c]); } return out; };
+  const ringB = b => { const [w, h] = dimsT(b.type, b.rot || 0); return ring(b.i, b.j, w, h); };
+  const skip = b => { const d = DEF[b.type]; return !d || d.cat === 'ut' || /fal|kapu/.test(b.type); };
+  function link(b, net, goal, walk) {
+    const start = ringB(b).filter(([i, j]) => walk(i, j)); if (!start.length) return;
+    if (start.some(([i, j]) => net.has(i + ',' + j) || goal.has(i + ',' + j))) return;
     const prev = {}, q = []; start.forEach(([i, j]) => { const k = i + ',' + j; prev[k] = null; q.push([i, j]); });
     let hit = null;
-    for (let h = 0; h < q.length && !hit; h++) { const [i, j] = q[h], k = i + ',' + j; if (net.has(k) || foR.has(k)) { hit = k; break; }
+    for (let h = 0; h < q.length && h < 4000; h++) { const [i, j] = q[h], k = i + ',' + j; if (net.has(k) || goal.has(k)) { hit = k; break; }
       for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ni = i + di, nj = j + dj, nk = ni + ',' + nj; if (nk in prev || !walk(ni, nj)) continue; prev[nk] = k; q.push([ni, nj]); } }
-    for (let k = hit; k; k = prev[k]) { net.add(k); s.roads[k] = 1; }
+    for (let k = hit; k; k = prev[k]) { net.add(k); s.roads[k] = s.roads[k] || 1; }
+  }
+  // saját hálózat: a főépület körüli gyűrűből és a vele összefüggő meglévő utakból
+  const foR = new Set(ringB(fo).map(([i, j]) => i + ',' + j)), net = new Set();
+  { const q = [...foR].filter(k => s.roads[k]); q.forEach(k => net.add(k)); for (let h = 0; h < q.length; h++) { const [i, j] = q[h].split(',').map(Number); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj]) => { const k = (i + di) + ',' + (j + dj); if (s.roads[k] && !net.has(k)) { net.add(k); q.push(k); } }); } }
+  const dist = b => Math.hypot(b.i - fo.i, b.j - fo.j);
+  s.buildings.filter(b => b !== fo && !skip(b) && !b.baro).sort((a, b) => dist(a) - dist(b)).forEach(b => link(b, net, foR, b.exLot ? walkOut : walkIn));
+  // a bárók földjén a báró vára a középpont
+  if (!s.rozgony) BARONS.forEach(r => {
+    const mine = s.buildings.filter(b => b.baro === r.id); if (!mine.length) return;
+    const goal = new Set(ring(r.i, r.j, 5, 5).map(([i, j]) => i + ',' + j).filter(k => base(k))), bnet = new Set();
+    mine.sort((a, b) => Math.hypot(a.i - r.i, a.j - r.j) - Math.hypot(b.i - r.i, b.j - r.j)).forEach(b => link(b, bnet, goal, walkOut));
   });
 }
 // régi mentések: egyszer rendet rakunk
-setTimeout(() => { try { if (!S || !S.carry || S.layoutV) return; S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
+setTimeout(() => { try { if (!S || !S.carry) return; if (!S.layoutV) { S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); } if (S.layoutV < 2) { S.layoutV = 2; autoRoads(S, true); try { roadCache = null; } catch (e) {} } connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
 
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
 auraFits = function (a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz); if (a.to === 'arany') return !!(d.prod && d.prod.arany); return true; };
@@ -3606,7 +3619,7 @@ function showRozgony() {
 }
 function rozBattle(sum) {
   const big = sum >= 70, rew = { penz: 800 + sum * 25, hirnev: 5 + Math.round(sum / 10), tudas: 2 + Math.round(sum / 25) };
-  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; if (b.exLot) { const [w, h] = dimsB(b); LOTS2.forEach(l => { if (b.i < l.i + l.w && b.i + w > l.i && b.j < l.j + l.h && b.j + h > l.j && !(S.lots || []).includes(l.id)) { S.lots = S.lots || []; S.lots.push(l.id); } }); } } }); S.rozgony = { at: S.gt, pct: sum, back }; Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
+  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; if (b.exLot) { const [w, h] = dimsB(b); LOTS2.forEach(l => { if (b.i < l.i + l.w && b.i + w > l.i && b.j < l.j + l.h && b.j + h > l.j && !(S.lots || []).includes(l.id)) { S.lots = S.lots || []; S.lots.push(l.id); } }); } } }); S.rozgony = { at: S.gt, pct: sum, back }; try { autoRoads(S, true); roadCache = null; connCache = null; } catch (e) {} Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
   save(); hud();
   modal(`<img class="hero" src="img/e05_rozgony_utan.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('A GYŐZELEM')}</span><h2>${tr(big ? 'Fényes diadal Rozgonynál!' : 'Győztünk, ha nehezen is')}</h2>
     <p>${tr(big ? 'A kiskirályok serege szétfutott. Aba Amadé fiai elmenekültek, a várak kapui kinyíltak. Ma Károly Róbert lett az ország igazi királya.' : 'A csata nehéz volt, de a királyi sereg győzött. A kiskirályok hatalma megtört, bár Csák Máté még morog a Vág mentén.')}</p>
