@@ -6321,6 +6321,13 @@ function rearUI() {
 
 // a meglepetések felszedése: kicsinyített térképen is pontosan eltalálható
 try { if (typeof surpAt === 'function' && typeof surpPos === 'function') surpAt = function (bx, by) { const r = Math.max(34, 30 / (typeof scale === 'number' && scale > 0 ? scale : 1)); let best = null, bd = r; (S.surp || []).forEach(x => { const [cx, cy] = surpPos(x); const d = Math.hypot(bx - cx, by - cy - 4); if (d < bd) { bd = d; best = x; } }); return best; }; } catch (e) {}
+
+// a meglepetések ikonja mindig legyen betöltve, és csak olyan meglepetés jöjjön, ami létező nyersanyagot ad
+try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
+  for (let n = SURPRISES.length - 1; n >= 0; n--) { const t = SURPRISES[n]; if (t.give && Object.keys(t.give).some(k => !RES[k])) SURPRISES.splice(n, 1); }
+  SURPRISES.forEach(t => { if (t.icon && !IMG[t.icon]) { const im = new Image(); im.src = 'img/' + t.icon + '.png'; IMG[t.icon] = im; } });
+  if (S && S.surp) S.surp = S.surp.filter(x => SURPRISES.some(e => e.id === x.t));
+} } catch (e) {}
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {
