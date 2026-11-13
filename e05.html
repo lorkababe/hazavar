@@ -5260,23 +5260,42 @@ function allyHTML() {
 function showPuccs() { showSoc('ally'); }
 function botLayout(b) {
   const era = typeof CUR_ERA === 'number' ? CUR_ERA : 0;
-  if (b.layout && b.layout.era === era && b.layout.list.every(x => DEF[x.type])) return b.layout.list;
-  const occ = {}, list = [];
+  if (b.layout && b.layout.v === 2 && b.layout.era === era && b.layout.list.every(x => DEF[x.type])) return b.layout.list;
+  // rendezett falu: a főépület körül út fut, onnan ágaznak ki az utcák, az épületek az utak mellé kerülnek
+  const M = 11, occ = {}, road = {}, list = [], K = (i, j) => i + ',' + j;
   const dims = (t, rot) => { const d = DEF[t]; const w = d.w || d.size || 1, h = d.h || d.size || 1; return rot ? [h, w] : [w, h]; };
-  const put = (t, i, j, rot) => { const [w, h] = dims(t, rot); if (i < 0 || j < 0 || i + w > N || j + h > N) return false;
-    for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (occ[(i + a) + ',' + (j + c)]) return false;
-    for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[(i + a) + ',' + (j + c)] = 1;
-    list.push({ type: t, i, j, rot: rot || 0, id: -(list.length + 2) }); return true; };
-  put('fo', 3, 3, 0);
-  const types = Object.keys(DEF).filter(t => DEF[t].img && t !== 'fo' && DEF[t].cat !== 'ut' && !DEF[t].secret && !DEF[t].unique);
-  const gbt = types.find(t => DEF[t].gb);
-  if (gbt && Math.random() < 0.6) for (let k = 0; k < 40 && !put(gbt, rnd(0, 6), rnd(0, 6), 0); k++);
-  const pool = types.filter(t => !DEF[t].gb), target = rnd(10, 16);
-  for (let k = 0; k < 400 && list.length < target; k++) { const t = pick(pool), d = DEF[t]; put(t, rnd(0, 8), rnd(0, 8), d.w && d.h && d.w !== d.h ? rnd(0, 1) : 0); }
-  b.layout = { era, list }; saveSoc(); return list;
+  const fits = (t, i, j, rot) => { const [w, h] = dims(t, rot); if (i < 0 || j < 0 || i + w > M || j + h > M) return false;
+    for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (occ[K(i + a, j + c)] || road[K(i + a, j + c)]) return false; return true; };
+  const touches = (t, i, j, rot) => { const [w, h] = dims(t, rot); for (let a = -1; a <= w; a++) for (let c = -1; c <= h; c++) { const edge = (a === -1 || a === w) !== (c === -1 || c === h); if (edge && road[K(i + a, j + c)]) return true; } return false; };
+  const put = (t, i, j, rot) => { const [w, h] = dims(t, rot); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[K(i + a, j + c)] = 1; list.push({ type: t, i, j, rot: rot || 0, id: -(list.length + 2) }); };
+  const fs = dims('fo', 0)[0], f0 = 4; put('fo', f0, f0, 0);
+  for (let a = f0 - 1; a <= f0 + fs; a++) { road[K(a, f0 - 1)] = 1; road[K(a, f0 + fs)] = 1; road[K(f0 - 1, a)] = 1; road[K(f0 + fs, a)] = 1; }
+  const mid = f0 + 1; for (let k = 0; k < M; k++) if (k < f0 - 1 || k > f0 + fs) { road[K(k, mid)] = 1; road[K(mid, k)] = 1; }
+  const types = Object.keys(DEF).filter(t => DEF[t].img && t !== 'fo' && DEF[t].cat !== 'ut' && !DEF[t].secret && !DEF[t].unique && !DEF[t].old);
+  const gbt = types.find(t => DEF[t].gb), pool = types.filter(t => !DEF[t].gb), target = rnd(11, 16);
+  const cells = []; for (let i = 0; i < M; i++) for (let j = 0; j < M; j++) cells.push([i, j, Math.hypot(i - f0 - 1, j - f0 - 1) + Math.random() * 2.5]);
+  cells.sort((x, y) => x[2] - y[2]);
+  const place = t => { const d = DEF[t], rots = d.w && d.h && d.w !== d.h ? [0, 1] : [0];
+    for (const [i, j] of cells) for (const r of rots) if (fits(t, i, j, r) && (touches(t, i, j, r) || (!d.road && Math.random() < 0.2))) { put(t, i, j, r); return true; } return false; };
+  if (gbt && Math.random() < 0.6) place(gbt);
+  for (let k = 0; k < 60 && list.length < target; k++) place(pick(pool));
+  // a semmibe vezető útvégeket levágjuk
+  const adj = (i, j) => list.some(x => { const [w, h] = dims(x.type, x.rot); return i >= x.i - 1 && i <= x.i + w && j >= x.j - 1 && j <= x.j + h && !((i === x.i - 1 || i === x.i + w) && (j === x.j - 1 || j === x.j + h)); });
+  for (let pass = 0; pass < M * 2; pass++) { let cut = 0; Object.keys(road).forEach(k => { const [i, j] = k.split(',').map(Number); const deg = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, c]) => road[K(i + a, j + c)]).length; if (deg <= 1 && !adj(i, j)) { delete road[k]; cut++; } }); if (!cut) break; }
+  b.layout = { v: 2, era, list, roads: Object.keys(road) }; saveSoc(); return list;
+}
+// utak a látogatói nézetben: földút a korai korokban, kövezett út később
+function paintRoads(g, TT, roads) {
+  if (!roads || !roads.length) return; const era = typeof CUR_ERA === 'number' ? CUR_ERA : 0, set = new Set(roads);
+  const dia = (i, j, ins) => { const p = [TT(i + ins, j + ins), TT(i + 1 - ins, j + ins), TT(i + 1 - ins, j + 1 - ins), TT(i + ins, j + 1 - ins)]; g.beginPath(); p.forEach((q, n) => n ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); };
+  const tiles = roads.map(k => k.split(',').map(Number));
+  g.save(); g.filter = 'blur(2px)'; g.fillStyle = 'rgba(60,40,15,.35)'; tiles.forEach(([i, j]) => { dia(i, j, -0.02); g.fill(); }); g.restore();
+  g.save(); g.fillStyle = era >= 3 ? '#A39A88' : '#B8925C'; tiles.forEach(([i, j]) => { dia(i, j, 0.04); g.fill();
+    [[1, 0], [0, 1]].forEach(([a, c]) => { if (set.has((i + a) + ',' + (j + c))) { dia(i + a / 2, j + c / 2, 0.04); g.fill(); } }); });
+  g.fillStyle = era >= 3 ? 'rgba(255,250,235,.25)' : 'rgba(255,240,200,.18)'; tiles.forEach(([i, j]) => { dia(i, j, 0.3); g.fill(); }); g.restore();
 }
 // közös rajzoló: szorosan a városra vág, halvány rács, lágy keret
-function paintTown(cv, bg, ox, oy, sprites, n, bw, bh) {
+function paintTown(cv, bg, ox, oy, sprites, n, bw, bh, roads) {
   if (!cv) return; const g = cv.getContext('2d');
   const TT = (i, j) => [ox + (i - j) * TW / 2, oy + (i + j) * TH / 2];
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -5295,6 +5314,7 @@ function paintTown(cv, bg, ox, oy, sprites, n, bw, bh) {
   g.save(); g.strokeStyle = 'rgba(255,248,220,.38)'; g.lineWidth = 1.4;
   for (let k = 0; k <= n; k++) { let a = TT(k, 0), b = TT(k, n); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); a = TT(0, k); b = TT(n, k); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
   g.restore();
+  try { paintRoads(g, TT, roads); } catch (e) {}
   sprites.forEach(r => { g.save();
     if (r.L && r.R && r.B) { g.save(); g.filter = 'blur(5px)'; g.fillStyle = 'rgba(40,30,10,.28)'; const T0 = [r.L[0] + (r.R[0] - r.B[0]), r.L[1] + (r.R[1] - r.B[1])]; g.beginPath(); g.moveTo(T0[0] - 4, T0[1]); g.lineTo(r.R[0] + 6, r.R[1]); g.lineTo(r.B[0], r.B[1] + 5); g.lineTo(r.L[0] - 6, r.L[1]); g.closePath(); g.fill(); g.restore(); }
     if (r.sq && r.L) { g.beginPath(); g.moveTo(r.x - 2, r.y - 2); g.lineTo(r.x + r.w + 2, r.y - 2); g.lineTo(r.x + r.w + 2, r.R[1]); g.lineTo(r.R[0], r.R[1]); g.lineTo(r.B[0], r.B[1]); g.lineTo(r.L[0], r.L[1]); g.lineTo(r.x - 2, r.L[1]); g.closePath(); g.clip(); }
@@ -5304,11 +5324,11 @@ function paintTown(cv, bg, ox, oy, sprites, n, bw, bh) {
   const vg = g.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.35, cv.width / 2, cv.height / 2, cv.width * 0.62);
   vg.addColorStop(0, 'rgba(40,25,5,0)'); vg.addColorStop(1, 'rgba(40,25,5,.38)'); g.fillStyle = vg; g.fillRect(0, 0, cv.width, cv.height);
 }
-function renderTown(cv, list) {
+function renderTown(cv, list, roads) {
   const bgKey = Object.keys(IMG).find(k => /alapterkep$/.test(k)); const bg = bgKey && IMG[bgKey];
   const items = typeof depthOrder === 'function' ? depthOrder(list) : list.slice().sort((a, b) => (a.i + a.j) - (b.i + b.j));
   const sprites = items.map(b => { const r = spriteRect(b); if (!r) return null; const d = DEF[b.type]; r.sq = !(d.w && d.h && d.w !== d.h); return r; }).filter(Boolean);
-  const o = tileTop(0, 0); paintTown(cv, bg, o[0], o[1], sprites, N);
+  const o = tileTop(0, 0); paintTown(cv, bg, o[0], o[1], sprites, N, 0, 0, roads);
 }
 function showVisit(id) {
   visitId = id; const b = bot(id); const town = b.real ? { list: [] } : townOf(b); const rt = b.real ? NET.towns[id] : null; if (b.real && !NET.walls[id]) netLoadWall(id); const wall = b.real ? (NET.walls[id] || []) : (SOC.walls[id] || []);
@@ -5327,7 +5347,7 @@ function showVisit(id) {
       ${wall.filter(w => !isBlocked(w.from)).map(w => `<div style="padding:4px 0;border-bottom:1px dashed rgba(90,55,25,.25)"><b>${esc(cleanT(nameOf(w.from)))}</b> <small>${ago(w.t)}</small><br>${esc(cleanT(w.text))}</div>`).join('')}</div>
     <div class="row">${btn(T('Vissza a megyébe'), 'id="vBack"', true, 'ghost')}${btn(isBlocked(id) ? T('Tiltás feloldása') : T('Letiltás'), 'id="vBlock"', true, isBlocked(id) ? 'teal' : 'coral')}</div></div>`, '', 'soc');
   wire(id);
-  try { if (b.real) renderRemoteTown($('vTown'), rt); else renderTown($('vTown'), botLayout(b)); } catch (e) { const c = $('vTown'); if (c) c.hidden = true; }
+  try { if (b.real) renderRemoteTown($('vTown'), rt); else renderTown($('vTown'), botLayout(b), b.layout && b.layout.roads); } catch (e) { const c = $('vTown'); if (c) c.hidden = true; }
 }
 function wire(vid) {
   const R = $('modalRoot'), on = (sel, fn) => R.querySelectorAll(sel).forEach(e => e.onclick = () => fn(e));
@@ -5611,7 +5631,7 @@ function renderRemoteTown(cv, town) {
       const w = b.rot ? b.h : b.w, h = b.rot ? b.w : b.h, flip = !!b.rot, s = (w + h) * TW / 2 / Math.max(1, m.maxX - m.minX);
       const L = TT(b.i, b.j + h); const lx = flip ? m.w - m.maxX : m.minX, ly = w === h ? (m.lY + m.rY) / 2 : flip ? m.rY : m.lY;
       return { im, flip, sq: w === h, L, R: TT(b.i + w, b.j), B: TT(b.i + w, b.j + h), x: L[0] - lx * s, y: L[1] - ly * s, w: im.naturalWidth * s, h: im.naturalHeight * s }; }).filter(Boolean);
-    paintTown(cv, RIMG[names[0]], ox, oy, sprites, town.n || 9, town.bgw || 1672, town.bgh || 941);
+    paintTown(cv, RIMG[names[0]], ox, oy, sprites, town.n || 9, town.bgw || 1672, town.bgh || 941, town.roads);
   };
   names.forEach(n => rimg(n, () => { if (--left <= 0) draw(); }));
 }
@@ -5729,7 +5749,7 @@ function visitFar(id) { if (id === 'me') return; showVisit(id); }
 function boot() {
   try { Object.assign(EN, SOC_EN, NET_EN); } catch (e) {}
   loadSoc(); mountBtn(); checkKits(); tick(); setInterval(tick, 30e3); setInterval(watchMsgs, 8e3); testServerTweaks(); if (ONLINE) showWelcome(netBoot); else netBoot();
-  window.__SOC = { get: () => SOC, skip: ms => { window.__socSkew = (window.__socSkew || 0) + ms; tick(); }, show: showSoc, kitAward, botRaidsMe: () => botRaidsMe(SOC.bots[0], true), offer: offerSnitch, coup: botCoup };
+  window.__SOC = { get: () => SOC, visit: id => showVisit(id), skip: ms => { window.__socSkew = (window.__socSkew || 0) + ms; tick(); }, show: showSoc, kitAward, botRaidsMe: () => botRaidsMe(SOC.bots[0], true), offer: offerSnitch, coup: botCoup };
 }
 if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListener('load', () => setTimeout(boot, 300));
 // ---------- az építés menü egyforma magas: minden kártya a legmagasabbhoz igazodik ----------
@@ -6463,6 +6483,235 @@ setInterval(() => {
   } catch (e) {}
 }, 700);
 window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave(); }, GBC };
+})();
+
+// ---------- Táblajáték a fogadóban ----------
+// két csapat bábui járnak körbe, leütni kell a másikét; a csavar, hogy a kockák számát mindig az ellenfél választja
+(function tablaGame() {
+  const DEV = !/github\.io$/.test(location.hostname);
+  const ERA = Math.max(0, Math.min(5, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
+  const THEMES = [
+    { host: ['tuzrako'], game: 'Csontdobó', where: 'a tűz mellett', foe: 'Bozontos Bendegúz', mine: ['Gyűjtögető', 'Íjas vadász', 'Kőpattintó', 'Törzsfő'], his: ['Bogyószedő', 'Lándzsás', 'Csontfaragó', 'Öregapó'], res: ['termeny', 'kovako'],
+      minus: 'Egy róka belekotort a zsákba', back: 'Megbotlottál egy gyökérben', fwd: 'Rád ijesztett egy mamut, futás', scale: 1,
+      fact: 'Az első kockák állatok bokacsontjai voltak. Négy oldalukon másképp álltak meg, ezért dobni is lehetett velük, jóval azelőtt, hogy bárki számokat rótt volna rájuk.' },
+    { host: ['taltos'], game: 'Táltoscsont', where: 'a táltos sátra előtt', foe: 'Szemhunyorgató Szabolcs', mine: ['Pásztor', 'Íjász', 'Lovas', 'Vezér'], his: ['Csikós', 'Nyilas', 'Paripás', 'Nagyúr'], res: ['termeny', 'kovako', 'hirnev'],
+      minus: 'A táltos kért egy kis áldozatot', back: 'Megbokrosodott a lovad', fwd: 'Hátszél fúj a pusztán', scale: 1.5,
+      fact: 'A kockajáték az emberiség egyik legrégebbi játéka. Mezopotámiában már négy és fél ezer éve játszottak táblás versenyjátékot, amelyben a bábuk egy pályán futottak és leüthették egymást.' },
+    { host: ['zsakmany'], game: 'Zsákmányosztó', where: 'a zsákmányraktár mögött', foe: 'Csorbakardú Csaba', mine: ['Gyalogos', 'Íjász', 'Lovasíjász', 'Vezér'], his: ['Lándzsás', 'Nyilas', 'Portyázó', 'Hadnagy'], res: ['termeny', 'kovako', 'hirnev'],
+      minus: 'Osztozni kellett a többiekkel', back: 'Rossz felé fordult a sereg', fwd: 'Színlelt menekülés, előre', scale: 2,
+      fact: 'A nyugati krónikák sok mindent feljegyeztek a kalandozó magyarokról, de azt nem, hogy kockáztak volna. Itt tehát nyugodtan kitalálhatjuk, hogyan osztoztak a zsákmányon.' },
+    { host: ['piac'], game: 'Vásári kocka', where: 'a piac sarkában', foe: 'Vásári Vince', mine: ['Paraszt', 'Kereskedő', 'Vitéz', 'Ispán'], his: ['Jobbágy', 'Kalmár', 'Fegyveres', 'Bíró'], res: ['termeny', 'kovako', 'hirnev'],
+      minus: 'Vámot szedett az ispán embere', back: 'Elgurult a krajcárod', fwd: 'Utat nyitott a tömeg', scale: 3,
+      fact: 'A középkori egyház nem nézte jó szemmel a kockázást, mert sokan pénzben játszottak, és nem egyszer a ruhájukat is eljátszották.' },
+    { host: ['fogado'], game: 'Ostábla', where: 'a fogadó asztalánál', foe: 'Kocsmáros Kelemen', mine: ['Szolga', 'Polgár', 'Lovag', 'Báró'], his: ['Kocsis', 'Mesterember', 'Zsoldos', 'Nádor'], res: ['bor', 'gyapju', 'vas', 'hirnev'],
+      minus: 'Kifizetted a kör bort', back: 'Sáros az út, visszacsúsztál', fwd: 'Felvett egy szekér', scale: 4,
+      fact: 'Az ostábla, amit ma backgammonként ismerünk, a középkorban egész Európában népszerű volt. Pont úgy, mint itt, a bábuk körbejártak, és le lehetett ütni a magányosan álló ellenfelet.' },
+    { host: ['fogado'], game: 'Lovagi ostábla', where: 'a fogadó asztalánál', foe: 'Hencegő Herold', mine: ['Apród', 'Fegyverhordozó', 'Lovag', 'Nádor'], his: ['Szolgalegény', 'Zsoldos', 'Rablólovag', 'Oligarcha'], res: ['bor', 'vas', 'arany', 'hirnev'],
+      minus: 'Az oligarcha embere vámot szedett', back: 'Elhagyta a lovad a patkóját', fwd: 'Királyi futár vitt magával', scale: 5,
+      fact: 'A középkorban a kockázás annyira elterjedt volt, hogy városok és uralkodók újra meg újra korlátozni próbálták. A tiltás ritkán járt sikerrel.' }
+  ];
+  const TM = THEMES[ERA];
+  if (ERA === 5 && typeof DEF !== 'undefined' && DEF.fogado) { delete DEF.fogado.old; }
+  const N = 28, ROUNDS = 15, VALS = [1, 2, 3, 5];
+  // mezők: start, menedék, újra, előre, vissza, nyersanyag, pénz, vám
+  const F = Array(N).fill('');
+  Object.entries({ 0: 'startp', 14: 'starta', 7: 'safe', 21: 'safe', 4: 'again', 18: 'again', 10: 'fwd', 24: 'fwd', 12: 'back', 26: 'back', 5: 'minus', 19: 'minus', 9: 'penz', 23: 'penz', 2: 'res0', 16: 'res1', 11: 'res2', 25: 'res3' }).forEach(([i, t]) => F[i] = t);
+  const SAFE = i => F[i] === 'safe' || F[i] === 'startp' || F[i] === 'starta';
+  const resOf = t => { const L = TM.res.filter(k => typeof RES !== 'undefined' && RES[k]); return L[(+t.slice(3)) % L.length]; };
+  const amt = k => k === 'penz' ? Math.round(30 * TM.scale) : k === 'hirnev' ? Math.max(1, Math.round(TM.scale)) : Math.round(4 * TM.scale);
+  const P = k => { const p = {}; if (k === 1) for (let r = 1; r <= 6; r++) p[r] = 1 / 6; else for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) p[a + b] = (p[a + b] || 0) + 1 / 36; return p; };
+  const PR = { 1: P(1), 2: P(2) };
+  const cellRC = i => i < 8 ? [0, i] : i < 15 ? [i - 7, 7] : i < 22 ? [7, 21 - i] : [28 - i, 0];
+  const acc = n => n + '-' + ({ 1: 'et', 2: 't', 3: 'at', 4: 'et', 5: 'öt', 6: 'ot', 7: 'et', 8: 'at', 9: 'et', 10: 'et', 11: 'et', 12: 't' }[n] || 'et');
+  const az = w => (/^[aáeéiíoóöőuúüű]/i.test(w) ? 'az ' : 'a ') + w;
+  let G = null, fast = false, busy = false;
+  const wait = ms => new Promise(r => setTimeout(r, fast ? Math.min(ms, 40) : ms));
+  function day() { if (!S.tabla || S.tabla.day !== new Date().toDateString()) S.tabla = { day: new Date().toDateString(), played: 0, paid: 0 }; return S.tabla; }
+  function newGame() {
+    G = { round: 1, p: VALS.map((v, n) => ({ v, name: TM.mine[n], at: [3, 2, 1, 0][n], out: false })), a: VALS.map((v, n) => ({ v, name: TM.his[n], at: [17, 16, 15, 14][n], out: false })),
+      sc: { p: 0, a: 0 }, pot: {}, phase: 'proll', k: 1, roll: null, log: [], over: false };
+    G.k = aiPick(); G.msg = trf('{0} úgy döntött, hogy {1} kockával dobsz.', TM.foe, G.k === 1 ? tr('egy') : tr('két')) + ' ' + whyTxt(G.k);
+  }
+  const occ = (at, side) => G[side].find(x => !x.out && x.at === at);
+  const other = s => s === 'p' ? 'a' : 'p';
+  function legal(side, pc, r) { const to = (pc.at + r) % N; if (occ(to, side)) return false; if (occ(to, other(side)) && SAFE(to)) return false; return true; }
+  function capGain(side, r) { let best = 0; G[side].forEach(pc => { if (pc.out || !legal(side, pc, r)) return; const t = occ((pc.at + r) % N, other(side)); if (t) best = Math.max(best, t.v); }); return best; }
+  function hitChance(side, k) { let s = 0; Object.entries(PR[k]).forEach(([r, p]) => { if (capGain(side, +r) > 0) s += p; }); return s; }
+  function aiPick() { const e = [1, 2].map(k => Object.entries(PR[k]).reduce((s, [r, p]) => s + p * capGain('p', +r), 0) + hitChance('p', k) * 0.01); return e[0] === e[1] ? 1 + (Math.random() < 0.5) : e[0] < e[1] ? 1 : 2; }
+  function whyTxt(k) { const c = Math.round(hitChance('p', k) * 100); return c ? trf('Így {0}% eséllyel tudsz leütni valakit.', c) : tr('Így most senkit nem érsz el.'); }
+  function danger(at, side) { if (SAFE(at)) return 0; const o = other(side); return Math.min(...[1, 2].map(k => Object.entries(PR[k]).reduce((s, [r, p]) => s + (G[o].some(q => !q.out && (q.at + +r) % N === at) ? p : 0), 0))); }
+  function aiMove(r) {
+    let best = null;
+    G.a.forEach(pc => { if (pc.out || !legal('a', pc, r)) return; const to = (pc.at + r) % N, t = occ(to, 'p'), f = F[to];
+      const from = pc.at; let sc = (t ? t.v * 12 : 0) + ({ again: 4, fwd: 1.5, safe: 2, back: -1 }[f] || 0);
+      if (t) t.out = true; pc.at = to; sc -= danger(to, 'a') * pc.v * 10; pc.at = from; if (t) t.out = false; sc += danger(from, 'a') * pc.v * 8; sc += Math.random() * 0.3;
+      if (!best || sc > best.sc) best = { pc, sc }; });
+    return best && best.pc;
+  }
+  function addPot(k, n) { G.pot[k] = Math.max(0, (G.pot[k] || 0) + n); }
+  function say(t) { G.log.unshift(t); G.log = G.log.slice(0, 6); }
+  async function step(side, pc, n) { const d = n < 0 ? -1 : 1; for (let s = 0; s < Math.abs(n); s++) { pc.at = (pc.at + d + N) % N; draw(); await wait(160); } }
+  async function land(side, pc, depth) {
+    const me = side === 'p', t = occ(pc.at, other(side)), f = F[pc.at];
+    if (t && !SAFE(pc.at)) { t.out = true; G.sc[side] += t.v; say(me ? trf('Leütötted {0} bábut! +{1} pont.', az(t.name), t.v) : trf('{0} leütötte {1} bábudat. +{2} pont neki.', TM.foe, az(t.name), t.v)); draw(); await wait(450); }
+    if (f === 'again') { say(me ? tr('Szerencsés mező, dobhatsz még egyet!') : trf('{0} újra dobhat.', TM.foe)); return true; }
+    if ((f === 'fwd' || f === 'back') && depth < 1) {
+      const n = f === 'fwd' ? 2 : -2, to = (pc.at + n + N) % N;
+      say((me ? '' : TM.foe + ' · ') + (f === 'fwd' ? TM.fwd + '! ' + tr('Előre kettőt.') : TM.back + '. ' + tr('Vissza kettőt.')));
+      if (occ(to, side) || (occ(to, other(side)) && SAFE(to))) { say(tr('Foglalt a mező, maradt a helyén.')); return false; }
+      await wait(250); await step(side, pc, n); return land(side, pc, depth + 1);
+    }
+    if (!me) return false;
+    if (f === 'penz') { const n = amt('penz'); addPot('penz', n); say(trf('+{0} Pénz a zsákba.', n)); }
+    if (f.startsWith('res')) { const k = resOf(f); if (k) { const n = amt(k); addPot(k, n); say(trf('+{0} {1} a zsákba.', n, RES[k].name)); } }
+    if (f === 'minus') { const n = Math.round(25 * TM.scale); const had = G.pot.penz || 0; addPot('penz', -n); say(had ? trf('{0}, -{1} Pénz a zsákból.', TM.minus, Math.min(had, n)) : trf('{0}, de üres volt a zsák. Szerencséd van!', TM.minus)); }
+    if (f === 'safe') say(tr('Menedék. Itt senki nem üthet le.'));
+    return false;
+  }
+  async function rollAnim(k) { busy = true; for (let n = 0; n < 7; n++) { G.dv = Array.from({ length: k }, () => 1 + Math.floor(Math.random() * 6)); draw(); await wait(70); } busy = false; return G.dv.reduce((a, b) => a + b, 0); }
+  async function pRoll() {
+    if (busy || G.phase !== 'proll') return; G.roll = await rollAnim(G.k);
+    const can = G.p.filter(pc => !pc.out && legal('p', pc, G.roll));
+    if (!can.length) { say(trf('{0} dobtál, de egyik bábuddal sem tudsz lépni.', acc(G.roll))); G.phase = 'achoose'; G.msg = ''; draw(); return; }
+    G.phase = 'pmove'; G.msg = trf('{0} dobtál. Melyik bábuddal lépsz? Koppints rá.', acc(G.roll)); draw();
+  }
+  async function pMove(n) {
+    const pc = G.p[n]; if (busy || G.phase !== 'pmove' || !pc || pc.out || !legal('p', pc, G.roll)) return;
+    busy = true; G.phase = 'anim'; G.msg = ''; await step('p', pc, G.roll); const again = await land('p', pc, 0); busy = false;
+    if (end()) return;
+    if (again) { G.phase = 'proll'; G.msg = trf('Dobhatsz még egyet, megint {0} kockával.', G.k === 1 ? tr('egy') : tr('két')); draw(); return; }
+    G.phase = 'achoose'; G.msg = ''; draw();
+  }
+  async function aTurn(k) {
+    if (busy || G.phase !== 'achoose') return; G.ak = k; G.phase = 'anim';
+    G.msg = trf('{0} dob.', TM.foe); draw(); await wait(300);
+    for (let guard = 0; guard < 4; guard++) {
+      const r = await rollAnim(k); busy = true; const pc = aiMove(r);
+      if (!pc) { say(trf('{0} {1} dobott, de nem tud lépni.', TM.foe, acc(r))); busy = false; break; }
+      say(trf('{0} {1} dobott, és {2} bábujával lép.', TM.foe, acc(r), az(pc.name))); draw(); await wait(300);
+      await step('a', pc, r); const again = await land('a', pc, 0); busy = false; if (end()) return; if (!again) break; await wait(300);
+    }
+    G.round++; if (end()) return;
+    G.k = aiPick(); G.phase = 'proll'; G.msg = trf('{0}. kör. {1} úgy döntött, hogy {2} kockával dobsz.', G.round, TM.foe, G.k === 1 ? tr('egy') : tr('két')) + ' ' + whyTxt(G.k); draw();
+  }
+  function end() {
+    const pa = G.p.every(x => x.out), aa = G.a.every(x => x.out);
+    if (!pa && !aa && G.round <= ROUNDS) return false;
+    G.over = true; G.phase = 'over'; G.win = aa || (!pa && G.sc.p > G.sc.a); G.tie = !aa && !pa && G.sc.p === G.sc.a; finish(); return true;
+  }
+  function finish() {
+    const d = day(), rew = Object.assign({}, G.pot);
+    if (G.win) { rew.penz = (rew.penz || 0) + Math.round(120 * TM.scale); rew.tudas = (rew.tudas || 0) + 1; if (RES.hirnev) rew.hirnev = (rew.hirnev || 0) + Math.max(2, Math.round(2 * TM.scale)); }
+    else if (G.tie) rew.penz = (rew.penz || 0) + Math.round(50 * TM.scale);
+    let paid = false;
+    if (!d.paid) { d.paid = 1; Object.entries(rew).forEach(([k, v]) => { if (v > 0 && RES[k]) S.res[k] = (S.res[k] || 0) + v; }); paid = true; save(); try { hud(); } catch (e) {} }
+    const head = G.win ? (G.a.every(x => x.out) ? tr('Mindet leütötted, tiéd a tábla!') : tr('Nyertél!')) : G.tie ? tr('Döntetlen') : trf('Most {0} nyert', TM.foe);
+    const rt = typeof miniRewText === 'function' ? miniRewText(rew) : Object.entries(rew).filter(([, v]) => v > 0).map(([k, v]) => `+${v} ${RES[k] ? RES[k].name : k}`).join(', ');
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><h2>${head}</h2>
+      <p>${trf('Te {0} pontot ütöttél le, {1} {2} pontot.', G.sc.p, TM.foe, G.sc.a)}</p>
+      ${paid ? `<p>${tr('A jutalmad')}</p>${rt || `<p>${tr('Most üres maradt a zsák, de holnap újra próbálhatod.')}</p>`}` : `<p>${tr('A mai jutalmat már megkaptad. Holnap újra jár.')}</p>`}
+      <div class="fact"><b>${tr('Tudtad?')}</b><p>${tr(TM.fact)}</p><p style="margin-top:8px">${tr('Két kockával a 7 a leggyakoribb összeg, mert hatféleképpen jöhet ki. A 2 és a 12 csak egyféleképpen.')}</p></div>
+      <div class="row">${DEV ? `<button class="btn coral" type="button" id="tbAgain">${tr('Új játék')}</button>` : ''}<button class="btn ghost" type="button" id="tbClose">${tr('Bezárás')}</button></div></div>`, '', 'tablaend');
+    $('tbClose').onclick = closeModal; if ($('tbAgain')) $('tbAgain').onclick = () => { G = null; start(); };
+  }
+  function cellHTML(i) {
+    const [r, c] = cellRC(i), f = F[i], pc = occ(i, 'p') || occ(i, 'a'), side = pc ? (G.p.includes(pc) ? 'p' : 'a') : '';
+    let ic = '';
+    if (f === 'again') ic = '<span class="tbi">🎲</span>'; else if (f === 'fwd') ic = '<span class="tbi">»2</span>'; else if (f === 'back') ic = '<span class="tbi">«2</span>';
+    else if (f === 'safe') ic = '<span class="tbi">🛡</span>'; else if (f === 'minus') ic = '<span class="tbi">💸</span>';
+    else if (f === 'penz' || f.startsWith('res')) { const k = f === 'penz' ? 'penz' : resOf(f); if (k && RES[k]) ic = `<img class="tbri" src="img/${RES[k].file || RES[k].icon + '.png'}" alt="">`; }
+    else if (f === 'startp' || f === 'starta') ic = '<span class="tbi">⌂</span>';
+    else ic = `<span class="tbi tbar">${i < 7 ? '›' : i < 14 ? '⌄' : i < 21 ? '‹' : '⌃'}</span>`;
+    const mv = side === 'p' && G.phase === 'pmove' && legal('p', pc, G.roll);
+    const tok = pc ? `<button type="button" class="tbt ${side}${mv ? ' mv' : ''}" ${side === 'p' ? `data-tbp="${G.p.indexOf(pc)}"` : ''} title="${pc.name}">${pc.v}</button>` : '';
+    return `<div class="tbc f-${f || 'n'}" data-c="${i}" style="grid-row:${r + 1};grid-column:${c + 1}">${ic}${tok}</div>`;
+  }
+  const pip = v => `<span class="tbd">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => `<i${({ 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] }[v] || []).includes(n) ? ' class="on"' : ''}></i>`).join('')}</span>`;
+  function centerHTML() {
+    const dice = G.dv ? `<div class="tbdice">${G.dv.map(pip).join('')}</div>` : '';
+    let ctl = '';
+    if (G.phase === 'proll') ctl = `<button class="btn coral" type="button" id="tbRoll">${trf('Dobás {0} kockával', G.k === 1 ? tr('egy') : tr('két'))}</button>`;
+    if (G.phase === 'achoose') ctl = `<p class="tbq">${trf('Hány kockával dobjon {0}?', TM.foe)}</p><div class="tbch">${[1, 2].map(k => `<button class="btn teal" type="button" data-tbk="${k}">${k === 1 ? tr('Egy kocka') : tr('Két kocka')}<small>${trf('{0}% esély, hogy üt', Math.round(hitChance('a', k) * 100))}</small></button>`).join('')}</div>`;
+    return `<div class="tbmid">${dice}${G.msg ? `<p class="tbmsg">${G.msg}</p>` : ''}${ctl}</div>`;
+  }
+  function sideHTML(side) {
+    return `<div class="tbteam ${side}"><b>${side === 'p' ? tr('Te') : TM.foe} · ${G.sc[side]} ${tr('pont')}</b><div>${G[side].map(x => `<span class="${x.out ? 'out' : ''}"><i class="tbt ${side}">${x.v}</i>${x.name}</span>`).join('')}</div></div>`;
+  }
+  function draw() {
+    const w = $('tbWrap'); if (!w || !G) return;
+    w.innerHTML = `<div class="tbtop"><span>${trf('{0}. kör / {1}', Math.min(G.round, ROUNDS), ROUNDS)}</span>${Object.keys(G.pot).length ? `<span>${tr('Zsák')} ${Object.entries(G.pot).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${RES[k].name}`).join(', ') || tr('üres')}</span>` : ''}${DEV ? `<button class="btn ghost" type="button" id="tbFast">${fast ? tr('Normál tempó') : tr('Gyorsítás')}</button>` : ''}</div>
+      ${sideHTML('a')}<div class="tbboard">${Array.from({ length: N }, (_, i) => cellHTML(i)).join('')}${centerHTML()}</div>${sideHTML('p')}
+      <div class="tblog">${G.log.map(l => `<p>${l}</p>`).join('')}</div>`;
+    w.querySelectorAll('[data-tbp]').forEach(b => { b.onclick = () => pMove(+b.dataset.tbp);
+      b.onmouseenter = () => { if (G.phase !== 'pmove') return; const pc = G.p[+b.dataset.tbp]; const c = w.querySelector(`[data-c="${(pc.at + G.roll) % N}"]`); if (c && legal('p', pc, G.roll)) c.classList.add('tg'); };
+      b.onmouseleave = () => w.querySelectorAll('.tg').forEach(c => c.classList.remove('tg')); });
+    if ($('tbRoll')) $('tbRoll').onclick = pRoll;
+    w.querySelectorAll('[data-tbk]').forEach(b => b.onclick = () => aTurn(+b.dataset.tbk));
+    if ($('tbFast')) $('tbFast').onclick = () => { fast = !fast; draw(); };
+  }
+  function legendHTML() {
+    const L = ['penz'].concat(TM.res).filter(k => RES[k]).map(k => RES[k].name), r = L.slice(0, -1).join(', ') + ' ' + tr('és') + ' ' + L[L.length - 1];
+    return `<ul class="tbleg"><li><b>🎲</b> ${tr('Dobhatsz még egyet')}</li><li><b>»2</b> ${tr('Előre kettőt')}</li><li><b>«2</b> ${tr('Vissza kettőt')}</li><li><b>🛡</b> ${tr('Menedék, itt nem lehet leütni senkit')}</li><li><b>⌂</b> ${tr('Kiinduló mező, ez is menedék')}</li><li><b>💸</b> ${tr('Vám, a zsákból elvisznek egy kis pénzt')}</li><li><b>＋</b> ${trf('{0} kerül a zsákba', r)}</li></ul>`;
+  }
+  function start() {
+    const d = day();
+    if (G && !G.over) { open(); return; }
+    if (!DEV && d.played) { toast('Ma már leültél egy játszmára. Holnap újra várnak az asztalnál!'); return; }
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><h2>${trf('Egy játszma {0}', tr(TM.where))}</h2>
+      <p>${trf('Két csapat bábui járnak körbe-körbe a táblán. Ha a bábud pont arra a mezőre lép, ahol {0} egyik bábuja áll, leütöd, és megkapod az értékét pontban.', TM.foe)}</p>
+      <p>${tr('A csavar, hogy nem te döntöd el, hány kockával dobsz. Te mondod meg az ellenfélnek, hogy egy vagy két kockával dobjon, ő pedig neked. Egy kockával 1 és 6 között bármi ugyanakkora eséllyel jöhet. Két kockával a 7 körüli összegek a leggyakoribbak, a 2 és a 12 nagyon ritka.')}</p>
+      <p>${trf('{0} kör után az nyer, aki több pontot ütött le. Aki az ellenfél összes bábuját leüti, azonnal nyer. A zsákba gyűjtött holmit a végén megkapod, győzelemért még jutalom is jár.', ROUNDS)}</p>
+      ${legendHTML()}
+      ${DEV ? `<p class="mg-devnote">${tr('Teszt mód: itt korlátlanul játszhatsz, és gyorsíthatsz is. Jutalom naponta egyszer jár. A nyilvános szerveren ez nincs.')}</p>` : `<p><small>${tr('Naponta egy játszma fér bele, és egyszer jár érte jutalom.')}</small></p>`}
+      <div class="row"><button class="btn coral" type="button" id="tbGo">${tr('Leülök játszani')}</button></div></div>`, '', 'tablaintro');
+    $('tbGo').onclick = () => { if (!DEV) { d.played = 1; save(); } newGame(); open(); };
+  }
+  function open() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><div id="tbWrap"></div></div>`, '', 'tabla'); draw();
+  }
+  window.tablaOpen = start;
+  window.__tbDev = { get G() { return G; }, set fast(v) { fast = v; }, F, aiPick, hitChance };
+  if (typeof showInfo === 'function') {
+    const _si = showInfo;
+    showInfo = function (b) {
+      const r = _si.apply(this, arguments);
+      try {
+        const el = $('info');
+        if (b && TM.host.includes(b.type) && !b.ruined && !(b.until && S.gt < b.until) && el && !el.querySelector('#tbOpen')) {
+          const box = document.createElement('div'); box.className = 'tbinfo';
+          box.innerHTML = `<b>🎲 ${tr(TM.game)}</b><small>${trf('Ülj le {0} ellen egy körbe-körbe táblajátékra.', TM.foe)}</small><button class="btn coral" type="button" id="tbOpen">${G && !G.over ? tr('Folytatom a játszmát') : tr('Leülök játszani')}</button>`;
+          const row = el.querySelector('.row'); el.insertBefore(box, row || null); box.querySelector('#tbOpen').onclick = () => { hideInfo(); start(); };
+        }
+      } catch (e) {}
+      return r;
+    };
+  }
+  const st = document.createElement('style');
+  st.textContent = `.tbinfo{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.75);box-shadow:inset 0 0 0 2px #E2B33C;margin:6px 0;flex-shrink:0}.tbinfo small{font-weight:700;color:var(--ink-soft)}
+  #tbWrap{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .tbtop{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-weight:900}.tbtop .btn{min-height:32px;padding:2px 12px;margin-left:auto}
+  .tbboard{position:relative;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:3px;width:min(100%,520px);aspect-ratio:1;margin:0 auto;padding:6px;border-radius:18px;background:#7A4A22;box-shadow:inset 0 0 0 3px #4A2A10,0 4px 0 rgba(0,0,0,.25);box-sizing:border-box}
+  .tbc{position:relative;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#F3DFB6;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12);min-width:0;min-height:0}
+  .tbc.f-safe{background:#CFE2B4}.tbc.f-startp{background:#BFD8F2}.tbc.f-starta{background:#F2C3B8}.tbc.f-again{background:#F6E08A}.tbc.f-fwd{background:#D6EAC9}.tbc.f-back{background:#EAD0C6}.tbc.f-minus{background:#E8C4B2}
+  .tbc.tg{box-shadow:inset 0 0 0 3px #2F8A3A}
+  .tbi{font:900 clamp(11px,2.6vw,17px) Nunito,sans-serif;color:#6A4520;opacity:.75}.tbar{opacity:.35;font-size:clamp(14px,3.4vw,22px)}.tbri{width:62%;height:62%;object-fit:contain;opacity:.85}
+  .tbt{position:absolute;inset:12%;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;font:900 clamp(13px,3vw,20px) Nunito,sans-serif;color:#fff;cursor:default;padding:0;box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.5)}
+  .tbt.p{background:#2C6FB0}.tbt.a{background:#B8402C}
+  .tbt.mv{cursor:pointer;animation:tbPulse 1s infinite;outline:3px solid #F2C14E}
+  @keyframes tbPulse{50%{transform:scale(1.12)}}
+  .tbmid{grid-row:2/8;grid-column:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;text-align:center;border-radius:12px;background:rgba(255,244,223,.92);min-width:0;overflow:hidden}
+  .tbmsg{margin:0;font-weight:800;font-size:clamp(12px,2.6vw,15px);line-height:1.35;max-width:32ch}
+  .tbq{margin:0;font-weight:900}
+  .tbch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.tbch .btn{flex-direction:column;height:auto;padding:8px 12px;line-height:1.2}.tbch small{display:block;font-weight:700;opacity:.85;font-size:12px}
+  .tbdice{display:flex;gap:10px}
+  .tbd{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;width:clamp(34px,8vw,50px);aspect-ratio:1;padding:6px;box-sizing:border-box;border-radius:10px;background:#FFF8EA;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 0 0 2px #8A5A2B}
+  .tbd i{border-radius:50%}.tbd i.on{background:#3A2410}
+  .tbteam{display:flex;flex-direction:column;gap:4px;font-size:14px}.tbteam>div{display:flex;flex-wrap:wrap;gap:4px 12px}
+  .tbteam span{display:inline-flex;align-items:center;gap:5px;font-weight:700}.tbteam span.out{opacity:.4;text-decoration:line-through}
+  .tbteam .tbt{position:static;width:22px;height:22px;font-size:12px;box-shadow:none}
+  .tblog{min-height:3em;font-size:14px;font-weight:700}.tblog p{margin:2px 0}.tblog p:first-child{color:var(--ink);font-weight:900}.tblog p:not(:first-child){opacity:.6}
+  .tbleg{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-weight:700;font-size:14px}.tbleg b{display:inline-block;min-width:2em}`;
+  document.head.appendChild(st);
 })();
 
 // HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
