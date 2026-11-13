@@ -3441,7 +3441,7 @@ function carryCity(s, d) {
     else { refund += Math.round(((DEF[t].cost || {}).penz || 100) * 0.6); }
   });
   Object.keys(d.roads || {}).forEach(k => { const [i, j] = k.split(',').map(Number); if (i >= 0 && j >= 0 && i < N && j < N && !occ[k] && okTile(k) && !ROUGH[k]) s.roads[k] = d.roads[k]; });
-  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); s.buildings.forEach(b => { if (b.baro && !b.exLot) delete b.baro; }); autoRoads(s); s.layoutV = 3;
+  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); s.buildings.forEach(b => { if (b.baro && !b.exLot) delete b.baro; }); autoRoads(s); s.layoutV = 4;
   return s.carried;
 }
 
@@ -3508,16 +3508,13 @@ function autoRoads(s, keep) {
   const foR = new Set(ringB(fo).map(([i, j]) => i + ',' + j)), net = new Set();
   { const q = [...foR].filter(k => s.roads[k]); q.forEach(k => net.add(k)); for (let h = 0; h < q.length; h++) { const [i, j] = q[h].split(',').map(Number); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj]) => { const k = (i + di) + ',' + (j + dj); if (s.roads[k] && !net.has(k)) { net.add(k); q.push(k); } }); } }
   const dist = b => Math.hypot(b.i - fo.i, b.j - fo.j);
-  s.buildings.filter(b => b !== fo && !skip(b) && !b.baro).sort((a, b) => dist(a) - dist(b)).forEach(b => link(b, net, foR, b.exLot ? walkOut : walkIn));
+  s.buildings.filter(b => b !== fo && !skip(b) && !b.baro).sort((a, b) => dist(a) - dist(b)).forEach(b => link(b, net, foR, walkIn));
   // a bárók földjén a báró vára a középpont
-  if (!s.rozgony) BARONS.forEach(r => {
-    const mine = s.buildings.filter(b => b.baro === r.id); if (!mine.length) return;
-    const goal = new Set(ring(r.i, r.j, 5, 5).map(([i, j]) => i + ',' + j).filter(k => base(k))), bnet = new Set();
-    mine.sort((a, b) => Math.hypot(a.i - r.i, a.j - r.j) - Math.hypot(b.i - r.i, b.j - r.j)).forEach(b => link(b, bnet, goal, walkOut));
-  });
+  // a saját földeden kívül nem maradhat utad (a bárók épületei a báró birtokán állnak, oda nem mi építünk)
+  Object.keys(s.roads).forEach(k => { const [i, j] = k.split(',').map(Number); if (!((i >= 0 && j >= 0 && i < N && j < N) || own.has(k))) delete s.roads[k]; });
 }
 // régi mentések: egyszer rendet rakunk
-setTimeout(() => { try { if (!S || !S.carry) return; if (!S.layoutV) { S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); } if (S.layoutV < 3) { S.layoutV = 3; S.buildings.forEach(b => { if (b.baro && !b.exLot) delete b.baro; }); autoRoads(S, true); try { roadCache = null; } catch (e) {} } connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
+setTimeout(() => { try { if (!S || !S.carry) return; if (!S.layoutV) { S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); } if (S.layoutV < 4) { S.layoutV = 4; S.buildings.forEach(b => { if (b.baro && !b.exLot) delete b.baro; }); autoRoads(S, true); try { roadCache = null; } catch (e) {} } connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
 
 // ---------- Raktár: a régi korokból áthozott épületek rendbetétele ----------
 {
@@ -3541,6 +3538,19 @@ setTimeout(() => { try { if (!S || !S.carry) return; if (!S.layoutV) { S.layoutV
       box.querySelectorAll('[data-old1]').forEach(b => b.onclick = () => kill(b.dataset.old1, false));
       box.querySelectorAll('[data-oldall]').forEach(b => b.onclick = () => kill(b.dataset.oldall, true));
     } catch (e) {}
+  };
+}
+
+// a báró épületének ablaka megmondja, kié
+{
+  const BN = { csak: 'Csák Máté', aba: 'Aba Amadé', koszegi: 'Kőszegi Henrik' };
+  const _si = showInfo;
+  showInfo = function (b) {
+    const r = _si.apply(this, arguments);
+    try { if (b && b.baro && !S.rozgony) { const el = $('info'); if (el && !el.querySelector('.baronote')) { const n = document.createElement('div'); n.className = 'baronote'; n.style.cssText = 'padding:10px 12px;border-radius:12px;background:rgba(201,55,44,.12);box-shadow:inset 0 0 0 2px rgba(201,55,44,.35);font-weight:800;flex-shrink:0';
+      n.textContent = trf('Ezt az épületet {0} elcsaklizta, és a saját birtokára vitte. Most neki termel. A rozgonyi csata után visszakapod, a földdel együtt.', BN[b.baro] || 'egy kiskirály');
+      const h = el.querySelector('h3'); el.insertBefore(n, h ? h.nextSibling : el.firstChild); el.querySelectorAll('#iMove,#iDel').forEach(x => x.remove()); } } } catch (e) {}
+    return r;
   };
 }
 
