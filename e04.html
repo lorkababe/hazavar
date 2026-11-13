@@ -6236,7 +6236,8 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       minus: 'Az oligarcha embere vámot szedett', back: 'Elhagyta a lovad a patkóját', fwd: 'Királyi futár vitt magával', scale: 5,
       fact: 'A középkorban a kockázás annyira elterjedt volt, hogy városok és uralkodók újra meg újra korlátozni próbálták. A tiltás ritkán járt sikerrel.' }
   ];
-  const TM = THEMES[ERA];
+  const TM = THEMES[ERA], PX = 'e0' + ERA, IMGV = '?v=2611131';
+  const pimg = (side, n) => `img/${PX}_tabla_${side}${n}.png${IMGV}`;
   if (ERA === 5 && typeof DEF !== 'undefined' && DEF.fogado) { delete DEF.fogado.old; }
   const N = 28, ROUNDS = 15, VALS = [1, 2, 3, 5];
   // mezők: start, menedék, újra, előre, vissza, nyersanyag, pénz, vám
@@ -6349,7 +6350,8 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     else if (f === 'startp' || f === 'starta') ic = '<span class="tbi">⌂</span>';
     else ic = `<span class="tbi tbar">${i < 7 ? '›' : i < 14 ? '⌄' : i < 21 ? '‹' : '⌃'}</span>`;
     const mv = side === 'p' && G.phase === 'pmove' && legal('p', pc, G.roll);
-    const tok = pc ? `<button type="button" class="tbt ${side}${mv ? ' mv' : ''}" ${side === 'p' ? `data-tbp="${G.p.indexOf(pc)}"` : ''} title="${pc.name}">${pc.v}</button>` : '';
+    const pn = pc ? G[side].indexOf(pc) : 0;
+    const tok = pc ? `<button type="button" class="tbt ${side}${mv ? ' mv' : ''}" ${side === 'p' ? `data-tbp="${pn}"` : ''} title="${pc.name}"><img src="${pimg(side, pn)}" alt="" onerror="this.remove()"><b>${pc.v}</b></button>` : '';
     return `<div class="tbc f-${f || 'n'}" data-c="${i}" style="grid-row:${r + 1};grid-column:${c + 1}">${ic}${tok}</div>`;
   }
   const pip = v => `<span class="tbd">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => `<i${({ 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] }[v] || []).includes(n) ? ' class="on"' : ''}></i>`).join('')}</span>`;
@@ -6361,7 +6363,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     return `<div class="tbmid">${dice}${G.msg ? `<p class="tbmsg">${G.msg}</p>` : ''}${ctl}</div>`;
   }
   function sideHTML(side) {
-    return `<div class="tbteam ${side}"><b>${side === 'p' ? tr('Te') : TM.foe} · ${G.sc[side]} ${tr('pont')}</b><div>${G[side].map(x => `<span class="${x.out ? 'out' : ''}"><i class="tbt ${side}">${x.v}</i>${x.name}</span>`).join('')}</div></div>`;
+    return `<div class="tbteam ${side}">${side === 'a' ? `<img class="tbface" src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()">` : ''}<div class="tbtm"><b>${side === 'p' ? tr('Te') : TM.foe} · ${G.sc[side]} ${tr('pont')}</b><div>${G[side].map(x => `<span class="${x.out ? 'out' : ''}"><img class="tbmini" src="${pimg(side, G[side].indexOf(x))}" alt="" onerror="this.remove()"><i class="tbv ${side}">${x.v}</i>${x.name}</span>`).join('')}</div></div></div>`;
   }
   function draw() {
     const w = $('tbWrap'); if (!w || !G) return;
@@ -6384,6 +6386,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     if (G && !G.over) { open(); return; }
     if (!DEV && d.played) { toast('Ma már leültél egy játszmára. Holnap újra várnak az asztalnál!'); return; }
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><h2>${trf('Egy játszma {0}', tr(TM.where))}</h2>
+      <div class="tbintro"><img src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()"><div class="bub">${trf('Na, leülsz velem egy játszmára? Én vagyok {0}, és még senki nem vert meg. Na jó, majdnem senki.', TM.foe)}</div></div>
       <p>${trf('Két csapat bábui járnak körbe-körbe a táblán. Ha a bábud pont arra a mezőre lép, ahol {0} egyik bábuja áll, leütöd, és megkapod az értékét pontban.', TM.foe)}</p>
       <p>${tr('A csavar, hogy nem te döntöd el, hány kockával dobsz. Te mondod meg az ellenfélnek, hogy egy vagy két kockával dobjon, ő pedig neked. Egy kockával 1 és 6 között bármi ugyanakkora eséllyel jöhet. Két kockával a 7 körüli összegek a leggyakoribbak, a 2 és a 12 nagyon ritka.')}</p>
       <p>${trf('{0} kör után az nyer, aki több pontot ütött le. Aki az ellenfél összes bábuját leüti, azonnal nyer. A zsákba gyűjtött holmit a végén megkapod, győzelemért még jutalom is jár.', ROUNDS)}</p>
@@ -6405,7 +6408,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
         const el = $('info');
         if (b && TM.host.includes(b.type) && !b.ruined && !(b.until && S.gt < b.until) && el && !el.querySelector('#tbOpen')) {
           const box = document.createElement('div'); box.className = 'tbinfo';
-          box.innerHTML = `<b>🎲 ${tr(TM.game)}</b><small>${trf('Ülj le {0} ellen egy körbe-körbe táblajátékra.', TM.foe)}</small><button class="btn coral" type="button" id="tbOpen">${G && !G.over ? tr('Folytatom a játszmát') : tr('Leülök játszani')}</button>`;
+          box.innerHTML = `<b>${ERA === 5 ? `<img src="img/e05_ikon_kocka.png${IMGV}" alt="" style="width:28px;height:28px;vertical-align:middle" onerror="this.remove()">` : '🎲'} ${tr(TM.game)}</b><small>${trf('Ülj le {0} ellen egy körbe-körbe táblajátékra.', TM.foe)}</small><button class="btn coral" type="button" id="tbOpen">${G && !G.over ? tr('Folytatom a játszmát') : tr('Leülök játszani')}</button>`;
           const row = el.querySelector('.row'); el.insertBefore(box, row || null); box.querySelector('#tbOpen').onclick = () => { hideInfo(); start(); };
         }
       } catch (e) {}
@@ -6416,16 +6419,19 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   st.textContent = `.tbinfo{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.75);box-shadow:inset 0 0 0 2px #E2B33C;margin:6px 0;flex-shrink:0}.tbinfo small{font-weight:700;color:var(--ink-soft)}
   #tbWrap{display:flex;flex-direction:column;gap:8px;min-width:0}
   .tbtop{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-weight:900}.tbtop .btn{min-height:32px;padding:2px 12px;margin-left:auto}
-  .tbboard{position:relative;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:3px;width:min(100%,520px);aspect-ratio:1;margin:0 auto;padding:6px;border-radius:18px;background:#7A4A22;box-shadow:inset 0 0 0 3px #4A2A10,0 4px 0 rgba(0,0,0,.25);box-sizing:border-box}
-  .tbc{position:relative;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#F3DFB6;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12);min-width:0;min-height:0}
-  .tbc.f-safe{background:#CFE2B4}.tbc.f-startp{background:#BFD8F2}.tbc.f-starta{background:#F2C3B8}.tbc.f-again{background:#F6E08A}.tbc.f-fwd{background:#D6EAC9}.tbc.f-back{background:#EAD0C6}.tbc.f-minus{background:#E8C4B2}
+  .tbboard{position:relative;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:3px;width:min(100%,560px);aspect-ratio:1;margin:0 auto;padding:4.5%;border-radius:18px;background:#4A2A10 url(img/${PX}_tabla_tabla.jpg${IMGV}) center/cover;box-shadow:inset 0 0 0 3px #4A2A10,0 4px 0 rgba(0,0,0,.25);box-sizing:border-box}
+  .tbc{position:relative;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,244,220,.5);box-shadow:inset 0 0 0 1.5px rgba(90,55,25,.45),0 1px 2px rgba(0,0,0,.2);min-width:0;min-height:0}
+  .tbc.f-safe{background:rgba(190,225,160,.75)}.tbc.f-startp{background:rgba(170,205,245,.8)}.tbc.f-starta{background:rgba(245,180,165,.8)}.tbc.f-again{background:rgba(250,225,120,.8)}.tbc.f-fwd{background:rgba(205,235,190,.7)}.tbc.f-back{background:rgba(235,200,185,.7)}.tbc.f-minus{background:rgba(230,185,165,.75)}
   .tbc.tg{box-shadow:inset 0 0 0 3px #2F8A3A}
   .tbi{font:900 clamp(11px,2.6vw,17px) Nunito,sans-serif;color:#6A4520;opacity:.75}.tbar{opacity:.35;font-size:clamp(14px,3.4vw,22px)}.tbri{width:62%;height:62%;object-fit:contain;opacity:.85}
-  .tbt{position:absolute;inset:12%;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;font:900 clamp(13px,3vw,20px) Nunito,sans-serif;color:#fff;cursor:default;padding:0;box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.5)}
-  .tbt.p{background:#2C6FB0}.tbt.a{background:#B8402C}
-  .tbt.mv{cursor:pointer;animation:tbPulse 1s infinite;outline:3px solid #F2C14E}
-  @keyframes tbPulse{50%{transform:scale(1.12)}}
-  .tbmid{grid-row:2/8;grid-column:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;text-align:center;border-radius:12px;background:rgba(255,244,223,.92);min-width:0;overflow:hidden}
+  .tbt{position:absolute;left:4%;right:4%;bottom:6%;top:-38%;display:flex;align-items:flex-end;justify-content:center;border:0;background:none;cursor:default;padding:0;z-index:2}
+  .tbt img{width:100%;height:100%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));pointer-events:none}
+  .tbt b{position:absolute;right:-6%;bottom:-6%;min-width:1.35em;height:1.35em;display:flex;align-items:center;justify-content:center;border-radius:50%;font:900 clamp(10px,2.2vw,13px) Nunito,sans-serif;color:#fff;box-shadow:0 0 0 2px #FFF4DF}
+  .tbt.p b,.tbv.p{background:#2C6FB0}.tbt.a b,.tbv.a{background:#B8402C}
+  .tbt:not(:has(img)){top:12%;bottom:12%;border-radius:50%}.tbt.p:not(:has(img)){background:#2C6FB0}.tbt.a:not(:has(img)){background:#B8402C}
+  .tbt.mv{cursor:pointer;animation:tbPulse 1s infinite}.tbt.mv img{filter:drop-shadow(0 0 4px #FFD54A) drop-shadow(0 0 2px #FFD54A)}
+  @keyframes tbPulse{50%{transform:translateY(-8%)}}
+  .tbmid{grid-row:2/8;grid-column:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;text-align:center;border-radius:12px;background:rgba(255,244,223,.7);backdrop-filter:blur(1px);min-width:0;overflow:hidden}
   .tbmsg{margin:0;font-weight:800;font-size:clamp(12px,2.6vw,15px);line-height:1.35;max-width:32ch}
   .tbq{margin:0;font-weight:900}
   .tbch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.tbch .btn{flex-direction:column;height:auto;padding:8px 12px;line-height:1.2}.tbch small{display:block;font-weight:700;opacity:.85;font-size:12px}
@@ -6434,7 +6440,9 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .tbd i{border-radius:50%}.tbd i.on{background:#3A2410}
   .tbteam{display:flex;flex-direction:column;gap:4px;font-size:14px}.tbteam>div{display:flex;flex-wrap:wrap;gap:4px 12px}
   .tbteam span{display:inline-flex;align-items:center;gap:5px;font-weight:700}.tbteam span.out{opacity:.4;text-decoration:line-through}
-  .tbteam .tbt{position:static;width:22px;height:22px;font-size:12px;box-shadow:none}
+  .tbteam{flex-direction:row!important;align-items:center;gap:10px!important}.tbtm{display:flex;flex-direction:column;gap:4px;min-width:0}.tbface{width:64px;height:auto;flex:none}.tbmini{width:22px;height:26px;object-fit:contain}.tbv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;color:#fff;font:900 11px Nunito,sans-serif;font-style:normal}
+  .tbintro{display:flex;gap:12px;align-items:center}.tbintro img{width:110px;height:auto;flex:none}.tbintro .bub{flex:1;min-width:0;background:rgba(255,248,232,.85);border-radius:14px;padding:10px 14px;font-weight:800;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
+  @media (max-width:520px){.tbintro img{width:76px}.tbface{width:48px}}
   .tblog{min-height:3em;font-size:14px;font-weight:700}.tblog p{margin:2px 0}.tblog p:first-child{color:var(--ink);font-weight:900}.tblog p:not(:first-child){opacity:.6}
   .tbleg{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-weight:700;font-size:14px}.tbleg b{display:inline-block;min-width:2em}`;
   document.head.appendChild(st);
