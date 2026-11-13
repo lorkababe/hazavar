@@ -4846,7 +4846,8 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       fact: 'A középkorban a kockázás annyira elterjedt volt, hogy városok és uralkodók újra meg újra korlátozni próbálták. A tiltás ritkán járt sikerrel.' }
   ];
   const TM = THEMES[ERA], PX = 'e0' + ERA, IMGV = '?v=2611131';
-  const pimg = (side, n) => `img/${PX}_tabla_${side}${n}.png${IMGV}`;
+  const SPRITE = `img/${PX}_tabla_babuk.png${IMGV}`;
+  const pimg = (side, n, cls) => `<i class="tbspr ${cls || ''}" style="background-image:url(${SPRITE});background-position:${n * 100 / 3}% ${side === 'p' ? 0 : 100}%"></i>`;
   if (ERA === 5 && typeof DEF !== 'undefined' && DEF.fogado) { delete DEF.fogado.old; }
   const N = 28, ROUNDS = 15, VALS = [1, 2, 3, 5];
   // mezők: start, menedék, újra, előre, vissza, nyersanyag, pénz, vám
@@ -4960,7 +4961,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     else ic = `<span class="tbi tbar">${i < 7 ? '›' : i < 14 ? '⌄' : i < 21 ? '‹' : '⌃'}</span>`;
     const mv = side === 'p' && G.phase === 'pmove' && legal('p', pc, G.roll);
     const pn = pc ? G[side].indexOf(pc) : 0;
-    const tok = pc ? `<button type="button" class="tbt ${side}${mv ? ' mv' : ''}" ${side === 'p' ? `data-tbp="${pn}"` : ''} title="${pc.name}"><img src="${pimg(side, pn)}" alt="" onerror="this.remove()"><b>${pc.v}</b></button>` : '';
+    const tok = pc ? `<button type="button" class="tbt ${side}${mv ? ' mv' : ''}" ${side === 'p' ? `data-tbp="${pn}"` : ''} title="${pc.name}">${pimg(side, pn)}<b>${pc.v}</b></button>` : '';
     return `<div class="tbc f-${f || 'n'}" data-c="${i}" style="grid-row:${r + 1};grid-column:${c + 1}">${ic}${tok}</div>`;
   }
   const pip = v => `<span class="tbd">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => `<i${({ 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] }[v] || []).includes(n) ? ' class="on"' : ''}></i>`).join('')}</span>`;
@@ -4972,7 +4973,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     return `<div class="tbmid">${dice}${G.msg ? `<p class="tbmsg">${G.msg}</p>` : ''}${ctl}</div>`;
   }
   function sideHTML(side) {
-    return `<div class="tbteam ${side}">${side === 'a' ? `<img class="tbface" src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()">` : ''}<div class="tbtm"><b>${side === 'p' ? tr('Te') : TM.foe} · ${G.sc[side]} ${tr('pont')}</b><div>${G[side].map(x => `<span class="${x.out ? 'out' : ''}"><img class="tbmini" src="${pimg(side, G[side].indexOf(x))}" alt="" onerror="this.remove()"><i class="tbv ${side}">${x.v}</i>${x.name}</span>`).join('')}</div></div></div>`;
+    return `<div class="tbteam ${side}">${side === 'a' ? `<img class="tbface" src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()">` : ''}<div class="tbtm"><b>${side === 'p' ? tr('Te') : TM.foe} · ${G.sc[side]} ${tr('pont')}</b><div>${G[side].map(x => `<span class="${x.out ? 'out' : ''}">${pimg(side, G[side].indexOf(x), 'tbmini')}<i class="tbv ${side}">${x.v}</i>${x.name}</span>`).join('')}</div></div></div>`;
   }
   function draw() {
     const w = $('tbWrap'); if (!w || !G) return;
@@ -5034,11 +5035,11 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .tbc.tg{box-shadow:inset 0 0 0 3px #2F8A3A}
   .tbi{font:900 clamp(11px,2.6vw,17px) Nunito,sans-serif;color:#6A4520;opacity:.75}.tbar{opacity:.35;font-size:clamp(14px,3.4vw,22px)}.tbri{width:62%;height:62%;object-fit:contain;opacity:.85}
   .tbt{position:absolute;left:4%;right:4%;bottom:6%;top:-38%;display:flex;align-items:flex-end;justify-content:center;border:0;background:none;cursor:default;padding:0;z-index:2}
-  .tbt img{width:100%;height:100%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));pointer-events:none}
+  .tbspr{display:block;background-size:400% 200%;background-repeat:no-repeat}.tbt .tbspr{width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));pointer-events:none}
   .tbt b{position:absolute;right:-6%;bottom:-6%;min-width:1.35em;height:1.35em;display:flex;align-items:center;justify-content:center;border-radius:50%;font:900 clamp(10px,2.2vw,13px) Nunito,sans-serif;color:#fff;box-shadow:0 0 0 2px #FFF4DF}
   .tbt.p b,.tbv.p{background:#2C6FB0}.tbt.a b,.tbv.a{background:#B8402C}
-  .tbt:not(:has(img)){top:12%;bottom:12%;border-radius:50%}.tbt.p:not(:has(img)){background:#2C6FB0}.tbt.a:not(:has(img)){background:#B8402C}
-  .tbt.mv{cursor:pointer;animation:tbPulse 1s infinite}.tbt.mv img{filter:drop-shadow(0 0 4px #FFD54A) drop-shadow(0 0 2px #FFD54A)}
+  
+  .tbt.mv{cursor:pointer;animation:tbPulse 1s infinite}.tbt.mv .tbspr{filter:drop-shadow(0 0 4px #FFD54A) drop-shadow(0 0 2px #FFD54A)}
   @keyframes tbPulse{50%{transform:translateY(-8%)}}
   .tbmid{grid-row:2/8;grid-column:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;text-align:center;border-radius:12px;background:rgba(255,244,223,.7);backdrop-filter:blur(1px);min-width:0;overflow:hidden}
   .tbmsg{margin:0;font-weight:800;font-size:clamp(12px,2.6vw,15px);line-height:1.35;max-width:32ch}
@@ -5049,7 +5050,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .tbd i{border-radius:50%}.tbd i.on{background:#3A2410}
   .tbteam{display:flex;flex-direction:column;gap:4px;font-size:14px}.tbteam>div{display:flex;flex-wrap:wrap;gap:4px 12px}
   .tbteam span{display:inline-flex;align-items:center;gap:5px;font-weight:700}.tbteam span.out{opacity:.4;text-decoration:line-through}
-  .tbteam{flex-direction:row!important;align-items:center;gap:10px!important}.tbtm{display:flex;flex-direction:column;gap:4px;min-width:0}.tbface{width:64px;height:auto;flex:none}.tbmini{width:22px;height:26px;object-fit:contain}.tbv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;color:#fff;font:900 11px Nunito,sans-serif;font-style:normal}
+  .tbteam{flex-direction:row!important;align-items:center;gap:10px!important}.tbtm{display:flex;flex-direction:column;gap:4px;min-width:0}.tbface{width:64px;height:auto;flex:none}.tbmini{width:24px;height:24px;flex:none}.tbv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;color:#fff;font:900 11px Nunito,sans-serif;font-style:normal}
   .tbintro{display:flex;gap:12px;align-items:center}.tbintro img{width:110px;height:auto;flex:none}.tbintro .bub{flex:1;min-width:0;background:rgba(255,248,232,.85);border-radius:14px;padding:10px 14px;font-weight:800;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
   @media (max-width:520px){.tbintro img{width:76px}.tbface{width:48px}}
   .tblog{min-height:3em;font-size:14px;font-weight:700}.tblog p{margin:2px 0}.tblog p:first-child{color:var(--ink);font-weight:900}.tblog p:not(:first-child){opacity:.6}
