@@ -6291,7 +6291,7 @@ function cardHTML(id) {
   return `<div class="gbbox"><div class="gbhead"><span class="gbtag">${tr('NEVEZETES ÉPÜLET')}</span><b>${trf('{0}. szint', l)} <small>/ ${GB_TOP}</small></b></div>
     <div class="gbrow"><small>${tr('Most ad')}</small><div>${fxChips(fx(id, l))}</div></div>
     ${max ? `<p class="gbmax">${tr('Elérte a legmagasabb szintet!')}</p>` : `<div class="gbrow"><small>${tr('A következő szint még ennyit tesz hozzá')}</small><div>${fxChips(fx(id, l + 1), fx(id, l))}</div></div>
-    <div class="gbbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>
+    <div class="hvgbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>
     <div class="row gbbtns"><button class="btn teal" type="button" data-gbi="5" ${me ? '' : 'disabled'}>+5</button><button class="btn teal" type="button" data-gbi="25" ${me ? '' : 'disabled'}>+25</button><button class="btn coral" type="button" data-gbi="9999" ${me ? '' : 'disabled'}>${tr('Amennyi kell')}</button></div>
     <small class="gbnote">${trf('Neked {0} Hírneved van.', fmt(me))}</small>`}
     ${max ? '' : `<div class="gbtop"><b>${tr('Beszállók ebben a szintben')}</b>${topList(id).length ? `<table>${topList(id).map(([k, v], i) => `<tr${k === 'me' ? ' class="me"' : ''}><td>${i + 1}.</td><td>${k === 'me' ? tr('Te') : esc(v.name || '?')}</td><td>${v.n} ${tr('Hírnév')}</td><td>${Math.round(v.n / n * 100)}%</td><td>${i < 3 && k !== 'me' ? trf('jutalma ×{0}', [1.6, 1.35, 1.15][i]) : ''}</td></tr>`).join('')}</table>` : `<p>${tr('Még senki nem szállt be ebbe a szintbe.')}</p>`}
@@ -6323,7 +6323,7 @@ function miniHTML(id) {
   const l = lvl(id), lv = L(id), n = need(l), max = l >= GB_TOP;
   return `<div class="gbbox"><div class="gbhead"><span class="gbtag">${tr('NEVEZETES ÉPÜLET')}</span><b>${trf('{0}. szint', l)} <small>/ ${GB_TOP}</small></b></div>
     <div class="gbrow"><div>${fxChips(fx(id, l))}</div></div>
-    ${max ? '' : `<div class="gbbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>`}
+    ${max ? '' : `<div class="hvgbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>`}
     <button class="btn coral" type="button" data-gbopen="${id}" style="width:100%">${max ? tr('Részletek') : tr('Szintezés és beszállók')}</button></div>`;
 }
 function showCard(id) {
@@ -6412,7 +6412,7 @@ function showGb() {
   const nb = neighbours().map(({ b, real, gbs }) => Object.entries(gbs).filter(([id]) => GBC[id]).map(([id, g]) => {
     const n = g.need || need(g.lvl), you = real ? 0 : g.mine || 0;
     return `<div class="gbn"><img src="img/${GBC[id].stages ? GBC[id].stages[Math.min(2, Math.floor(g.lvl / 4))] : (IMG[GBC[id].img] ? GBC[id].img : GBC[id].alt || GBC[id].img)}.png" alt=""><div class="gbi"><b>${esc(b.name)} · ${GBC[id].name}</b><small>${trf('{0}. szint', g.lvl)}${you ? ' · ' + trf('te már {0}-t tettél bele', you) : ''}</small>
-      <div class="gbbar sm"><i style="width:${Math.min(100, g.pts / n * 100)}%"></i><span>${g.pts} / ${n}</span></div>
+      <div class="hvgbar sm"><i style="width:${Math.min(100, g.pts / n * 100)}%"></i><span>${g.pts} / ${n}</span></div>
       <div class="row"><button class="btn teal" type="button" data-gbc="${b.id}|${id}|10" ${(S.res.hirnev || 0) >= 10 ? '' : 'disabled'}>${tr('+10 Hírnév · tervrajz')}</button><button class="btn ghost" type="button" data-gbc="${b.id}|${id}|30" ${(S.res.hirnev || 0) >= 30 ? '' : 'disabled'}>+30</button></div></div></div>`;
   }).join('')).join('');
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('NEVEZETES ÉPÜLETEK')}</span><h2>${tr('Az ország büszkeségei')}</h2>
@@ -6437,10 +6437,10 @@ st.textContent = `#btnGb{position:absolute;left:calc(16px + env(safe-area-inset-
   .gbtop{display:block!important;margin-top:10px}.gbtop table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.gbtop td{padding:4px 6px;border-bottom:1px dashed rgba(90,55,25,.25);color:#3A2410!important;background:none}.gbtop tr.me{font-weight:900;background:rgba(226,179,60,.25)}.gbtop td:nth-child(3),.gbtop td:nth-child(4){text-align:right;white-space:nowrap}.gbtop td:last-child{color:#2F7A3A!important;font-weight:800;font-size:12px}.gbtop p{margin:4px 0;font-size:13px}
   @media (max-width:560px){.gbbig img{width:90px;height:90px}}
   #info{max-height:calc(100vh - var(--toph,72px) - 140px - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
-  .gbbox{background:rgba(255,248,232,.75);border-radius:14px;padding:8px 10px;margin:4px 0;box-shadow:inset 0 0 0 2px #E2B33C}#info .gbc{font-size:12px;padding:1px 7px}#info .gbrow{margin:4px 0}#info .gbrow>div{gap:4px}#info .gbbar{margin:6px 0}#info .gbnote{font-size:11px}.gbhead{display:flex;justify-content:space-between;align-items:center}.gbtag{font-size:11px;letter-spacing:.12em;font-weight:900;color:#8A3A16}
+  .gbbox{box-sizing:border-box;max-width:100%;overflow:hidden;background:rgba(255,248,232,.75);border-radius:14px;padding:8px 10px;margin:4px 0;box-shadow:inset 0 0 0 2px #E2B33C}#info .gbc{font-size:12px;padding:1px 7px}#info .gbrow{margin:4px 0}#info .gbrow>div{gap:4px}#info .hvgbar{margin:6px 0}#info .gbnote{font-size:11px}.gbhead{display:flex;justify-content:space-between;align-items:center}.gbtag{font-size:11px;letter-spacing:.12em;font-weight:900;color:#8A3A16}
   .gbrow{margin:6px 0}.gbrow>small{display:block;color:var(--ink-soft);font-weight:800;font-size:12px}.gbrow>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
   .gbc{display:inline-flex;align-items:center;gap:4px;background:#FFF4DF;border-radius:999px;padding:2px 9px;font-weight:900;font-size:13px;box-shadow:0 0 0 1px rgba(90,55,25,.15)}.gbc img{width:18px;height:18px;object-fit:contain}
-  .gbbar{position:relative;height:22px;border-radius:11px;background:rgba(90,55,25,.18);overflow:hidden;margin:8px 0}.gbbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#E2B33C,#C9472F)}.gbbar span{position:relative;display:block;text-align:center;font-weight:900;font-size:12px;line-height:22px}.gbbar.sm{height:18px}.gbbar.sm span{line-height:18px}
+  .hvgbar{position:relative;display:block;width:100%;height:22px;flex:none;border-radius:11px;background:rgba(90,55,25,.18);overflow:hidden;margin:8px 0}.hvgbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#E2B33C,#C9472F)}.hvgbar span{position:relative;display:block;text-align:center;font-weight:900;font-size:12px;line-height:22px}.hvgbar.sm{height:18px}.hvgbar.sm span{line-height:18px}
   .gbbtns .btn{min-height:36px;padding:0 14px}.gbnote{display:block;color:var(--ink-soft);font-size:12px;margin:4px 0}.gbmax{color:var(--good);font-weight:900}
   .gbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:10px}
   .gbcard,.gbn{display:flex;gap:10px;background:rgba(255,248,232,.7);border-radius:16px;padding:10px;box-shadow:0 0 0 2px rgba(90,55,25,.15)}.gbcard.on{box-shadow:0 0 0 3px #E2B33C}
