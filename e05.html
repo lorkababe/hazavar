@@ -502,7 +502,7 @@ const TERRAIN = {
 };
 
 const DEF = {
-  fo:        { name: 'Királyi udvarház', size: 3, img: 'e03_kiralyi_udvarhaz', cat: 'fo', pop: 10, hang: 5, desc: 'A régi királyi udvarház. Károly Róbert innen kezdi a rendrakást, és innen nézi, melyik kiskirály szed már megint vámot a saját hídján.' },
+  fo:        { name: 'Királyi udvarház', size: 3, img: 'e05_kiralyi_udvarhaz', cat: 'fo', pop: 10, hang: 5, desc: 'Gótikus kőkúria toronnyal, liliomos zászlókkal. Károly Róbert innen kezdi a rendrakást, és innen nézi, melyik kiskirály szed már megint vámot a saját hídján.' },
   // ---- lakóházak ----
   polgarhaz: { name: 'Polgárház', size: 2, img: 'e05_polgarhaz', cat: 'lak', cost: { penz: 250, fa: 10 }, pop: 12, prod: { penz: 70 }, time: 5 * M, bt: 10 * M, road: true, desc: 'Kőből rakott földszint, gerendás emelet, cégér a kapu fölött. A polgár kereskedik, adót fizet, és mindenről van véleménye.' },
   kuria:     { name: 'Nemesi kúria', size: 3, img: 'e05_kuria', cat: 'lak', cost: { penz: 900, fa: 40, vas: 6 }, pop: 30, hang: 2, prod: { penz: 240 }, time: 10 * M, bt: 40 * M, road: true, tech: 'nemes', desc: 'Tornác, kút, ló az udvaron, címer az ajtó fölött. A nemes úr itt lakik, ha éppen nem a királynál panaszkodik.' },
@@ -544,12 +544,12 @@ const DEF = {
   vendegtelep: { old: 1, b4: 1, name: 'Vendégtelep', size: 2, img: 'e04_vendegtelep', cat: 'lak', cost: { penz: 420, fa: 30 }, pop: 26, prod: { penz: 130 }, time: 10 * M, bt: 30 * M, road: true, up: 'polgarhaz', upT: 2 * H1, desc: 'Német, vallon és olasz telepesek, akiket a király hívott. Szorgalmasak, csak az a baj, hogy mindent jobban tudnak.' },
   lakotorony: { old: 1, b4: 1, name: 'Nemesi lakótorony', size: 2, img: 'e04_lakotorony', cat: 'lak', cost: { penz: 600, fa: 40, vas: 8 }, pop: 6, hang: 6, faith: 'ker', def: 2, bt: H1, stone: true, aura: { r: 3, mul: -0.1, to: 'lak', txt: 'a környező jobbágyok kevesebbet termelnek, mert a földesúr is kér' }, desc: 'Egy kisnemes kőtornya. Az urak örülnek, a szomszéd jobbágyok kevésbé.' },
   vizimalom: { old: 1, b4: 1, inset: 0.06, name: 'Vízimalom', size: 2, img: 'e04_vizimalom', cat: 'term', cost: { penz: 380, fa: 40 }, workers: 2, prod: { termeny: 80 }, time: 15 * M, bt: 40 * M, road: true, modes: true, terrain: 'bank', aura: { r: 4, mul: 0.25, to: 'termeny', txt: 'a közeli szántók 25%-kal több Terményt adnak' }, desc: 'A folyó hajtja a kereket, a kerék a követ, a kő őrli a búzát. A molnár csak a vámot szedi.' },
-  juhaszat:  { old: 1, b4: 1, inset: 0.08, name: 'Juhászat', size: 3, img: 'e04_juhaszat', cat: 'term', cost: { penz: 260, fa: 20 }, workers: 3, prod: { penz: 60 }, time: 15 * M, bt: 20 * M, road: true, modes: true, desc: 'Birkák, kutya, egy juhász, aki furulyázik. A gyapjúból posztó lesz, a furulyaszóból semmi.' },
-  posztomuhely: { old: 1, b4: 1, name: 'Posztóműhely', size: 2, img: 'e04_posztomuhely', cat: 'term', cost: { penz: 450, fa: 30 }, workers: 3,  prod: { penz: 90 }, time: 20 * M, bt: 40 * M, road: true, modes: true, desc: 'Szövőszék és kallómalom. Gyapjúból posztót készít, ami köpeny, nadrág és vásári áru lesz.' },
-  szolohegy: { old: 1, b4: 1, inset: 0.12, name: 'Szőlőhegy', size: 2, img: 'e04_szolohegy', cat: 'term', cost: { penz: 260, fa: 15 }, workers: 2, prod: { bor: 3 }, time: 15 * M, bt: 30 * M, road: true, modes: true, terrain: 'hill', desc: 'Napos domboldal, karók, tőkék. A vincellér szerint a tavalyi jobb volt, de ezt minden évben mondja.' },
-  preshaz:   { old: 1, b4: 1, name: 'Présház', size: 1, img: 'e04_preshaz', cat: 'term', cost: { penz: 350, fa: 30 }, workers: 2,  prod: { bor: 3 }, time: 20 * M, bt: 40 * M, road: true, modes: true, desc: 'Prés, kád, hordó. Szőlőből bort csinál, a borból jókedvet, a jókedvből néha verekedést.' },
-  ercbanya:  { old: 1, b4: 1, inset: 0.12, name: 'Ércbánya', size: 2, img: 'e04_ercbanya', cat: 'term', cost: { penz: 400, fa: 40 }, workers: 4, prod: { vas: 3 }, up: 'vashamor1', upT: 2 * H1, time: 20 * M, bt: 45 * M, road: true, modes: true, terrain: 'hill', desc: 'Lyuk a sziklában, csille, gyertya. A bányász lent dolgozik, a gondja fent marad.' },
-  kovacsmuhely: { old: 1, b4: 1, name: 'Kovácsműhely', size: 2, img: 'e04_kovacsmuhely', cat: 'term', cost: { penz: 450, fa: 40 }, workers: 3,  prod: { vas: 3 }, time: 20 * M, bt: 40 * M, road: true, modes: true, aura: { r: 2, mul: -0.15, to: 'lak', txt: 'a közeli házak 15%-kal kevesebbet adnak, mert reggeltől estig kalapál' }, desc: 'Fújtató, üllő, kalapács. Az ércből vasat csinál, a csendből zajt.' },
+  juhaszat:  { old: 1, b4: 1, inset: 0.08, name: 'Juhászat', size: 3, img: 'e04_juhaszat', cat: 'term', cost: { penz: 260, fa: 20 }, workers: 3, prod: { termeny: 70 }, time: 15 * M, bt: 20 * M, road: true, modes: true, desc: 'Birkák, kutya, egy juhász, aki furulyázik. A gyapjúból posztó lesz, a furulyaszóból semmi. Az Anjouk korában a gyapjút már a kereskedők viszik, a juhászat sajtot és húst ad a városnak.' },
+  posztomuhely: { old: 1, b4: 1, name: 'Posztóműhely', size: 2, img: 'e04_posztomuhely', cat: 'term', cost: { penz: 450, fa: 30 }, workers: 3,  prod: { penz: 90 }, time: 20 * M, bt: 40 * M, road: true, modes: true, desc: 'Szövőszék és kallómalom. Gyapjúból posztót készít, ami köpeny, nadrág és vásári áru lesz. Ebben a korban a posztót rögtön eladják a vásáron, ezért Pénzt hoz.' },
+  szolohegy: { old: 1, b4: 1, inset: 0.12, name: 'Szőlőhegy', size: 2, img: 'e04_szolohegy', cat: 'term', cost: { penz: 260, fa: 15 }, workers: 2, prod: { bor: 3 }, time: 15 * M, bt: 30 * M, road: true, modes: true, terrain: 'hill', desc: 'Napos domboldal, karók, tőkék. A vincellér szerint a tavalyi jobb volt, de ezt minden évben mondja. A régi szőlőhegyen a vincellér már maga préseli a bort.' },
+  preshaz:   { old: 1, b4: 1, name: 'Présház', size: 1, img: 'e04_preshaz', cat: 'term', cost: { penz: 350, fa: 30 }, workers: 2,  prod: { bor: 3 }, time: 20 * M, bt: 40 * M, road: true, modes: true, desc: 'Prés, kád, hordó. Szőlőből bort csinál, a borból jókedvet, a jókedvből néha verekedést. Most már a saját szőlejéből dolgozik.' },
+  ercbanya:  { old: 1, b4: 1, inset: 0.12, name: 'Ércbánya', size: 2, img: 'e04_ercbanya', cat: 'term', cost: { penz: 400, fa: 40 }, workers: 4, prod: { vas: 3 }, up: 'vashamor1', upT: 2 * H1, time: 20 * M, bt: 45 * M, road: true, modes: true, terrain: 'hill', desc: 'Lyuk a sziklában, csille, gyertya. A bányász lent dolgozik, a gondja fent marad. Az ércet helyben olvasztják, így rögtön Vas lesz belőle. Átépíthető Vashámorrá.' },
+  kovacsmuhely: { old: 1, b4: 1, name: 'Kovácsműhely', size: 2, img: 'e04_kovacsmuhely', cat: 'term', cost: { penz: 450, fa: 40 }, workers: 3,  prod: { vas: 3 }, time: 20 * M, bt: 40 * M, road: true, modes: true, aura: { r: 2, mul: -0.15, to: 'lak', txt: 'a közeli házak 15%-kal kevesebbet adnak, mert reggeltől estig kalapál' }, desc: 'Fújtató, üllő, kalapács. Az ércből vasat csinál, a csendből zajt. A kovács most a környék ércéből maga készít vasat.' },
   vasarter:  { old: 1, b4: 1, name: 'Vásártér', size: 3, img: 'e04_vasarter', cat: 'term', cost: { penz: 1200, fa: 60, bor: 8 }, workers: 4, hang: 4, prod: { penz: 220 }, time: 20 * M, bt: 2 * H1, road: true, modes: true, aura: { r: 4, mul: 0.15, to: 'penz', txt: 'a közeli épületek 15%-kal több Pénzt adnak' }, desc: 'Sátrak, standok, kikiáltó. Itt minden kapható, ami nem kell, és semmi, ami kellene.' },
   revhaz:    { old: 1, b4: 1, name: 'Révház', w: 1, h: 2, img: 'e04_revhaz', cat: 'term', cost: { penz: 320, fa: 30 }, workers: 2, prod: { penz: 90 }, time: 10 * M, bt: 30 * M, road: true, modes: true, terrain: 'bank', desc: 'Komp és révész. Átvisz a folyón, és mindenkitől kér révpénzt, a királytól is, csak tőle halkabban.' },
   penzvero_kamara: { old: 1, b4: 1, name: 'Pénzverő kamara', size: 2, img: 'e04_penzvero_kamara', cat: 'term', cost: { penz: 900, vas: 12 }, workers: 3, prod: { penz: 320 }, time: 30 * M, bt: 2 * H1, road: true, modes: true, stone: true, desc: 'A kamarahaszna ide folyik be. Minden évben új pénzt vernek, és a régit be kell váltani. Persze kicsit kevesebbre.' },
@@ -735,7 +735,7 @@ const art = w => /^[AÁEÉIÍOÓÖŐUÚÜŰ]/i.test(w) ? 'az' : 'a';
 const withArt = w => LANG === 'en' ? w : /^Az? /.test(w) ? w.charAt(0).toLowerCase() + w.slice(1) : art(w) + ' ' + w;
 function dimsT(type, rot) { const d = DEF[type]; const w = d.w || d.size, h = d.h || d.size; return rot ? [h, w] : [w, h]; }
 const dimsB = b => b.obst ? [1, 1] : dimsT(b.type, b.rot);
-const off = b => !!(b.ruined || (b.until && S.gt < b.until));
+const off = b => !!(b.ruined || (b.until && S.gt < b.until) || (b.baro && !S.rozgony));
 function pop() { return S.buildings.reduce((a, b) => a + (b.ruined ? 0 : off(b) ? (b.upTo && b.oldPop) || 0 : (DEF[b.type].pop || 0)), 0); }
 function workers() { return S.buildings.reduce((a, b) => a + (off(b) ? 0 : (DEF[b.type].workers || 0)), 0); }
 function hangOf(f) { return S.buildings.reduce((a, b) => a + (off(b) || (DEF[b.type].faith || '') !== f ? 0 : (DEF[b.type].hang || 0)), 0); }
@@ -1735,12 +1735,12 @@ function upgradeTick() {
 
 // ---------- mi mire jó: láncok egyszerűen ----------
 const CHAINS = [
-  { id: 'fa', name: 'Fa', steps: ['favago', 'fa'], why: 'Szinte minden új épülethez kell. Ebből fogy el a leggyorsabban, ezért legyen belőle mindig két favágód.' },
-  { id: 'bor', name: 'Bor', steps: ['szolohegy', 'szolo', 'preshaz', 'bor'], why: 'A Fogadó pénzt csinál belőle, és kell a Vásártérhez, a Ciszterci apátsághoz és a Jáki templomhoz. A Raktárban drágán el is adhatod.' },
-  { id: 'poszto', name: 'Posztó', steps: ['juhaszat', 'gyapju', 'posztomuhely', 'poszto'], why: 'Kell a Vendégtelephez, a Vásártérhez, a Lovagi tornatérhez, és a tatárjárás előtti kutatáshoz is.' },
-  { id: 'vas', name: 'Vas', steps: ['ercbanya', 'erc', 'kovacsmuhely', 'vas'], why: 'A kőépületekhez, a Kővárhoz, a kőfalhoz és a legendás épületekhez kell. A tatárjárás előtt ez a legfontosabb áru.' }
+  { id: 'fa', name: 'Fa', steps: ['favago', 'fa'], why: 'Szinte minden új épülethez kell. Legyen belőle mindig két favágód az erdő szélén.' },
+  { id: 'vas', name: 'Vas', steps: ['vashamor1', 'vas'], why: 'A kardokhoz, a patkókhoz és a kőépületekhez kell. Rozgony előtt ez a legfontosabb áru.' },
+  { id: 'bor', name: 'Bor', steps: ['szolohegy1', 'bor'], why: 'A lakomához és a palotához kell, a vásáron pedig jó pénzt adnak érte.' },
+  { id: 'arany', name: 'Aranyforint', steps: ['aranybanya1', 'arany', 'penzverde1', 'forint'], why: 'Az arany a patakból és a hegyből jön, a pénzverdében aranyforint lesz belőle. A nagy épületekhez és a királytalálkozóhoz ez kell.' }
 ];
-const GOOD_WHY = { fa: CHAINS[0].why, bor: CHAINS[1].why, poszto: CHAINS[2].why, vas: CHAINS[3].why, szolo: 'Ez csak alapanyag. A Présház csinál belőle bort.', gyapju: 'Ez csak alapanyag. A Posztóműhely sző belőle posztót.', erc: 'Ez csak alapanyag. A Kovácsműhely olvaszt belőle vasat.' };
+const GOOD_WHY = { fa: CHAINS[0].why, vas: CHAINS[1].why, bor: CHAINS[2].why, forint: CHAINS[3].why, arany: 'Ez csak alapanyag. A Pénzverde ver belőle aranyforintot.' };
 const chainOf = t => CHAINS.find(c => c.steps.includes(t));
 function usesOf(r) {
   const p = [], c = [], t = [];
@@ -1769,7 +1769,7 @@ function showChains() {
   hideInfo(); closeDrawer();
   const aur = Object.entries(DEF).filter(([k, d]) => d.aura && !d.old);
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('MANKÓ')}</span><h2>${tr('Mi mire jó?')}</h2>
-    <p>${tr('Négy fontos áru van. Mindegyiknek van egy lánca. Balról jobbra halad, először a nyersanyag terem meg, aztán a műhely árut csinál belőle. A műhely induláskor elveszi a raktárból az alapanyagot, és ha nincs elég, megvárja.')}</p>
+    <p>${tr('Ebben a korban egyszerű a dolog. A fát, a vasat és a bort egyetlen épület adja, csak az aranyból lesz még valami más, aranyforint. A műhely induláskor elveszi a raktárból az alapanyagot, és ha nincs elég, megvárja.')}</p>
     ${CHAINS.map(ch => `<div class="ch-card"><div class="ch-head"><img src="img/${RES[ch.id].icon}.png" alt=""><b>${ch.name}</b><span>${trf('raktárban {0}', fmt(S.res[ch.id] || 0))}</span></div>
       ${chainStrip(ch)}<p class="ch-why"><b>${tr('Miért fontos?')}</b> ${tr(ch.why)}</p><p class="ch-next">${chainNext(ch)}</p></div>`).join('')}
     <div class="ch-card"><div class="ch-head"><b>${tr('Környék-hatás')}</b></div>
@@ -3399,6 +3399,14 @@ const _placeWall = place;
 place = function (i, j) { const r = _placeWall(i, j); try { wallFix(); wallSig = ''; } catch (e) {} return r; };
 
 // ---------- Béla városa átköltözik az Anjou-kori térképre ----------
+// a kiskirályok közben elcsaklizták a város szélét: ezek az épületek az ő zászlójuk alatt állnak, nekik termelnek, Rozgony után visszakerülnek
+function baroGrab(s) {
+  if (s.rozgony) return 0; const cx = N / 2, cy = N / 2, cands = s.buildings.filter(b => b.c4 && b.type !== 'fo' && !b.baro);
+  const dist = b => { const [w, h] = dimsT(b.type, b.rot || 0); return Math.hypot(b.i + w / 2 - cx, b.j + h / 2 - cy) + (b.far ? 100 : 0); };
+  cands.sort((a, b) => dist(b) - dist(a)); const n = Math.round(cands.length * 0.4);
+  cands.slice(0, n).forEach(b => { const [w, h] = dimsT(b.type, b.rot || 0); let best = null; BARONS.forEach(r => { const d = Math.hypot(b.i + w / 2 - r.i - 2.5, b.j + h / 2 - r.j - 2.5); if (!best || d < best[1]) best = [r.id, d]; }); b.baro = best[0]; });
+  s.baroV = 1; return n;
+}
 // ami a város 20×20-as közepén állt, az ugyanott marad; ami a régi telkeken volt, annak a közepén keresünk helyet; ami sehova nem fér, azért pénz jár
 const CARRY_MAP = { szanto3: 'haromnyomasos_szanto' };
 function carryCity(s, d) {
@@ -3417,7 +3425,7 @@ function carryCity(s, d) {
     if (b.type === 'fo') return; const t = CARRY_MAP[b.type] || b.type; if (!DEF[t] || DEF[t].cat === 'ut') return;
     const rot = b.rot || 0;
     if (DEF[t].terrain === 'bank') { later.push([b, t, rot]); return; }
-    if (fits(t, b.i, b.j, rot)) { const nb = { id: s.nextId++, type: t, i: b.i, j: b.j, rot, t0: 0, mode: b.mode }; if (b.ruined) nb.ruined = true; s.buildings.push(nb); mark(t, b.i, b.j, rot, nb.id); kept++; }
+    if (fits(t, b.i, b.j, rot)) { const nb = { id: s.nextId++, type: t, i: b.i, j: b.j, rot, t0: 0, mode: b.mode, c4: 1 }; if (b.ruined) nb.ruined = true; s.buildings.push(nb); mark(t, b.i, b.j, rot, nb.id); kept++; }
     else later.push([b, t, rot]);
   });
   later.forEach(([b, t, rot]) => {
@@ -3427,14 +3435,16 @@ function carryCity(s, d) {
     if (!best) { const want = { forest: 'E', hill: 'D', bank: 'V' }[DEF[t].terrain] || 'M';
       for (const l of LOTS2.filter(x => x.k === want).concat(LOTS2.filter(x => x.k !== want))) { if (best) break; const own = (s.lots || []).includes(l.id);
         for (let i = l.i; i < l.i + l.w && !best; i++) for (let j = l.j; j < l.j + l.h && !best; j++) if (fits(t, i, j, rot, l)) { best = [i, j, 0]; if (!own) { s.lots = s.lots || []; s.lots.push(l.id); s.freeLots = (s.freeLots || 0) + 1; } } } }
-    if (best) { const nb = { id: s.nextId++, type: t, i: best[0], j: best[1], rot, t0: 0, mode: b.mode }; s.buildings.push(nb); mark(t, best[0], best[1], rot, nb.id); moved++; }
+    if (best) { const nb = { id: s.nextId++, type: t, i: best[0], j: best[1], rot, t0: 0, mode: b.mode, c4: 1, far: 1 }; s.buildings.push(nb); mark(t, best[0], best[1], rot, nb.id); moved++; }
     else { refund += Math.round(((DEF[t].cost || {}).penz || 100) * 0.6); }
   });
   Object.keys(d.roads || {}).forEach(k => { const [i, j] = k.split(',').map(Number); if (i >= 0 && j >= 0 && i < N && j < N && !occ[k] && okTile(k) && !ROUGH[k]) s.roads[k] = d.roads[k]; });
-  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund };
+  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) };
   return s.carried;
 }
 
+setTimeout(() => { try { if (!S || !S.carry || S.baroV || S.rozgony) return; const d = JSON.parse(localStorage.getItem('panelvar-e04-v1') || 'null'); const seen = new Set(((d && d.buildings) || []).map(b => b.type + '@' + b.i + ',' + b.j));
+  S.buildings.forEach(b => { if (b.type !== 'fo' && (DEF[b.type].b4 || seen.has(b.type + '@' + b.i + ',' + b.j))) b.c4 = 1; }); const n = baroGrab(S); save(); if (n) baroNews(n); } catch (e) {} }, 3200);
 // aki már elkezdte az Anjou-kort üres várossal, annak is utánaköltözik Béla városa
 setTimeout(() => { try {
   if (!S || S.carry) return; const d = JSON.parse(localStorage.getItem('panelvar-e04-v1') || 'null'); if (!d || !Array.isArray(d.buildings) || d.buildings.length < 2) { S.carry = 1; return; }
@@ -3442,12 +3452,19 @@ setTimeout(() => { try {
   const show = () => { if (openModal) { setTimeout(show, 1500); return; }
     modal(`<div class="inner"><span class="eyebrow">${tr('MEGÉRKEZETT BÉLA VÁROSA')}</span><h2>${tr('Átköltöztünk!')}</h2>
       <p>${trf('{0} épület jött át Béla korából. A legtöbb ugyanott áll, ahol eddig. Ami a régi telkeken volt, az új helyet kapott, és ahol kellett, ingyen telket is adtam hozzá.', n)}</p>
+      ${ci.baro ? `<p><b>${trf('Csakhogy amíg költöztünk, a kiskirályok lecsaptak. {0} épületre a saját zászlójukat tűzték, és most nekik termelnek. Rozgonynál visszaszerezzük őket!', ci.baro)}</b></p>` : ''}
       ${ci.refund ? `<p>${trf('Ami sehogy sem fért el, azért {0} Pénzt kaptál.', fmt(ci.refund))}</p>` : ''}
       <p>${tr('A régi épületek tovább termelnek. A Vendégtelepből Polgárház, az Ércbányából Vashámor építhető, koppints rájuk, és nyomd meg az Átépítés gombot.')}</p>
       <div class="row"><button class="btn coral" type="button" id="cyOk">${tr('Nézzük!')}</button></div></div>`, '', 'carry');
     $('cyOk').onclick = () => { closeModal(); renderGuide(); }; };
   show();
 } catch (e) { try { noteErr(e); } catch (e2) {} } }, 2500);
+
+function baroNews(n) { const show = () => { if (openModal) { setTimeout(show, 1500); return; }
+  modal(`<div class="inner"><span class="eyebrow">${tr('A KISKIRÁLYOK LECSAPTAK')}</span><h2>${tr('Elcsaklizták a város szélét!')}</h2>
+    <p>${trf('Csák Máté, Aba Amadé és Kőszegi Henrik emberei {0} épületre tűzték ki a saját zászlójukat. Ezek most nekik termelnek, nem neked.', n)}</p>
+    <p>${tr('Ne bontsd le őket, Rozgony után visszakerülnek hozzád, ráadásul jutalommal.')}</p>
+    <div class="row"><button class="btn coral" type="button" id="bnOk">${tr('Majd meglátják!')}</button></div></div>`, '', 'carry'); $('bnOk').onclick = closeModal; }; show(); }
 
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
 auraFits = function (a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz); if (a.to === 'arany') return !!(d.prod && d.prod.arany); return true; };
@@ -3497,9 +3514,10 @@ function barSoft(k) {
   if (BAR_SOFT[k]) return BAR_SOFT[k]; const im = BAR_IMG[k]; if (!im.complete || !im.naturalWidth) return null;
   const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   const m = document.createElement('canvas'); m.width = w; m.height = h; const mg = m.getContext('2d'); mg.fillStyle = '#fff'; mg.fillRect(0, 0, w, h * 0.5);
-  mg.save(); mg.translate(w / 2, h * 0.66); mg.scale(1, 0.52); const gr = mg.createRadialGradient(0, 0, 0, 0, 0, w * 0.5); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.62, 'rgba(255,255,255,1)'); gr.addColorStop(0.95, 'rgba(255,255,255,0)'); mg.fillStyle = gr; mg.beginPath(); mg.arc(0, 0, w * 0.5, 0, 7); mg.fill(); mg.restore();
+  mg.save(); mg.translate(w / 2, h * 0.66); mg.scale(1, 0.52); const gr = mg.createRadialGradient(0, 0, 0, 0, 0, w * 0.5); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.8, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); mg.fillStyle = gr; mg.beginPath(); mg.arc(0, 0, w * 0.5, 0, 7); mg.fill(); mg.restore();
   g.globalCompositeOperation = 'destination-in'; g.drawImage(m, 0, 0); return (BAR_SOFT[k] = c);
 }
+const BAR_WHO = { csak: 'Csák Máté', aba: 'Aba Amadé', koszegi: 'Kőszegi Henrik' };
 const BAR_NAME = { csak: 'Csák Máté vára', aba: 'Aba Amadé vára', koszegi: 'Kőszegi Henrik vára' };
 const _drawB = draw;
 draw = function (now) {
@@ -3513,9 +3531,15 @@ draw = function (now) {
       ctx.drawImage(im, x0, yb - h + 6, w, h);
       if (!S.rozgony) { ctx.font = '800 20px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,8,.8)'; ctx.fillStyle = '#FFE9B8'; const [cx] = tileTop(b.i + 2.5, b.j + 2.5); ctx.strokeText(tr(BAR_NAME[b.id]), cx, yb - h + 2); ctx.fillText(tr(BAR_NAME[b.id]), cx, yb - h + 2); }
     });
+    if (!S.rozgony) S.buildings.forEach(b => { if (!b.baro) return; const [w, h] = dimsT(b.type, b.rot || 0), [x, y] = tileTop(b.i + w / 2, b.j + h / 2), col = BAR_COL[b.baro] || BAR_COL.aba, py = y - 40 - Math.max(w, h) * 34;
+      ctx.fillStyle = 'rgba(30,20,10,.35)'; ctx.beginPath(); ctx.ellipse(x, y + 2, w * 26, w * 13, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#5A3A1A'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, py); ctx.stroke();
+      const wv = Math.sin(now / 300 + b.id) * 4; ctx.fillStyle = col[0]; ctx.beginPath(); ctx.moveTo(x + 2, py); ctx.quadraticCurveTo(x + 30, py + 6 + wv, x + 58, py + 4 + wv); ctx.lineTo(x + 50, py + 20 + wv / 2); ctx.lineTo(x + 58, py + 36 + wv); ctx.quadraticCurveTo(x + 30, py + 38 + wv, x + 2, py + 34); ctx.closePath(); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(40,20,8,.7)'; ctx.stroke();
+      ctx.fillStyle = col[1]; ctx.font = '900 18px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(col[2], x + 26, py + 24 + wv / 2); });
     ctx.restore();
   } catch (e) {}
 };
+const BAR_COL = { csak: ['#3E7D3A', '#F4EBD0', 'CS'], aba: ['#C9372C', '#FFF4E0', 'A'], koszegi: ['#2F5FA8', '#F4EBD0', 'K'] };
 // ---------- Rozgony, 1312 ----------
 function rozPrep() {
   const p = [
@@ -3537,11 +3561,12 @@ function showRozgony() {
 }
 function rozBattle(sum) {
   const big = sum >= 70, rew = { penz: 800 + sum * 25, hirnev: 5 + Math.round(sum / 10), tudas: 2 + Math.round(sum / 25) };
-  S.rozgony = { at: S.gt, pct: sum }; Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
+  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; } }); S.rozgony = { at: S.gt, pct: sum, back }; Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
   save(); hud();
   modal(`<img class="hero" src="img/e05_rozgony_utan.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('A GYŐZELEM')}</span><h2>${tr(big ? 'Fényes diadal Rozgonynál!' : 'Győztünk, ha nehezen is')}</h2>
     <p>${tr(big ? 'A kiskirályok serege szétfutott. Aba Amadé fiai elmenekültek, a várak kapui kinyíltak. Ma Károly Róbert lett az ország igazi királya.' : 'A csata nehéz volt, de a királyi sereg győzött. A kiskirályok hatalma megtört, bár Csák Máté még morog a Vág mentén.')}</p>
     <p>${tr('A kiskirályok várai leomlottak. A helyükön rom áll, hogy senki ne felejtse el, mi lesz a gőg vége.')}</p>
+    ${back ? `<p><b>${trf('{0} elcsaklizott épület visszakerült hozzád, és mostantól neked termel.', back)}</b></p>` : ''}
     <p><b>${tr('Jutalom')}:</b> ${miniRewText(rew)}</p>
     <div class="fact"><b>${tr('Mi történt valójában?')}</b><p>${tr('1312. június 15-én Rozgonynál Károly Róbert legyőzte az Aba fiakat és Csák Máté csapatait. A szepesi szászok is a király oldalán harcoltak. A csata után a kiskirályok hatalma lassan összeomlott, Csák Máté 1321-ben halt meg.')}</p></div>
     <div class="row"><button class="btn coral" type="button" id="rzOk">${tr('Éljen a király!')}</button></div></div>`, '', 'rozgony');
@@ -3575,7 +3600,7 @@ setInterval(() => { try { if (!S || openModal) return; const g = document.getEle
   #klapka .kb{margin-bottom:60%;background:#FFF8E8;border-radius:18px 18px 18px 4px;padding:10px 14px;font-weight:900;font-size:18px;color:#3A2410;box-shadow:0 6px 18px rgba(0,0,0,.3);max-width:220px}
   #klapka:not(.out){animation:klUp .6s cubic-bezier(.2,1.4,.4,1) forwards} @keyframes klUp{to{transform:translate(-50%,0)}}
   #klapka.out{transform:translate(-50%,110%);transition:transform .6s ease-in}
-  .roz{display:grid;gap:8px;margin:10px 0}.rz{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,248,232,.7)}.rz img{width:34px;height:34px;object-fit:contain}.rz .g{flex:1;min-width:0}.rz small{display:block;color:var(--ink-soft);font-size:12px}.rz .bar{height:8px;border-radius:4px;background:rgba(90,55,25,.18);margin-top:4px;overflow:hidden}.rz .bar i{display:block;height:100%;background:#C9472F}.rz span{font-weight:900}`; document.head.appendChild(st); })();
+  .roz{display:grid;gap:8px;margin:10px 0}.rz{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,248,232,.7)}.rz img{width:34px;height:34px;object-fit:contain}.rz .g{flex:1;min-width:0}.rz small{display:block;color:var(--ink-soft);font-size:12px}.rz .bar{height:8px;border-radius:4px;background:rgba(90,55,25,.18);margin-top:4px;overflow:hidden}.rz .bar i{display:block;height:100%;background:#C9472F}.rz span{font-weight:900}.baro-note{background:#F3D9C4;border-left:4px solid #C9372C;padding:8px 10px;border-radius:8px;font-weight:800}`; document.head.appendChild(st); })();
 
 // ---------- a királytalálkozó után Nagy Lajos a kalauz ----------
 // Károly Róbert 1342-ben meghalt, a fia, Lajos örökölte a trónt
@@ -4104,7 +4129,7 @@ function showInfo(b, refresh) {
   const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? tr('ösvény kell a táborig') : tr('ösvény nélkül is működik'), d.def ? trf('+{0} Védelem', d.def) : '', prodTxt, auraTxt, d.aura ? trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt) : '', grassTxt].filter(Boolean).join(' · ');
   if (refresh && el.dataset.id === String(b.id) && el.dataset.ruined === String(!!b.ruined) && el.dataset.dry === String(!!b.dry)) { const s = el.querySelector('.st'); if (s) s.innerHTML = status; return; }
   el.dataset.id = b.id; el.dataset.ruined = !!b.ruined; el.dataset.dry = !!b.dry;
-  el.innerHTML = `<h3>${d.name}${d.gb ? ' · ' + trf('{0}. szint', gbLvl(b.type)) : ''}</h3>${LANG === 'hu' ? rovasHTML(DEF[b.type].name) : ''}<p>${d.desc}</p><p>${extra}</p>${d.gb && !off(b) ? gbHTML() : ''}${d.modes && !off(b) ? `<div class="modes"><b>${tr('Termelési idő')}</b>${MODES.map(m => `<button class="btn ${modeOf(b).id === m.id ? 'coral' : 'ghost'}" type="button" data-mode="${m.id}">${tr(m.lbl)}</button>`).join('')}<span>${tr('A hosszabb idő óránként kevesebbet hoz, de ott vár, mire visszajössz. Váltáskor újraindul.')}</span></div>` : ''}<div class="st">${status}</div>
+  el.innerHTML = `<h3>${d.name}${d.gb ? ' · ' + trf('{0}. szint', gbLvl(b.type)) : ''}</h3>${LANG === 'hu' ? rovasHTML(DEF[b.type].name) : ''}<p>${d.desc}</p><p>${extra}</p>${d.gb && !off(b) ? gbHTML() : ''}${d.modes && !off(b) ? `<div class="modes"><b>${tr('Termelési idő')}</b>${MODES.map(m => `<button class="btn ${modeOf(b).id === m.id ? 'coral' : 'ghost'}" type="button" data-mode="${m.id}">${tr(m.lbl)}</button>`).join('')}<span>${tr('A hosszabb idő óránként kevesebbet hoz, de ott vár, mire visszajössz. Váltáskor újraindul.')}</span></div>` : ''}${b.baro && !S.rozgony ? `<p class="baro-note">${trf('Ezt az épületet {0} elcsaklizta. Neki termel, nem neked. Rozgony után visszakerül hozzád.', tr(BAR_WHO[b.baro]))}</p>` : ''}<div class="st">${status}</div>
     <div class="row">${b.ruined ? `<button class="btn teal" type="button" id="iRe">${tr('Újjáépítés')}</button>` : ''}
     ${false ? `<button class="btn coral" type="button" id="iMig">${tr('Továbbvonulás')} · ${moveCost().termeny} ${RES.termeny.name}</button>` : ''}
     ${chainInfoHTML(b.type)}${speedHTML(b)}
@@ -4166,7 +4191,7 @@ function showIntro() {
 }
 // ---------- Raktár: verem, lakoma, vásár ----------
 const FEAST_COST = 500, FEAST_LEN = 4 * 3600;
-const GOOD_PRICE = { fa: 6, bor: 30, poszto: 35, vas: 40 };
+const GOOD_PRICE = { fa: 6, bor: 30, vas: 40, arany: 50, forint: 120 };
 function sellRate() { return S.council === 'kereskedo' || S.council === 'mindketto' ? 15 : 10; } // 100 Terményért ennyi Pénz
 function showStore() {
   hideInfo(); closeDrawer();
