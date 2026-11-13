@@ -4347,14 +4347,15 @@ function rearUI() {
       minus: 'Az oligarcha embere vámot szedett', back: 'Elhagyta a lovad a patkóját', fwd: 'Királyi futár vitt magával', scale: 5,
       fact: 'A középkorban a kockázás annyira elterjedt volt, hogy városok és uralkodók újra meg újra korlátozni próbálták. A tiltás ritkán járt sikerrel.' }
   ];
-  const TM = THEMES[ERA], PX = 'e0' + ERA, IMGV = '?v=2611131';
+  const TM = THEMES[ERA], PX = 'e0' + ERA, IMGV = '?v=2611132';
   const SPRITE = `img/${PX}_tabla_babuk.png${IMGV}`;
   const pimg = (side, n, cls) => `<i class="tbspr ${cls || ''}" style="background-image:url(${SPRITE});background-position:${n * 100 / 3}% ${side === 'p' ? 0 : 100}%"></i>`;
   if (ERA === 5 && typeof DEF !== 'undefined' && DEF.fogado) { delete DEF.fogado.old; }
   const N = 28, ROUNDS = 15, VALS = [1, 2, 3, 5];
   // mezők: start, menedék, újra, előre, vissza, nyersanyag, pénz, vám
   const F = Array(N).fill('');
-  Object.entries({ 0: 'startp', 14: 'starta', 7: 'safe', 21: 'safe', 4: 'again', 18: 'again', 10: 'fwd', 24: 'fwd', 12: 'back', 26: 'back', 5: 'minus', 19: 'minus', 9: 'penz', 23: 'penz', 2: 'res0', 16: 'res1', 11: 'res2', 25: 'res3' }).forEach(([i, t]) => F[i] = t);
+  Object.entries({ 0: 'startp', 14: 'starta', 7: 'safe', 21: 'safe', 4: 'again', 18: 'again', 10: 'fwd', 24: 'fwd', 12: 'back', 26: 'back', 5: 'minus', 19: 'minus', 9: 'penz', 23: 'penz', 2: 'res0', 16: 'res1', 11: 'res2', 25: 'res3', 6: 'portal', 20: 'portal', 13: 'gift', 27: 'gift', 8: 'star', 22: 'star' }).forEach(([i, t]) => F[i] = t);
+  const EM = { again: '🎲', fwd: '⏩', back: '⏪', safe: '🛡️', startp: '🏠', starta: '🏠', minus: '💸', portal: '🌀', gift: '🎁', star: '⭐' };
   const SAFE = i => F[i] === 'safe' || F[i] === 'startp' || F[i] === 'starta';
   const resOf = t => { const L = TM.res.filter(k => typeof RES !== 'undefined' && RES[k]); return L[(+t.slice(3)) % L.length]; };
   const amt = k => k === 'penz' ? Math.round(30 * TM.scale) : k === 'hirnev' ? Math.max(1, Math.round(TM.scale)) : Math.round(4 * TM.scale);
@@ -4369,7 +4370,7 @@ function rearUI() {
   function newGame() {
     G = { round: 1, p: VALS.map((v, n) => ({ v, name: TM.mine[n], at: [3, 2, 1, 0][n], out: false })), a: VALS.map((v, n) => ({ v, name: TM.his[n], at: [17, 16, 15, 14][n], out: false })),
       sc: { p: 0, a: 0 }, pot: {}, phase: 'proll', k: 1, roll: null, log: [], over: false };
-    G.k = aiPick(); G.msg = trf('{0} úgy döntött, hogy {1} kockával dobsz.', TM.foe, G.k === 1 ? tr('egy') : tr('két')) + ' ' + whyTxt(G.k);
+    G.k = aiPick(); G.msg = trf('{0} úgy döntött, hogy {1} kockával dobsz.', TM.foe, G.k === 1 ? tr('egy') : tr('két')) + ' ' + tr('Te pedig mindig eldöntheted, hány kockával dobjon ő.');
   }
   const occ = (at, side) => G[side].find(x => !x.out && x.at === at);
   const other = s => s === 'p' ? 'a' : 'p';
@@ -4382,17 +4383,38 @@ function rearUI() {
   function aiMove(r) {
     let best = null;
     G.a.forEach(pc => { if (pc.out || !legal('a', pc, r)) return; const to = (pc.at + r) % N, t = occ(to, 'p'), f = F[to];
-      const from = pc.at; let sc = (t ? t.v * 12 : 0) + ({ again: 4, fwd: 1.5, safe: 2, back: -1 }[f] || 0);
+      const from = pc.at; let sc = (t ? t.v * 12 : 0) + ({ again: 4, fwd: 1.5, safe: 2, back: -1, star: 6, gift: 1.5, portal: 0.5 }[f] || 0);
       if (t) t.out = true; pc.at = to; sc -= danger(to, 'a') * pc.v * 10; pc.at = from; if (t) t.out = false; sc += danger(from, 'a') * pc.v * 8; sc += Math.random() * 0.3;
       if (!best || sc > best.sc) best = { pc, sc }; });
     return best && best.pc;
   }
   function addPot(k, n) { G.pot[k] = Math.max(0, (G.pot[k] || 0) + n); }
   function say(t) { G.log.unshift(t); G.log = G.log.slice(0, 6); }
-  async function step(side, pc, n) { const d = n < 0 ? -1 : 1; for (let s = 0; s < Math.abs(n); s++) { pc.at = (pc.at + d + N) % N; draw(); await wait(160); } }
+  const tokEl = (side, pc) => { const w = $('tbWrap'); return w && w.querySelector(`[data-k="${side}${G[side].indexOf(pc)}"]`); };
+  function placeTok(el, at) {
+    const w = $('tbWrap'), c = w && w.querySelector(`[data-c="${at}"]`); if (!el || !c) return;
+    const cw = c.offsetWidth, ch = c.offsetHeight;
+    el.style.width = cw * 1.04 + 'px'; el.style.height = ch * 1.32 + 'px'; el.style.left = (c.offsetLeft - cw * 0.02) + 'px'; el.style.top = (c.offsetTop + ch * 0.96 - ch * 1.32) + 'px';
+  }
+  function placeAll() { const w = $('tbWrap'); if (!w || !G) return; ['p', 'a'].forEach(sd => G[sd].forEach((pc, n) => { if (!pc.out) placeTok(w.querySelector(`[data-k="${sd}${n}"]`), pc.at); })); }
+  window.addEventListener('resize', () => { try { placeAll(); } catch (e) {} });
+  function hop(el, cls) { if (!el) return; el.classList.remove('hop', 'fly'); void el.offsetWidth; el.classList.add(cls || 'hop'); }
+  async function step(side, pc, n) { const d = n < 0 ? -1 : 1, el = tokEl(side, pc); for (let s = 0; s < Math.abs(n); s++) { pc.at = (pc.at + d + N) % N; placeTok(el, pc.at); hop(el); await wait(210); } }
+  function popTxt(at, txt, cls) { const w = $('tbWrap'), c = w && w.querySelector(`[data-c="${at}"]`), b = w && w.querySelector('.tbboard'); if (!c || !b) return; const p = document.createElement('div'); p.className = 'tbpop ' + (cls || ''); p.textContent = txt; p.style.left = (c.offsetLeft + c.offsetWidth / 2) + 'px'; p.style.top = c.offsetTop + 'px'; b.appendChild(p); setTimeout(() => p.remove(), 1300); }
   async function land(side, pc, depth) {
     const me = side === 'p', t = occ(pc.at, other(side)), f = F[pc.at];
-    if (t && !SAFE(pc.at)) { t.out = true; G.sc[side] += t.v; say(me ? trf('Leütötted {0} bábut! +{1} pont.', az(t.name), t.v) : trf('{0} leütötte {1} bábudat. +{2} pont neki.', TM.foe, az(t.name), t.v)); draw(); await wait(450); }
+    if (t && !SAFE(pc.at)) {
+      const el = tokEl(other(side), t); if (el) el.classList.add('hit'); popTxt(pc.at, trf('Leütve! +{0}', t.v), me ? 'good' : 'bad');
+      G.sc[side] += t.v; say(me ? trf('Leütötted {0} bábut! +{1} pont.', az(t.name), t.v) : trf('{0} leütötte {1} bábudat. +{2} pont neki.', TM.foe, az(t.name), t.v));
+      await wait(750); t.out = true; G.lastOut = other(side) + G[other(side)].indexOf(t); draw(); await wait(250);
+    }
+    if (f === 'portal' && depth < 1) {
+      const to = (pc.at + N / 2) % N;
+      if (occ(to, side) || (occ(to, other(side)) && SAFE(to))) { say(tr('Titkos ösvény, de a túloldal foglalt.')); return false; }
+      say((me ? '' : TM.foe + ' · ') + tr('Titkos ösvény! Átsuhantál a tábla túloldalára.'));
+      await wait(200); const el = tokEl(side, pc); pc.at = to; placeTok(el, to); hop(el, 'fly'); await wait(560); return land(side, pc, depth + 1);
+    }
+    if (f === 'star') { G.sc[side] += 1; popTxt(pc.at, '+1', me ? 'good' : 'bad'); say(me ? tr('Csillagmező, +1 pont!') : trf('{0} csillagmezőre lépett, +1 pont neki.', TM.foe)); }
     if (f === 'again') { say(me ? tr('Szerencsés mező, dobhatsz még egyet!') : trf('{0} újra dobhat.', TM.foe)); return true; }
     if ((f === 'fwd' || f === 'back') && depth < 1) {
       const n = f === 'fwd' ? 2 : -2, to = (pc.at + n + N) % N;
@@ -4400,14 +4422,20 @@ function rearUI() {
       if (occ(to, side) || (occ(to, other(side)) && SAFE(to))) { say(tr('Foglalt a mező, maradt a helyén.')); return false; }
       await wait(250); await step(side, pc, n); return land(side, pc, depth + 1);
     }
-    if (!me) return false;
-    if (f === 'penz') { const n = amt('penz'); addPot('penz', n); say(trf('+{0} Pénz a zsákba.', n)); }
+    if (!me) { if (f === 'gift') say(trf('{0} talált egy ajándékot, de csak egy üres zsák volt benne.', TM.foe)); return false; }
+    if (f === 'gift') {
+      const r = Math.random();
+      if (r < 0.3) { say(tr('Meglepetés! Dobhatsz még egyet.')); popTxt(pc.at, '🎲', 'good'); return true; }
+      if (r < 0.6) { G.sc.p += 2; popTxt(pc.at, '+2', 'good'); say(tr('Meglepetés! +2 pont.')); }
+      else { const n = amt('penz') * 2; addPot('penz', n); popTxt(pc.at, '+' + n, 'good'); say(trf('Meglepetés! +{0} Pénz a zsákba.', n)); }
+    }
+    if (f === 'penz') { const n = amt('penz'); addPot('penz', n); popTxt(pc.at, '+' + n, 'good'); say(trf('+{0} Pénz a zsákba.', n)); }
     if (f.startsWith('res')) { const k = resOf(f); if (k) { const n = amt(k); addPot(k, n); say(trf('+{0} {1} a zsákba.', n, RES[k].name)); } }
     if (f === 'minus') { const n = Math.round(25 * TM.scale); const had = G.pot.penz || 0; addPot('penz', -n); say(had ? trf('{0}, -{1} Pénz a zsákból.', TM.minus, Math.min(had, n)) : trf('{0}, de üres volt a zsák. Szerencséd van!', TM.minus)); }
     if (f === 'safe') say(tr('Menedék. Itt senki nem üthet le.'));
     return false;
   }
-  async function rollAnim(k) { busy = true; for (let n = 0; n < 7; n++) { G.dv = Array.from({ length: k }, () => 1 + Math.floor(Math.random() * 6)); draw(); await wait(70); } busy = false; return G.dv.reduce((a, b) => a + b, 0); }
+  async function rollAnim(k) { busy = true; const w = $('tbWrap'), m = w && w.querySelector('.tbmid'); if (m) m.innerHTML = '<div class="tbdice"></div>'; for (let n = 0; n < 8; n++) { G.dv = Array.from({ length: k }, () => 1 + Math.floor(Math.random() * 6)); const d = w && w.querySelector('.tbdice'); if (d) d.innerHTML = G.dv.map(pip).join(''); else draw(); await wait(65); } busy = false; return G.dv.reduce((a, b) => a + b, 0); }
   async function pRoll() {
     if (busy || G.phase !== 'proll') return; G.roll = await rollAnim(G.k);
     const can = G.p.filter(pc => !pc.out && legal('p', pc, G.roll));
@@ -4416,7 +4444,7 @@ function rearUI() {
   }
   async function pMove(n) {
     const pc = G.p[n]; if (busy || G.phase !== 'pmove' || !pc || pc.out || !legal('p', pc, G.roll)) return;
-    busy = true; G.phase = 'anim'; G.msg = ''; await step('p', pc, G.roll); const again = await land('p', pc, 0); busy = false;
+    busy = true; G.phase = 'anim'; G.msg = ''; draw(); await step('p', pc, G.roll); const again = await land('p', pc, 0); busy = false;
     if (end()) return;
     if (again) { G.phase = 'proll'; G.msg = trf('Dobhatsz még egyet, megint {0} kockával.', G.k === 1 ? tr('egy') : tr('két')); draw(); return; }
     G.phase = 'achoose'; G.msg = ''; draw();
@@ -4431,7 +4459,7 @@ function rearUI() {
       await step('a', pc, r); const again = await land('a', pc, 0); busy = false; if (end()) return; if (!again) break; await wait(300);
     }
     G.round++; if (end()) return;
-    G.k = aiPick(); G.phase = 'proll'; G.msg = trf('{0}. kör. {1} úgy döntött, hogy {2} kockával dobsz.', G.round, TM.foe, G.k === 1 ? tr('egy') : tr('két')) + ' ' + whyTxt(G.k); draw();
+    G.k = aiPick(); G.phase = 'proll'; G.msg = trf('{0}. kör. {1} úgy döntött, hogy {2} kockával dobsz.', G.round, TM.foe, G.k === 1 ? tr('egy') : tr('két')); draw();
   }
   function end() {
     const pa = G.p.every(x => x.out), aa = G.a.every(x => x.out);
@@ -4454,34 +4482,40 @@ function rearUI() {
     $('tbClose').onclick = closeModal; if ($('tbAgain')) $('tbAgain').onclick = () => { G = null; start(); };
   }
   function cellHTML(i) {
-    const [r, c] = cellRC(i), f = F[i], pc = occ(i, 'p') || occ(i, 'a'), side = pc ? (G.p.includes(pc) ? 'p' : 'a') : '';
+    const [r, c] = cellRC(i), f = F[i];
     let ic = '';
-    if (f === 'again') ic = '<span class="tbi">🎲</span>'; else if (f === 'fwd') ic = '<span class="tbi">»2</span>'; else if (f === 'back') ic = '<span class="tbi">«2</span>';
-    else if (f === 'safe') ic = '<span class="tbi">🛡</span>'; else if (f === 'minus') ic = '<span class="tbi">💸</span>';
+    if (EM[f]) ic = `<span class="tbi">${EM[f]}</span>`;
     else if (f === 'penz' || f.startsWith('res')) { const k = f === 'penz' ? 'penz' : resOf(f); if (k && RES[k]) ic = `<img class="tbri" src="img/${RES[k].file || RES[k].icon + '.png'}" alt="">`; }
-    else if (f === 'startp' || f === 'starta') ic = '<span class="tbi">⌂</span>';
     else ic = `<span class="tbi tbar">${i < 7 ? '›' : i < 14 ? '⌄' : i < 21 ? '‹' : '⌃'}</span>`;
-    const mv = side === 'p' && G.phase === 'pmove' && legal('p', pc, G.roll);
-    const pn = pc ? G[side].indexOf(pc) : 0;
-    const tok = pc ? `<button type="button" class="tbt ${side}${mv ? ' mv' : ''}" ${side === 'p' ? `data-tbp="${pn}"` : ''} title="${pc.name}">${pimg(side, pn)}<b>${pc.v}</b></button>` : '';
-    return `<div class="tbc f-${f || 'n'}" data-c="${i}" style="grid-row:${r + 1};grid-column:${c + 1}">${ic}${tok}</div>`;
+    return `<div class="tbc f-${f || 'n'}" data-c="${i}" style="grid-row:${r + 1};grid-column:${c + 1}">${ic}</div>`;
   }
   const pip = v => `<span class="tbd">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => `<i${({ 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] }[v] || []).includes(n) ? ' class="on"' : ''}></i>`).join('')}</span>`;
   function centerHTML() {
     const dice = G.dv ? `<div class="tbdice">${G.dv.map(pip).join('')}</div>` : '';
     let ctl = '';
     if (G.phase === 'proll') ctl = `<button class="btn coral" type="button" id="tbRoll">${trf('Dobás {0} kockával', G.k === 1 ? tr('egy') : tr('két'))}</button>`;
-    if (G.phase === 'achoose') ctl = `<p class="tbq">${trf('Hány kockával dobjon {0}?', TM.foe)}</p><div class="tbch">${[1, 2].map(k => `<button class="btn teal" type="button" data-tbk="${k}">${k === 1 ? tr('Egy kocka') : tr('Két kocka')}<small>${trf('{0}% esély, hogy üt', Math.round(hitChance('a', k) * 100))}</small></button>`).join('')}</div>`;
+    if (G.phase === 'achoose') ctl = `<p class="tbq">${trf('Hány kockával dobjon {0}?', TM.foe)}</p><div class="tbch">${[1, 2].map(k => `<button class="btn teal" type="button" data-tbk="${k}">${k === 1 ? '🎲 ' + tr('Egy kocka') : '🎲🎲 ' + tr('Két kocka')}</button>`).join('')}</div>`;
     return `<div class="tbmid">${dice}${G.msg ? `<p class="tbmsg">${G.msg}</p>` : ''}${ctl}</div>`;
   }
-  function sideHTML(side) {
-    return `<div class="tbteam ${side}">${side === 'a' ? `<img class="tbface" src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()">` : ''}<div class="tbtm"><b>${side === 'p' ? tr('Te') : TM.foe} · ${G.sc[side]} ${tr('pont')}</b><div>${G[side].map(x => `<span class="${x.out ? 'out' : ''}">${pimg(side, G[side].indexOf(x), 'tbmini')}<i class="tbv ${side}">${x.v}</i>${x.name}</span>`).join('')}</div></div></div>`;
+  function toksHTML() {
+    return ['p', 'a'].map(sd => G[sd].map((pc, n) => pc.out ? '' : `<button type="button" class="tbt ${sd}${sd === 'p' && G.phase === 'pmove' && legal('p', pc, G.roll) ? ' mv' : ''}" data-k="${sd}${n}" ${sd === 'p' ? `data-tbp="${n}"` : ''} title="${pc.name}">${pimg(sd, n)}<b>${pc.v}</b></button>`).join('')).join('');
+  }
+  function jailHTML(sd) {
+    const L = G[sd].map((pc, n) => [pc, n]).filter(([pc]) => pc.out);
+    return `<div class="tbjail ${sd}"><small>${sd === 'a' ? tr('Leütötted') : trf('{0} leütötte', TM.foe)}</small>${L.map(([pc, n]) => `<span class="tbjp${G.lastOut === sd + n ? ' new' : ''}" title="${pc.name}">${pimg(sd, n)}<b class="tbv ${sd}">${pc.v}</b></span>`).join('') || `<em>${tr('még senkit')}</em>`}</div>`;
+  }
+  function scoreHTML(sd) {
+    const left = G[sd].filter(x => !x.out).length;
+    return `<div class="tbsc ${sd}">${sd === 'a' ? `<img class="tbface" src="img/${PX}_tabla_ellenfel.png${IMGV}" alt="" onerror="this.remove()">` : `<span class="tbme">🙂</span>`}<div><b>${sd === 'p' ? tr('Te') : TM.foe}</b><span class="tbpts">${G.sc[sd]} ${tr('pont')}</span><small>${trf('{0} bábu a táblán', left)}</small></div></div>`;
   }
   function draw() {
     const w = $('tbWrap'); if (!w || !G) return;
-    w.innerHTML = `<div class="tbtop"><span>${trf('{0}. kör / {1}', Math.min(G.round, ROUNDS), ROUNDS)}</span>${Object.keys(G.pot).length ? `<span>${tr('Zsák')} ${Object.entries(G.pot).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${RES[k].name}`).join(', ') || tr('üres')}</span>` : ''}${DEV ? `<button class="btn ghost" type="button" id="tbFast">${fast ? tr('Normál tempó') : tr('Gyorsítás')}</button>` : ''}</div>
-      ${sideHTML('a')}<div class="tbboard">${Array.from({ length: N }, (_, i) => cellHTML(i)).join('')}${centerHTML()}</div>${sideHTML('p')}
-      <div class="tblog">${G.log.map(l => `<p>${l}</p>`).join('')}</div>`;
+    const pot = Object.entries(G.pot).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${RES[k].name}`).join(', ');
+    w.innerHTML = `<div class="tbmain"><div class="tbarena">${jailHTML('a')}<div class="tbboard">${Array.from({ length: N }, (_, i) => cellHTML(i)).join('')}${centerHTML()}${toksHTML()}</div>${jailHTML('p')}</div>
+      <div class="tbside"><div class="tbtop"><span>${trf('{0}. kör / {1}', Math.min(G.round, ROUNDS), ROUNDS)}</span>${DEV ? `<button class="btn ghost" type="button" id="tbFast">${fast ? tr('Normál tempó') : tr('Gyorsítás')}</button>` : ''}</div>
+      ${scoreHTML('a')}${scoreHTML('p')}<div class="tbpot">💰 ${tr('Zsák')} <b>${pot || tr('üres')}</b></div>
+      <div class="tblog">${G.log.map(l => `<p>${l}</p>`).join('')}</div></div></div>`;
+    placeAll(); requestAnimationFrame(placeAll);
     w.querySelectorAll('[data-tbp]').forEach(b => { b.onclick = () => pMove(+b.dataset.tbp);
       b.onmouseenter = () => { if (G.phase !== 'pmove') return; const pc = G.p[+b.dataset.tbp]; const c = w.querySelector(`[data-c="${(pc.at + G.roll) % N}"]`); if (c && legal('p', pc, G.roll)) c.classList.add('tg'); };
       b.onmouseleave = () => w.querySelectorAll('.tg').forEach(c => c.classList.remove('tg')); });
@@ -4491,7 +4525,7 @@ function rearUI() {
   }
   function legendHTML() {
     const L = ['penz'].concat(TM.res).filter(k => RES[k]).map(k => RES[k].name), r = L.slice(0, -1).join(', ') + ' ' + tr('és') + ' ' + L[L.length - 1];
-    return `<ul class="tbleg"><li><b>🎲</b> ${tr('Dobhatsz még egyet')}</li><li><b>»2</b> ${tr('Előre kettőt')}</li><li><b>«2</b> ${tr('Vissza kettőt')}</li><li><b>🛡</b> ${tr('Menedék, itt nem lehet leütni senkit')}</li><li><b>⌂</b> ${tr('Kiinduló mező, ez is menedék')}</li><li><b>💸</b> ${tr('Vám, a zsákból elvisznek egy kis pénzt')}</li><li><b>＋</b> ${trf('{0} kerül a zsákba', r)}</li></ul>`;
+    return `<ul class="tbleg"><li><b>🎲</b> ${tr('Dobhatsz még egyet')}</li><li><b>⏩</b> ${tr('Előre kettőt')}</li><li><b>⏪</b> ${tr('Vissza kettőt')}</li><li><b>🌀</b> ${tr('Titkos ösvény, átsuhansz a tábla túloldalára')}</li><li><b>⭐</b> ${tr('Csillag, +1 pont')}</li><li><b>🎁</b> ${tr('Meglepetés, lehet pont, pénz vagy újabb dobás')}</li><li><b>🛡️</b> ${tr('Menedék, itt nem lehet leütni senkit')}</li><li><b>🏠</b> ${tr('Kiinduló mező, ez is menedék')}</li><li><b>💸</b> ${tr('Vám, a zsákból elvisznek egy kis pénzt')}</li><li><b>💰</b> ${trf('{0} kerül a zsákba', r)}</li></ul>`;
   }
   function start() {
     const d = day();
@@ -4547,33 +4581,53 @@ function rearUI() {
   }
   const st = document.createElement('style');
   st.textContent = `.tbinfo{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.75);box-shadow:inset 0 0 0 2px #E2B33C;margin:6px 0;flex-shrink:0}.tbinfo small{font-weight:700;color:var(--ink-soft)}
-  #tbWrap{display:flex;flex-direction:column;gap:8px;min-width:0}
+  #tbWrap{min-width:0}
+  .tbmain{display:flex;gap:16px;align-items:flex-start}
+  .tbarena{flex:none;width:min(100%,max(300px,calc(100vh - 250px)),620px);display:flex;flex-direction:column;gap:6px}
+  .tbside{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+  @media (max-width:760px){.tbmain{flex-direction:column;align-items:stretch}.tbarena{width:min(100%,max(300px,calc(100vh - 330px)));margin:0 auto}.tbside{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tbside .tbtop,.tbside .tbpot,.tbside .tblog{grid-column:1/-1}}
   .tbtop{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-weight:900}.tbtop .btn{min-height:32px;padding:2px 12px;margin-left:auto}
-  .tbboard{position:relative;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:3px;width:min(100%,560px);aspect-ratio:1;margin:0 auto;padding:4.5%;border-radius:18px;background:#4A2A10 url(img/${PX}_tabla_tabla.jpg${IMGV}) center/cover;box-shadow:inset 0 0 0 3px #4A2A10,0 4px 0 rgba(0,0,0,.25);box-sizing:border-box}
-  .tbc{position:relative;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,244,220,.5);box-shadow:inset 0 0 0 1.5px rgba(90,55,25,.45),0 1px 2px rgba(0,0,0,.2);min-width:0;min-height:0}
-  .tbc.f-safe{background:rgba(190,225,160,.75)}.tbc.f-startp{background:rgba(170,205,245,.8)}.tbc.f-starta{background:rgba(245,180,165,.8)}.tbc.f-again{background:rgba(250,225,120,.8)}.tbc.f-fwd{background:rgba(205,235,190,.7)}.tbc.f-back{background:rgba(235,200,185,.7)}.tbc.f-minus{background:rgba(230,185,165,.75)}
-  .tbc.tg{box-shadow:inset 0 0 0 3px #2F8A3A}
-  .tbi{font:900 clamp(11px,2.6vw,17px) Nunito,sans-serif;color:#6A4520;opacity:.75}.tbar{opacity:.35;font-size:clamp(14px,3.4vw,22px)}.tbri{width:62%;height:62%;object-fit:contain;opacity:.85}
-  .tbt{position:absolute;left:4%;right:4%;bottom:6%;top:-38%;display:flex;align-items:flex-end;justify-content:center;border:0;background:none;cursor:default;padding:0;z-index:2}
-  .tbspr{display:block;background-size:400% 200%;background-repeat:no-repeat}.tbt .tbspr{width:100%;height:100%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));pointer-events:none}
-  .tbt b{position:absolute;right:-6%;bottom:-6%;min-width:1.35em;height:1.35em;display:flex;align-items:center;justify-content:center;border-radius:50%;font:900 clamp(10px,2.2vw,13px) Nunito,sans-serif;color:#fff;box-shadow:0 0 0 2px #FFF4DF}
+  .tbsc{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:rgba(255,248,232,.7);box-shadow:inset 0 0 0 2px rgba(138,90,43,.2)}.tbsc.p{box-shadow:inset 0 0 0 2px #2C6FB0}.tbsc.a{box-shadow:inset 0 0 0 2px #B8402C}
+  .tbsc>div{display:flex;flex-direction:column;min-width:0}.tbsc b{font-size:15px}.tbpts{font-weight:900;font-size:20px}.tbsc small{font-weight:700;opacity:.75}
+  .tbface{width:56px;height:auto;flex:none}.tbme{font-size:34px;width:56px;text-align:center;flex:none}
+  .tbpot{font-weight:800;font-size:14px}
+  .tbboard{position:relative;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);gap:2px;width:100%;aspect-ratio:1;padding:4.5%;border-radius:18px;background:#4A2A10 url(img/${PX}_tabla_tabla.jpg${IMGV}) center/cover;box-shadow:inset 0 0 0 3px #4A2A10,0 4px 0 rgba(0,0,0,.25);box-sizing:border-box}
+  .tbc{position:relative;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(255,244,220,.32);box-shadow:inset 0 0 0 1.5px rgba(90,55,25,.5),0 1px 2px rgba(0,0,0,.2);min-width:0;min-height:0}
+  .tbc.f-safe{background:rgba(190,225,160,.6)}.tbc.f-startp{background:rgba(170,205,245,.65)}.tbc.f-starta{background:rgba(245,180,165,.65)}.tbc.f-again{background:rgba(250,225,120,.65)}.tbc.f-fwd{background:rgba(205,235,190,.55)}.tbc.f-back{background:rgba(235,200,185,.55)}.tbc.f-minus{background:rgba(230,185,165,.6)}.tbc.f-portal{background:rgba(190,170,240,.6)}.tbc.f-gift{background:rgba(250,190,220,.6)}.tbc.f-star{background:rgba(255,235,150,.65)}
+  .tbc.tg{box-shadow:inset 0 0 0 3px #2F8A3A,0 0 10px #7BD47B}
+  .tbi{font:900 clamp(13px,2.8vw,20px) Nunito,sans-serif;color:#6A4520;line-height:1}.tbri{width:62%;height:62%;object-fit:contain}
+  .tbar{opacity:.35;font-size:clamp(14px,3.4vw,22px)}
+  .tbspr{display:block;background-size:400% 200%;background-repeat:no-repeat}
+  .tbt{position:absolute;border:0;background:none;cursor:default;padding:0;z-index:3;transition:left .19s ease-out,top .19s ease-out}
+  .tbt .tbspr{width:100%;height:100%;filter:drop-shadow(0 3px 2px rgba(0,0,0,.45));pointer-events:none}
+  .tbt b{position:absolute;right:-4%;bottom:2%;min-width:1.35em;height:1.35em;display:flex;align-items:center;justify-content:center;border-radius:50%;font:900 clamp(10px,2.2vw,13px) Nunito,sans-serif;color:#fff;box-shadow:0 0 0 2px #FFF4DF}
   .tbt.p b,.tbv.p{background:#2C6FB0}.tbt.a b,.tbv.a{background:#B8402C}
-  
-  .tbt.mv{cursor:pointer;animation:tbPulse 1s infinite}.tbt.mv .tbspr{filter:drop-shadow(0 0 4px #FFD54A) drop-shadow(0 0 2px #FFD54A)}
+  .tbt.hop .tbspr{animation:tbHop .21s ease-out}
+  @keyframes tbHop{0%{transform:translateY(0)}45%{transform:translateY(-20%) scale(1.04)}100%{transform:translateY(0)}}
+  .tbt.fly{transition:left .5s cubic-bezier(.5,0,.3,1),top .5s cubic-bezier(.5,0,.3,1)}.tbt.fly .tbspr{animation:tbFly .5s ease-in-out}
+  @keyframes tbFly{0%{transform:none;opacity:1}50%{transform:scale(.4) rotate(180deg);opacity:.5}100%{transform:none;opacity:1}}
+  .tbt.mv{cursor:pointer;z-index:4}.tbt.mv .tbspr{animation:tbPulse 1s infinite;filter:drop-shadow(0 0 4px #FFD54A) drop-shadow(0 0 2px #FFD54A)}
   @keyframes tbPulse{50%{transform:translateY(-8%)}}
-  .tbmid{grid-row:2/8;grid-column:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;text-align:center;border-radius:12px;background:rgba(255,244,223,.7);backdrop-filter:blur(1px);min-width:0;overflow:hidden}
-  .tbmsg{margin:0;font-weight:800;font-size:clamp(12px,2.6vw,15px);line-height:1.35;max-width:32ch}
-  .tbq{margin:0;font-weight:900}
-  .tbch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.tbch .btn{flex-direction:column;height:auto;padding:8px 12px;line-height:1.2}.tbch small{display:block;font-weight:700;opacity:.85;font-size:12px}
+  .tbt.hit{z-index:5}.tbt.hit .tbspr{animation:tbHit .75s ease-in forwards}
+  @keyframes tbHit{0%{transform:none}15%{transform:translateX(-8%) rotate(-10deg)}30%{transform:translateX(8%) rotate(10deg)}45%{transform:translateX(-6%) rotate(-8deg)}100%{transform:translateY(-40%) rotate(80deg) scale(.4);opacity:0}}
+  .tbpop{position:absolute;z-index:6;transform:translate(-50%,-30%);font:900 clamp(15px,3vw,22px) Nunito,sans-serif;white-space:nowrap;pointer-events:none;animation:tbPop 1.3s ease-out forwards;text-shadow:0 2px 0 #fff,0 0 6px #fff}
+  .tbpop.good{color:#1F6A2A}.tbpop.bad{color:#B8402C}
+  @keyframes tbPop{0%{opacity:0;transform:translate(-50%,0) scale(.6)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-180%)}}
+  .tbjail{display:flex;align-items:center;gap:6px;min-height:40px;padding:2px 10px;border-radius:12px;background:rgba(74,42,16,.12);box-shadow:inset 0 0 0 2px rgba(74,42,16,.2)}
+  .tbjail small{font-weight:800;opacity:.75;margin-right:4px}.tbjail em{font-size:13px;opacity:.5}
+  .tbjp{position:relative;width:46px;height:38px;flex:none}.tbjp .tbspr{position:absolute;inset:0 6px;transform:rotate(-78deg);filter:grayscale(.35) drop-shadow(0 2px 1px rgba(0,0,0,.3))}.tbjp b{position:absolute;right:0;bottom:0;width:17px;height:17px;border-radius:50%;color:#fff;font:900 10px/17px Nunito,sans-serif;text-align:center}
+  .tbjp.new{animation:tbJail .6s ease-out}@keyframes tbJail{0%{transform:scale(1.8);opacity:0}100%{transform:none;opacity:1}}
+  .tbmid{grid-row:2/8;grid-column:2/8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px;text-align:center;border-radius:12px;background:rgba(255,244,223,.55);min-width:0;overflow:hidden}
+  .tbmsg{margin:0;font-weight:800;font-size:clamp(12px,2.4vw,15px);line-height:1.35;max-width:30ch;background:rgba(255,248,232,.8);border-radius:10px;padding:4px 10px}
+  .tbq{margin:0;font-weight:900;background:rgba(255,248,232,.8);border-radius:10px;padding:2px 10px}
+  .tbch{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   .tbdice{display:flex;gap:10px}
   .tbd{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;width:clamp(34px,8vw,50px);aspect-ratio:1;padding:6px;box-sizing:border-box;border-radius:10px;background:#FFF8EA;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 0 0 2px #8A5A2B}
   .tbd i{border-radius:50%}.tbd i.on{background:#3A2410}
-  .tbteam{display:flex;flex-direction:column;gap:4px;font-size:14px}.tbteam>div{display:flex;flex-wrap:wrap;gap:4px 12px}
-  .tbteam span{display:inline-flex;align-items:center;gap:5px;font-weight:700}.tbteam span.out{opacity:.4;text-decoration:line-through}
-  .tbteam{flex-direction:row!important;align-items:center;gap:10px!important}.tbtm{display:flex;flex-direction:column;gap:4px;min-width:0}.tbface{width:64px;height:auto;flex:none}.tbmini{width:24px;height:24px;flex:none}.tbv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;color:#fff;font:900 11px Nunito,sans-serif;font-style:normal}
+  .tbv{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;color:#fff;font:900 11px Nunito,sans-serif;font-style:normal}
+  .tblog{font-size:14px;font-weight:700}.tblog p{margin:2px 0}.tblog p:first-child{color:var(--ink);font-weight:900}.tblog p:not(:first-child){opacity:.6}
   .tbintro{display:flex;gap:12px;align-items:center}.tbintro img{width:110px;height:auto;flex:none}.tbintro .bub{flex:1;min-width:0;background:rgba(255,248,232,.85);border-radius:14px;padding:10px 14px;font-weight:800;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
-  @media (max-width:520px){.tbintro img{width:76px}.tbface{width:48px}}
-  .tblog{min-height:3em;font-size:14px;font-weight:700}.tblog p{margin:2px 0}.tblog p:first-child{color:var(--ink);font-weight:900}.tblog p:not(:first-child){opacity:.6}
+  @media (max-width:520px){.tbintro img{width:76px}.tbface{width:44px}.tbme{width:44px;font-size:28px}.tbpts{font-size:17px}}
   .tbleg{list-style:none;padding:0;margin:0;display:grid;gap:4px;font-weight:700;font-size:14px}.tbleg b{display:inline-block;min-width:2em}`;
   document.head.appendChild(st);
 })();
