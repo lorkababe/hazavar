@@ -6239,6 +6239,15 @@ function rearUI() {
 
 // eseményképek: mindig a teljes kép látszik, vágás és elmosott szél nélkül
 (function () { const st = document.createElement('style'); st.textContent = '.modal .hero{aspect-ratio:auto!important;height:auto!important;max-height:none!important;object-fit:contain!important}.herow{height:auto!important;aspect-ratio:auto!important;background:none!important}.herow .bg{display:none!important}.herow .fg{height:auto!important;filter:none!important}'; document.head.appendChild(st); })();
+
+// az épület ablaka: tömörebb, a Hiba? gomb alá nem csúszik be, és a térkép nem kicsinyíthető a széle fölé
+(function () {
+  const st = document.createElement('style');
+  st.textContent = '#info{width:min(340px,calc(100vw - 24px))!important;padding:14px 16px!important;gap:8px!important}#info .row{gap:6px!important}#info .row .btn{min-height:38px;padding:6px 14px;font-size:14px}'
+    + 'body:has(#fbBtn:not([hidden])) #info{max-height:calc(100vh - var(--toph,72px) - 200px - env(safe-area-inset-bottom,0px))!important}';
+  document.head.appendChild(st);
+  setInterval(() => { try { if (!zBand && scale < minS * 0.999) { scale = minS; clampCam(); } } catch (e) {} }, 400);
+})();
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {
@@ -6454,8 +6463,8 @@ function showGb() {
 window.showGb = showGb;
 // gomb a bal oldalon, a Kalandok alatt
 const st = document.createElement('style');
-st.textContent = `#btnGb{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));z-index:7;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:8px;border-radius:14px;border:0;background:rgba(58,36,16,.88);color:#FFF4DF;font:800 15px Nunito,system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25)}
-  #btnGb img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}#btnGb .gbd{background:#C9472F;border-radius:999px;padding:0 7px;font-size:12px}
+st.textContent = `#btnGb{position:absolute!important;left:calc(16px + env(safe-area-inset-left,0px));z-index:7;width:auto;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:6px;border-radius:14px 18px 14px 16px;border:0;color:#FFF1D8;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3)}#btnGb:not(.wood){background:rgba(58,36,16,.88)}
+  #btnGb img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}#btnGb .gbd{background:#C9472F;border-radius:999px;padding:0 7px;font-size:12px}
   #info>*{flex-shrink:0}.gbmodal{max-width:min(860px,calc(100vw - 24px))}.gbmodal .inner{min-width:0}.gbbig{display:flex;gap:14px;align-items:center;min-width:0}.gbbig>div{min-width:0;flex:1}.gbtop table{table-layout:fixed}.gbtop td{overflow:hidden;text-overflow:ellipsis}.gbtop td:first-child{width:2.5em}.gbtop td:nth-child(3){width:7em}.gbtop td:nth-child(4){width:3.5em}.gbtop td:nth-child(5){width:4.5em}.gbbig img{width:150px;height:150px;object-fit:contain;flex:none}.gbbig h2{margin:0 0 4px}
   .gbtop{display:block!important;margin-top:10px}.gbtop table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.gbtop td{padding:4px 6px;border-bottom:1px dashed rgba(90,55,25,.25);color:#3A2410!important;background:none}.gbtop tr.me{font-weight:900;background:rgba(226,179,60,.25)}.gbtop td:nth-child(3),.gbtop td:nth-child(4){text-align:right;white-space:nowrap}.gbtop td:last-child{color:#2F7A3A!important;font-weight:800;font-size:12px}.gbtop p{margin:4px 0;font-size:13px}
   @media (max-width:560px){.gbbig img{width:90px;height:90px}}
@@ -6481,7 +6490,7 @@ document.body.appendChild(bt);
 setInterval(() => {
   try {
     const ref = document.getElementById('btnMini') || document.getElementById('btnMiniE') || [...document.querySelectorAll('button')].find(x => /Kalandok|Adventures/.test(x.textContent) && x.getBoundingClientRect().left < 200);
-    if (ref) { const r = ref.getBoundingClientRect(); bt.style.top = (r.bottom + 10 + scrollY) + 'px'; bt.hidden = ref.hidden || getComputedStyle(ref).display === 'none'; }
+    if (ref) { const r = ref.getBoundingClientRect(); bt.style.top = (r.bottom + 10 + scrollY) + 'px'; bt.style.left = (r.left + scrollX) + 'px'; if (!bt.dataset.cls && ref.className) { bt.className = ref.className; bt.dataset.cls = 1; } bt.hidden = ref.hidden || getComputedStyle(ref).display === 'none'; }
     const ready = MINE.filter(id => !S.buildings.some(b => b.type === id) && ((R.tr[id] || 0) >= NEED_TR || R.built[id])).length, d = bt.querySelector('.gbd'); d.hidden = !ready; d.textContent = ready;
   } catch (e) {}
 }, 700);
