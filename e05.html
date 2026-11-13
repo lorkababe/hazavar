@@ -6293,8 +6293,9 @@ function cardHTML(id) {
     ${max ? `<p class="gbmax">${tr('Elérte a legmagasabb szintet!')}</p>` : `<div class="gbrow"><small>${tr('A következő szint még ennyit tesz hozzá')}</small><div>${fxChips(fx(id, l + 1), fx(id, l))}</div></div>
     <div class="gbbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>
     <div class="row gbbtns"><button class="btn teal" type="button" data-gbi="5" ${me ? '' : 'disabled'}>+5</button><button class="btn teal" type="button" data-gbi="25" ${me ? '' : 'disabled'}>+25</button><button class="btn coral" type="button" data-gbi="9999" ${me ? '' : 'disabled'}>${tr('Amennyi kell')}</button></div>
-    <small class="gbnote">${trf('Neked {0} Hírneved van. A szomszédaid és a szövetségeseid is beszállhatnak, az első három jutalmat kap, amikor a szint megtelik.', fmt(me))}</small>`}
-    ${topList(id).length ? `<div class="gbtop">${topList(id).slice(0, 5).map(([k, v], i) => `<span>${i + 1}. ${k === 'me' ? tr('Te') : esc(v.name || '?')} · ${v.n}</span>`).join('')}</div>` : ''}</div>`;
+    <small class="gbnote">${trf('Neked {0} Hírneved van.', fmt(me))}</small>`}
+    ${max ? '' : `<div class="gbtop"><b>${tr('Beszállók ebben a szintben')}</b>${topList(id).length ? `<table>${topList(id).map(([k, v], i) => `<tr${k === 'me' ? ' class="me"' : ''}><td>${i + 1}.</td><td>${k === 'me' ? tr('Te') : esc(v.name || '?')}</td><td>${v.n} ${tr('Hírnév')}</td><td>${Math.round(v.n / n * 100)}%</td><td>${i < 3 && k !== 'me' ? trf('jutalma ×{0}', [1.6, 1.35, 1.15][i]) : ''}</td></tr>`).join('')}</table>` : `<p>${tr('Még senki nem szállt be ebbe a szintbe.')}</p>`}
+      <small class="gbnote">${tr('Amikor a szint megtelik, az első három szomszéd a beszállt Hírneve 1,6, 1,35 és 1,15-szörösét kapja vissza, az első még egy tervrajzot is.')}</small></div>`}</div>`;
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function levelUp(id) {
@@ -6317,9 +6318,22 @@ function invest(id, n) {
 let cur = null;
 const _si = showInfo;
 showInfo = function (b) { cur = b && DEF[b.type] && DEF[b.type].gb && GBC[b.type] ? b.type : null; const r = _si.apply(this, arguments); try { if (cur) wireCard($('info'), () => showInfo(b)); } catch (e) {} return r; };
-gbHTML = function () { return cur ? cardHTML(cur) : ''; };
+gbHTML = function () { return cur ? miniHTML(cur) : ''; };
+function miniHTML(id) {
+  const l = lvl(id), lv = L(id), n = need(l), max = l >= GB_TOP;
+  return `<div class="gbbox"><div class="gbhead"><span class="gbtag">${tr('NEVEZETES ÉPÜLET')}</span><b>${trf('{0}. szint', l)} <small>/ ${GB_TOP}</small></b></div>
+    <div class="gbrow"><div>${fxChips(fx(id, l))}</div></div>
+    ${max ? '' : `<div class="gbbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>`}
+    <button class="btn coral" type="button" data-gbopen="${id}" style="width:100%">${max ? tr('Részletek') : tr('Szintezés és beszállók')}</button></div>`;
+}
+function showCard(id) {
+  const g = GBC[id];
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('NEVEZETES ÉPÜLET')}</span><div class="gbbig"><img src="img/${imgOf(id)}.png" alt=""><div><h2>${g.name}</h2><p>${tr(g.desc)}</p></div></div>${cardHTML(id)}</div>`, '', 'gbcard');
+  const root = $('modalRoot'); root.querySelectorAll('[data-gbi]').forEach(x => x.onclick = () => { invest(id, +x.dataset.gbi); showCard(id); });
+}
+window.gbShowCard = showCard;
 gbInvest = function (n) { if (cur) invest(cur, n); };
-function wireCard(root, redo) { root.querySelectorAll('[data-gbi]').forEach(x => x.onclick = () => { invest(cur, +x.dataset.gbi); redo(); }); }
+function wireCard(root, redo) { root.querySelectorAll('[data-gbopen]').forEach(x => x.onclick = () => { const id = x.dataset.gbopen; try { hideInfo(); } catch (e) {} showCard(id); }); }
 // ---------- építés tervrajzból ----------
 const _sb = startBuild;
 let pending = null;
@@ -6391,7 +6405,7 @@ function showGb() {
   const mine = MINE.map(id => {
     const g = GBC[id], built = S.buildings.find(b => b.type === id), t = R.tr[id] || 0, done = !!R.built[id], l = lvl(id);
     const st = built ? `<span class="gbok">${trf('{0}. szint', l)}</span>` : done ? `<span class="gbok">${tr('Felépítve, lerakható')}</span>` : `<div class="gbtr"><i style="width:${Math.min(100, t / NEED_TR * 100)}%"></i><span>${trf('{0} / {1} tervrajz', Math.min(t, NEED_TR), NEED_TR)}</span></div>`;
-    const btn = built ? `<button class="btn teal" type="button" data-gbgo="${id}">${tr('Megnézem')}</button>` : (done || t >= NEED_TR) ? `<button class="btn coral" type="button" data-gbb="${id}">${tr('Felépítem')}</button><small>${costHTML(g.cost)}</small>` : `<small>${GBC[id].free && !R.freeGot[id] && typeof TECH !== 'undefined' && TECH.some(x => x.id === GBC[id].free[0]) ? trf('A(z) {0} kutatás {1} tervrajzot ad hozzá. ', TECH.find(x => x.id === GBC[id].free[0]).name, GBC[id].free[1]) : ''}${tr('Szállj be a szomszédok nevezetes épületeibe, vagy nyerj a kalandokban.')}</small>`;
+    const btn = built ? `<button class="btn coral" type="button" data-gbcard="${id}">${tr('Szintezés')}</button><button class="btn teal" type="button" data-gbgo="${id}">${tr('Megnézem')}</button>` : (done || t >= NEED_TR) ? `<button class="btn coral" type="button" data-gbb="${id}">${tr('Felépítem')}</button><small>${costHTML(g.cost)}</small>` : `<small>${GBC[id].free && !R.freeGot[id] && typeof TECH !== 'undefined' && TECH.some(x => x.id === GBC[id].free[0]) ? trf('A(z) {0} kutatás {1} tervrajzot ad hozzá. ', TECH.find(x => x.id === GBC[id].free[0]).name, GBC[id].free[1]) : ''}${tr('Szállj be a szomszédok nevezetes épületeibe, vagy nyerj a kalandokban.')}</small>`;
     return `<div class="gbcard${built ? ' on' : ''}"><img src="img/${imgOf(id)}.png" alt=""><div class="gbi"><b>${g.name}</b><small class="gbera">${g.era < CUR_ERA ? (done ? tr('Veled jött egy korábbi korból') : tr('Korábbi korból')) : tr('Ebből a korból')}</small><p>${tr(g.desc)}</p>
       <div class="gbrow"><small>${tr(built ? 'Most ad' : 'Az 1. szinten ad')}</small><div>${fxChips(fx(id, built ? l : 0))}</div></div><div class="gbrow"><small>${tr('A 10. szinten ad')}</small><div>${fxChips(fx(id, GB_TOP))}</div></div>${st}<div class="row">${btn}</div></div></div>`;
   }).join('');
@@ -6410,6 +6424,7 @@ function showGb() {
   const root = $('modalRoot');
   root.querySelectorAll('[data-gbt]').forEach(x => x.onclick = () => { tab = x.dataset.gbt; showGb(); });
   root.querySelectorAll('[data-gbb]').forEach(x => x.onclick = () => { const id = x.dataset.gbb; if (!canPay(costOf(id))) { toast(trf('Hiányzik · {0}', missText(costOf(id)))); return; } closeModal(); startBuild(id); });
+  root.querySelectorAll('[data-gbcard]').forEach(x => x.onclick = () => showCard(x.dataset.gbcard));
   root.querySelectorAll('[data-gbgo]').forEach(x => x.onclick = () => { const b = S.buildings.find(y => y.type === x.dataset.gbgo); closeModal(); if (b) { try { const [w, h] = dimsB(b); const [cx, cy] = tileTop(b.i + w / 2, b.j + h / 2); camX = cx - innerWidth / 2 / scale; camY = cy - innerHeight / 2 / scale; } catch (e) {} showInfo(b); } });
   root.querySelectorAll('[data-gbc]').forEach(x => x.onclick = () => { const [bid, id, n] = x.dataset.gbc.split('|'); const soc = SOCx(); const b = soc && soc.bots.find(y => y.id === bid); if (!b) return; contrib(b, id, +n, !!b.real); showGb(); });
 }
@@ -6418,13 +6433,15 @@ window.showGb = showGb;
 const st = document.createElement('style');
 st.textContent = `#btnGb{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));z-index:7;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:8px;border-radius:14px;border:0;background:rgba(58,36,16,.88);color:#FFF4DF;font:800 15px Nunito,system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25)}
   #btnGb img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}#btnGb .gbd{background:#C9472F;border-radius:999px;padding:0 7px;font-size:12px}
+  #info>*{flex-shrink:0}.gbbig{display:flex;gap:14px;align-items:center}.gbbig img{width:150px;height:150px;object-fit:contain;flex:none}.gbbig h2{margin:0 0 4px}
+  .gbtop{display:block!important;margin-top:10px}.gbtop table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.gbtop td{padding:4px 6px;border-bottom:1px dashed rgba(90,55,25,.25);color:#3A2410!important;background:none}.gbtop tr.me{font-weight:900;background:rgba(226,179,60,.25)}.gbtop td:nth-child(3),.gbtop td:nth-child(4){text-align:right;white-space:nowrap}.gbtop td:last-child{color:#2F7A3A!important;font-weight:800;font-size:12px}.gbtop p{margin:4px 0;font-size:13px}
+  @media (max-width:560px){.gbbig img{width:90px;height:90px}}
   #info{max-height:calc(100vh - var(--toph,72px) - 140px - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
   .gbbox{background:rgba(255,248,232,.75);border-radius:14px;padding:8px 10px;margin:4px 0;box-shadow:inset 0 0 0 2px #E2B33C}#info .gbc{font-size:12px;padding:1px 7px}#info .gbrow{margin:4px 0}#info .gbrow>div{gap:4px}#info .gbbar{margin:6px 0}#info .gbnote{font-size:11px}.gbhead{display:flex;justify-content:space-between;align-items:center}.gbtag{font-size:11px;letter-spacing:.12em;font-weight:900;color:#8A3A16}
   .gbrow{margin:6px 0}.gbrow>small{display:block;color:var(--ink-soft);font-weight:800;font-size:12px}.gbrow>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
   .gbc{display:inline-flex;align-items:center;gap:4px;background:#FFF4DF;border-radius:999px;padding:2px 9px;font-weight:900;font-size:13px;box-shadow:0 0 0 1px rgba(90,55,25,.15)}.gbc img{width:18px;height:18px;object-fit:contain}
   .gbbar{position:relative;height:22px;border-radius:11px;background:rgba(90,55,25,.18);overflow:hidden;margin:8px 0}.gbbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#E2B33C,#C9472F)}.gbbar span{position:relative;display:block;text-align:center;font-weight:900;font-size:12px;line-height:22px}.gbbar.sm{height:18px}.gbbar.sm span{line-height:18px}
   .gbbtns .btn{min-height:36px;padding:0 14px}.gbnote{display:block;color:var(--ink-soft);font-size:12px;margin:4px 0}.gbmax{color:var(--good);font-weight:900}
-  .gbtop{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:800;margin-top:6px}
   .gbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:10px}
   .gbcard,.gbn{display:flex;gap:10px;background:rgba(255,248,232,.7);border-radius:16px;padding:10px;box-shadow:0 0 0 2px rgba(90,55,25,.15)}.gbcard.on{box-shadow:0 0 0 3px #E2B33C}
   .gbcard>img{width:110px;height:110px;object-fit:contain;flex:none}.gbn>img{width:70px;height:70px;object-fit:contain;flex:none}.gbi{min-width:0;flex:1}.gbi p{font-size:13px;margin:4px 0}.gbi>b{display:block}.gbi>small{display:block}.gbera{color:#8A3A16;font-weight:800}
