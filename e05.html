@@ -3570,7 +3570,7 @@ draw = function (now) {
       if (!S.rozgony) { ctx.font = '800 20px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,8,.8)'; ctx.fillStyle = '#FFE9B8'; const [cx] = tileTop(b.i + 2.5, b.j + 2.5); ctx.strokeText(tr(BAR_NAME[b.id]), cx, yb - h + 2); ctx.fillText(tr(BAR_NAME[b.id]), cx, yb - h + 2); }
     });
     if (!S.rozgony) S.buildings.forEach(b => { if (!b.baro) return; const [w, h] = dimsT(b.type, b.rot || 0), [x, y] = tileTop(b.i + w / 2, b.j + h / 2), py = y - 30 - Math.max(w, h) * 30;
-      const fl = BAR_FLAG[b.baro]; if (fl && fl.complete && fl.naturalWidth) { const fh = 120, fw = fh * fl.naturalWidth / fl.naturalHeight; ctx.drawImage(fl, x - fw * 0.2, py - fh * 0.35, fw, fh); return; }
+      const fl = BAR_FLAG[b.baro]; if (fl && fl.complete && fl.naturalWidth) { const fh = 110 + Math.max(w, h) * 12, fw = fh * fl.naturalWidth / fl.naturalHeight, yb = y + 6, sw = Math.sin(now / 900 + b.id) * 0.03; ctx.save(); ctx.translate(x, yb); ctx.rotate(sw); ctx.drawImage(fl, -fw * 0.16, -fh, fw, fh); ctx.restore(); return; }
       const col = BAR_COL[b.baro] || BAR_COL.aba, wv = Math.sin(now / 320 + b.id) * 3;
       ctx.strokeStyle = '#6B4420'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, py - 6); ctx.stroke();
       ctx.fillStyle = '#E8B23A'; ctx.beginPath(); ctx.arc(x, py - 8, 5, 0, 7); ctx.fill();
