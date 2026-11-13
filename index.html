@@ -2284,6 +2284,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
+window.__gbNet = { send: (id, kind, p) => netEvent(id, kind, p), town: id => (NET.towns || {})[id] || null };
 const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-(sync|rearr)-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
@@ -2414,7 +2415,7 @@ async function netPushProfile(force) {
   const ready = S.buildings.filter(b => DEF[b.type] && DEF[b.type].prod && !b.ruined).length;
   let def = 0; try { def = typeof defPts === 'function' ? defPts() : Math.round(pop() / 12); } catch (e) {}
   const row = { id: NET.me, name: (PROF.name || '').slice(0, 24) || 'Törzsfő', avatar: PROF.av, bio: (PROF.bio || '').slice(0, 140), era, defense: def, pop: pop(),
-    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}), n: N }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
+    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}), n: N, gbs: typeof window.gbTown === 'function' ? window.gbTown() : null }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
   const sig = JSON.stringify([row.name, row.bio, row.avatar, row.defense, row.pop, list.length, ready, era, row.score]);
   if (!force && sig === lastProf) return; lastProf = sig;
   let { error } = await NET.sb.from('players').upsert(row); if (error && /score/.test(error.message || '')) { delete row.score; ({ error } = await NET.sb.from('players').upsert(row)); } if (error) console.warn('profile', error);
@@ -2446,6 +2447,8 @@ function applyEvent(e) {
   const from = 'u_' + e.from_id, who = NET.names[from] || T('Egy szomszéd'), p = e.payload || {};
   if (e.kind === 'kalaka') { const r = { penz: p.n || amt(8) }; giveR(r); log(TF('{0} kalákázott nálad. {1}', who, resTxt(r)), 'kalaka'); }
   if (e.kind === 'ajandek' && p.k && RES[p.k]) { const r = { [p.k]: Math.min(p.n || 0, 500) }; giveR(r); log(TF('{0} ajándékot küldött: {1}', who, resTxt(r)), 'ajandek'); toast(TF('{0} ajándékot küldött! {1}', who, resTxt(r))); }
+  if (e.kind === 'gbpts' && typeof window.gbRecv === 'function') window.gbRecv(from, who, p);
+  if (e.kind === 'gbrew' && typeof window.gbGot === 'function') window.gbGot(who, p);
   if (e.kind === 'portya') {
     if (p.ok) { const lost = Math.min(Math.floor((S.res.penz || 0) * 0.05), p.n || 0); S.res.penz -= lost; log(TF('{0} kifosztott! Elvittek {1} Pénzt.', who, lost), 'portya'); toast(TF('{0} kifosztott! -{1} Pénz', who, lost)); }
     else log(TF('{0} rád portyázott, de az őreid visszaverték.', who), 'portya');
@@ -3632,6 +3635,7 @@ function rearUI() {
   const INF_KEY = 'hv-dev-inf'; let inf = false; try { inf = localStorage.getItem(INF_KEY) === '1'; } catch (e) {}
   const fill = () => { if (!inf || typeof S === 'undefined' || !S || !S.res) return; Object.keys(RES).forEach(k => { const v = k === 'tudas' ? 999 : k === 'kovako' || k === 'hirnev' ? 999 : 999999; if ((S.res[k] || 0) < v) S.res[k] = v; }); if ((S.korona || 0) < 999) S.korona = 999; };
   setInterval(() => { try { fill(); } catch (e) {} }, 400);
+  A.tervrajz = () => { if (!window.__gbDev) { say('Ebben a korban nincs nevezetes épület.'); return; } Object.keys(window.__gbDev.GBC).forEach(id => window.__gbDev.give(id, 5)); say('+5 tervrajz minden nevezetes épülethez.'); };
   A.inf = () => { inf = !inf; try { localStorage.setItem(INF_KEY, inf ? '1' : '0'); } catch (e) {} fill(); redraw(); say(inf ? 'Végtelen nyersanyag bekapcsolva, minden korszakban.' : 'Végtelen nyersanyag kikapcsolva.'); };
   let confirmReset = false;
   function render() {
@@ -3640,7 +3644,7 @@ function rearUI() {
       <div class="r" style="margin-top:5px"><button data-a="jump" data-v="600">+10 perc</button><button data-a="jump" data-v="${H}">+1 óra</button><button data-a="jump" data-v="${8 * H}">+8 óra</button><button data-a="jump" data-v="${24 * H}">+1 nap</button><button data-a="ready">Minden kész most</button></div>
       <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla', 'Anjou'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
       <div class="i">A többi korszak mentése megmarad, csak átugrasz oda.</div>
-      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
+      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button><button data-a="tervrajz">+5 tervrajz mindenhez</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
       <div class="i">Most a(z) ${(S.quest || 0) + 1}. küldetésnél tartasz.</div>
       <h4>Újrajátszás</h4><div class="r"><button data-a="mini">Mai kalandok újra</button>${g$('hvnT1') ? '<button data-a="night">Éjszaka / Reggel</button><button data-a="ask">Esti kérdés</button>' : ''}${has('showIntro') ? '<button data-a="intro">Bevezető újra</button>' : ''}${has('showEraEnd') ? '<button data-a="eraEnd">Korszak vége ablak</button>' : ''}</div>
       ${ERA === 4 ? `<h4>Tatárjárás</h4><div class="r"><button data-a="tatar">Elölről</button>${w && !w.done ? '<button data-a="tatarWin">Ugrás a csatához</button>' : ''}<button data-a="honal">Második honalapító</button></div><div class="i">${w ? (w.done ? 'Lezajlott: ' + (w.outcome || '') + ', ' + (w.score || 0) + '%' : 'Folyamatban, ' + Math.max(0, Math.round((WINTER_LEN - (S.gt - w.start)) / H)) + ' óra van hátra') : 'Még nem kezdődött el.'}</div>` : ''}

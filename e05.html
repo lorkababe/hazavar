@@ -613,10 +613,10 @@ const QUESTS = [
   { face: 'magyaraz', text: 'A régi pénz minden évben romlik, senki nem bízik benne. Tanuld ki Az aranyforintot, építs Pénzverdét, és verj 10 aranyforintot.', check: () => (S.res.forint || 0) >= 10 || (S.stats.forint || 0) >= 10, rew: { tudas: 4 } },
   { face: 'orul', text: 'A jó épület nem költözik, hanem szépül. Koppints egy bányára, szőlőhegyre vagy vashámorra, és építsd át a következő szintre. Ugyanakkora marad, csak többet termel.', check: () => S.buildings.some(b => DEF[b.type] && DEF[b.type].lvl >= 2), rew: { forint: 4 } },
   { face: 'orul', text: 'Legyünk kétszázan! A nagy ország sok emberrel nagy.', check: () => pop() >= 200, rew: { penz: 800 } },
-  { face: 'magyaraz', text: 'Visegrád lesz a székhelyünk, gyönyörű kilátással a Dunára. Tanuld ki a királyi székhelyet, és kezdd el építeni a palotát.', check: () => S.buildings.some(b => /^palota/.test(b.type)), rew: { hirnev: 10 } },
-  { face: 'nevet', text: 'Három király jön vendégségbe, és mindegyik nagyon éhes. Építsd a palotát legalább a második szintig, és tanuld ki A visegrádi királytalálkozót.', check: () => !!S.techs.kiraly, rew: { hirnev: 15 } },
+  { face: 'magyaraz', text: 'Visegrád lesz a székhelyünk, gyönyörű kilátással a Dunára. A palota nevezetes épület. Tanuld ki a királyi székhelyet, ez 3 tervrajzot ad, a maradékot a szomszédaidtól szerzed. Aztán a Nevezetes menüben építsd fel.', check: () => S.buildings.some(b => /^palota/.test(b.type)), rew: { hirnev: 10 } },
+  { face: 'nevet', text: 'Három király jön vendégségbe, és mindegyik nagyon éhes. Szintezd a palotát Hírnévvel legalább a 3. szintig, és tanuld ki A visegrádi királytalálkozót.', check: () => !!S.techs.kiraly, rew: { hirnev: 15 } },
   { face: 'orul', text: 'Üdv, Nagy Lajos vagyok! Apám rendet rakott, én fényt hozok. Lovagkirály leszek, ehhez pedig tornapálya kell. Tanuld ki A lovagkirályt, és építs Lovagi tornapályát.', check: () => has('lovagitorna'), rew: { hirnev: 20 } },
-  { face: 'nevet', text: 'A palotám legyen a legszebb Európában. Építsd át a visegrádi palotát a harmadik szintre, hadd irigykedjenek a velenceiek.', check: () => S.buildings.some(b => b.type === 'palota3'), rew: { hirnev: 30 } }
+  { face: 'nevet', text: 'A palotám legyen a legszebb Európában. Szintezd a visegrádi palotát a 8. szintig, akkor lesz a legszebb, hadd irigykedjenek a velenceiek.', check: () => !!(S.gb && S.gb.palota1 && S.gb.palota1.lvl >= 8), rew: { hirnev: 30 } }
 ];
 
 const has = t => S.buildings.some(b => b.type === t && !b.ruined);
@@ -1030,7 +1030,7 @@ function collect(b) {
   const d = DEF[b.type]; const m = mood().mult; const [bw, bh] = dimsB(b); const [tx, ty] = tileTop(b.i + bw / 2, b.j + bh / 2);
   let k = 0;
   Object.entries(d.prod).forEach(([r, v]) => {
-    let n = r === 'kovako' || r === 'tudas' || RES[r].good ? v * bMul(b) * (r === 'tudas' ? lawMul('tudas', b) : 1) : Math.round(v * bMul(b) * (b.type === 'gazda' && S.techs.eke ? 1.25 : 1) * (b.type === 'gazda' && S.council === 'gazda' ? 1.25 : 1) * (r === 'termeny' ? 1 + relics().reduce((a, x) => a + (x.term || 0), 0) : 1) * m * lendMult() * lawMul(r, b) * (r === 'penz' ? 1 + relics().reduce((a, x) => a + (x.penz || 0), 0) : 1) * (r === 'penz' && S.home === 'duna' ? 1.1 : 1) * (r === 'termeny' && S.home === 'tisza' ? 1.1 : 1) * (r === 'penz' && DEF[b.type].gb ? 1 + 0.1 * gbLvl(b.type) : 1) * auraMul(b, r) * gbResMul(r));
+    let n = r === 'kovako' || r === 'tudas' || RES[r].good ? v * bMul(b) * (r === 'tudas' ? lawMul('tudas', b) : 1) : Math.round(v * bMul(b) * (b.type === 'gazda' && S.techs.eke ? 1.25 : 1) * (b.type === 'gazda' && S.council === 'gazda' ? 1.25 : 1) * (r === 'termeny' ? 1 + relics().reduce((a, x) => a + (x.term || 0), 0) : 1) * m * lendMult() * lawMul(r, b) * (r === 'penz' ? 1 + relics().reduce((a, x) => a + (x.penz || 0), 0) : 1) * (r === 'penz' && S.home === 'duna' ? 1.1 : 1) * (r === 'termeny' && S.home === 'tisza' ? 1.1 : 1) * auraMul(b, r) * gbResMul(r));
     if (r === 'termeny') { const room = Math.max(0, termCap() - S.res.termeny); if (n > room) { const p = Math.floor((n - room) / 5); if (p > 0) { S.res.penz += p; floatText(tx, ty - 92 - k * 22, '+' + p + ' ' + RES.penz.name, '#F5C542'); } n = room; } }
     S.res[r] = (S.res[r] || 0) + n; if (r === 'kovako') S.stats.kovako += n; if (r === 'bor') S.stats.bor = (S.stats.bor || 0) + n; if (r === 'penz') S.earned = (S.earned || 0) + n;
     floatText(tx, ty - 70 - k * 22, '+' + n + ' ' + RES[r].name, r === 'kovako' || RES[r].good ? '#7FE0D2' : '#F5C542'); k++;
@@ -3619,10 +3619,10 @@ function rozBattle(sum) {
 }
 // ---------- a visegrádi királytalálkozó, 1335 ----------
 function showKiraly() {
-  const pal = S.buildings.find(b => /^palota/.test(b.type) && !b.upTo), lvl = pal ? DEF[pal.type].lvl || 1 : 0, ok = lvl >= 2;
+  const pal = S.buildings.find(b => /^palota/.test(b.type)), lvl = pal ? ((S.gb && S.gb.palota1 && S.gb.palota1.lvl) || 0) : -1, ok = lvl >= 3;
   modal(`${X_BTN}<img class="hero" src="img/e05_kiralytalalkozo.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('VISEGRÁD, 1335')}</span><h2>${tr('Három király egy asztalnál')}</h2>
     <p>${tr('A cseh és a lengyel király jön vendégségbe. Új kereskedelmi utat akarunk, hogy az áru ne Bécsen át menjen, ahol mindenre vámot szednek. Ehhez jó lakoma és szép palota kell.')}</p>
-    <p style="font-weight:800">${ok ? tr('A palota készen áll a vendégekre.') : tr('A palotának legalább a második szinten kell lennie. Építsd át, és utána jöhetnek a királyok.')}</p>
+    <p style="font-weight:800">${ok ? tr('A palota készen áll a vendégekre.') : tr('A palotának legalább a 3. szinten kell lennie. Szintezd Hírnévvel, és utána jöhetnek a királyok.')}</p>
     <div class="row">${ok ? `<button class="btn coral" type="button" id="kkGo">${tr('Kezdődjön a lakoma!')}</button>` : ''}<button class="btn ghost" type="button" id="kkNo">${tr(ok ? 'Még nem' : 'Rendben')}</button></div></div>`, '', 'kiraly');
   $('kkNo').onclick = closeModal;
   if (ok) $('kkGo').onclick = () => {
@@ -5405,6 +5405,7 @@ const SB_URL = 'https://eaeczgphpslppqyrnaos.supabase.co', SB_KEY = 'sb_publisha
 const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(location.search);
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
+window.__gbNet = { send: (id, kind, p) => netEvent(id, kind, p), town: id => (NET.towns || {})[id] || null };
 const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-(sync|rearr)-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
@@ -5535,7 +5536,7 @@ async function netPushProfile(force) {
   const ready = S.buildings.filter(b => DEF[b.type] && DEF[b.type].prod && !b.ruined).length;
   let def = 0; try { def = typeof defPts === 'function' ? defPts() : Math.round(pop() / 12); } catch (e) {}
   const row = { id: NET.me, name: (PROF.name || '').slice(0, 24) || 'Törzsfő', avatar: PROF.av, bio: (PROF.bio || '').slice(0, 140), era, defense: def, pop: pop(),
-    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}), n: N }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
+    town: Object.assign({ era, list, ready, roads: Object.keys(S.roads || {}), n: N, gbs: typeof window.gbTown === 'function' ? window.gbTown() : null }, ERA_MAP[era] || ERA_MAP[0]), updated_at: new Date().toISOString(), score: myScore() };
   const sig = JSON.stringify([row.name, row.bio, row.avatar, row.defense, row.pop, list.length, ready, era, row.score]);
   if (!force && sig === lastProf) return; lastProf = sig;
   let { error } = await NET.sb.from('players').upsert(row); if (error && /score/.test(error.message || '')) { delete row.score; ({ error } = await NET.sb.from('players').upsert(row)); } if (error) console.warn('profile', error);
@@ -5567,6 +5568,8 @@ function applyEvent(e) {
   const from = 'u_' + e.from_id, who = NET.names[from] || T('Egy szomszéd'), p = e.payload || {};
   if (e.kind === 'kalaka') { const r = { penz: p.n || amt(8) }; giveR(r); log(TF('{0} kalákázott nálad. {1}', who, resTxt(r)), 'kalaka'); }
   if (e.kind === 'ajandek' && p.k && RES[p.k]) { const r = { [p.k]: Math.min(p.n || 0, 500) }; giveR(r); log(TF('{0} ajándékot küldött: {1}', who, resTxt(r)), 'ajandek'); toast(TF('{0} ajándékot küldött! {1}', who, resTxt(r))); }
+  if (e.kind === 'gbpts' && typeof window.gbRecv === 'function') window.gbRecv(from, who, p);
+  if (e.kind === 'gbrew' && typeof window.gbGot === 'function') window.gbGot(who, p);
   if (e.kind === 'portya') {
     if (p.ok) { const lost = Math.min(Math.floor((S.res.penz || 0) * 0.05), p.n || 0); S.res.penz -= lost; log(TF('{0} kifosztott! Elvittek {1} Pénzt.', who, lost), 'portya'); toast(TF('{0} kifosztott! -{1} Pénz', who, lost)); }
     else log(TF('{0} rád portyázott, de az őreid visszaverték.', who), 'portya');
@@ -6213,6 +6216,237 @@ function rearUI() {
   x.onclick = e => { e.stopPropagation(); set(true); };
   setInterval(() => { const p = document.getElementById('evPct'); if (p) pct.textContent = p.textContent; }, 700);
 })();
+// HazaVár · Nevezetes épületek (István korától)
+// tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
+(function () {
+'use strict';
+if (typeof CUR_ERA !== 'number' || CUR_ERA < 3 || typeof DEF === 'undefined') return;
+const GBK = 'panelvar-gb-v1', NEED_TR = 5, GB_TOP = 10;
+const H = 3600, MN = 60;
+const need = l => 30 + 20 * l;
+const GBC = {
+  vezeri: { era: 3, name: 'Pannonhalmi apátság', img: 'e03_pannonhalma', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 500, termeny: 250 }, base: { hang: 10, pop: 6, prod: { penz: 90 } }, per: { hang: 4, pop: 2, mul: 0.6 }, time: 20 * MN, free: ['apatsag', 3],
+    desc: 'Géza kezdte, István fejezte be. A bencések ezer évig itt lesznek, és közben hangulatot és pénzt hoznak a városnak.' },
+  jak: { era: 4, name: 'Jáki templom', img: 'e04_jak_1', stages: ['e04_jak_1', 'e04_jak_2', 'e04_jak_3'], size: 3, cat: 'hang', faith: 'pog', cost: { penz: 2500, fa: 100 }, base: { hang: 10, pop: 4, prod: { penz: 200 } }, per: { hang: 4, pop: 2, mul: 0.6 }, time: H, free: ['jak', 3],
+    desc: 'A Ják nemzetség temploma, kapuján a tizenkét apostol. Rengeteg hangulatot és pénzt ad, szintenként egyre többet.' },
+  visegrad: { era: 4, name: 'Visegrádi vár', img: 'e04_visegrad_1', stages: ['e04_visegrad_1', 'e04_visegrad_2', 'e04_visegrad_3'], size: 3, cat: 'ved', faith: 'ker', cost: { penz: 4000, fa: 120 }, base: { def: 8, hang: 4, pop: 6, prod: { termeny: 120 } }, per: { def: 3, mul: 0.6 }, time: H, free: ['visegrad', 5],
+    desc: 'A tatárjárás után épült fellegvár a Duna fölött. Védelmet és Terményt ad, szintenként egyre többet.' },
+  palota1: { era: 5, name: 'Visegrádi királyi palota', img: 'e05_palota1', stages: ['e05_palota1', 'e05_palota2', 'e05_palota3'], size: 5, cat: 'hang', faith: 'ker', cost: { penz: 4000, fa: 150, vas: 30 }, base: { hang: 12, pop: 10, prod: { hirnev: 2 } }, per: { hang: 4, pop: 3, add: { hirnev: 1 } }, time: H, free: ['palota', 3],
+    desc: 'Károly Róbert székhelye, Nagy Lajos fényes udvara. Hírnevet termel, amivel a többi nevezetes épületet is szintezheted.' },
+  pecs: { era: 5, name: 'Pécsi egyetem', img: 'e05_pecsi_egyetem', alt: 'e04_ciszterci_apatsag', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 3000, fa: 80, forint: 10 }, base: { hang: 6, pop: 4, prod: { tudas: 2 } }, per: { hang: 2, add: { tudas: 1 } }, time: H,
+    desc: 'Az első magyar egyetem, Nagy Lajos alapította 1367-ben. Tudást ad, szintenként egyre többet.' },
+  diosgyor: { era: 5, name: 'Diósgyőri vár', img: 'e05_diosgyori_var', alt: 'e04_visegrad_3', size: 3, cat: 'ved', faith: 'ker', cost: { penz: 3500, fa: 100, vas: 30 }, base: { def: 8, hang: 4, prod: { vas: 4 } }, per: { def: 3, add: { vas: 2 } }, time: H,
+    desc: 'Nagy Lajos kedvenc vára, négy saroktoronnyal. Védelmet és Vasat ad, szintenként egyre többet.' },
+  kormoc: { era: 5, name: 'Körmöci aranybánya', img: 'e05_kormoci_banya', alt: 'e05_aranybanya3', size: 3, cat: 'term', terrain: 'hill', cost: { penz: 3000, fa: 120, vas: 20 }, base: { prod: { arany: 6 } }, per: { add: { arany: 3 } }, time: H,
+    desc: 'Európa leggazdagabb aranybányája. Aranyat ad, szintenként egyre többet, és kiváltja a kis bányákat.' }
+};
+const MINE = Object.keys(GBC).filter(k => GBC[k].era <= CUR_ERA);
+// ---------- közös tár: szint, tervrajz, beszállók ----------
+let R; try { R = JSON.parse(localStorage.getItem(GBK) || 'null'); } catch (e) { R = null; }
+R = R || {}; R.tr = R.tr || {}; R.lv = R.lv || {}; R.built = R.built || {}; R.freeGot = R.freeGot || {}; R.bots = R.bots || {}; R.log = R.log || [];
+const gsave = () => { try { localStorage.setItem(GBK, JSON.stringify(R)); } catch (e) {} };
+const L = id => (R.lv[id] = R.lv[id] || { lvl: 0, pts: 0, top: {} });
+const lvl = id => (R.lv[id] && R.lv[id].lvl) || 0;
+// régi mentésből átvesszük a szinteket
+try { Object.keys(S.gb || {}).forEach(id => { if (GBC[id] && S.gb[id] && (S.gb[id].lvl || 0) > lvl(id)) { L(id).lvl = S.gb[id].lvl; L(id).pts = S.gb[id].pts || 0; } }); } catch (e) {}
+// a régi palota-szintekből nevezetes épület lesz
+if (DEF.palota1) {
+  S.buildings.forEach(b => { if (b.type === 'palota2' || b.type === 'palota3') { const l = b.type === 'palota3' ? 8 : 4; if (lvl('palota1') < l) L('palota1').lvl = l; b.type = 'palota1'; delete b.upTo; } });
+  delete DEF.palota1.up; delete DEF.palota1.upT;
+}
+// ---------- hatás szintenként ----------
+function fx(id, l) {
+  const g = GBC[id], o = { hang: (g.base.hang || 0) + (g.per.hang || 0) * l, def: (g.base.def || 0) + (g.per.def || 0) * l, pop: (g.base.pop || 0) + (g.per.pop || 0) * l, prod: {} };
+  Object.entries(g.base.prod || {}).forEach(([k, v]) => { o.prod[k] = g.per.mul ? Math.round(v * (1 + g.per.mul * l)) : v + ((g.per.add || {})[k] || 0) * l; });
+  return o;
+}
+const imgOf = id => { const g = GBC[id]; if (g.stages) return g.stages[Math.min(2, Math.floor(lvl(id) / 4))]; return (IMG[g.img] || !g.alt) ? g.img : g.alt; };
+function apply() {
+  MINE.forEach(id => {
+    const g = GBC[id], o = fx(id, lvl(id));
+    const d = DEF[id] = Object.assign(DEF[id] || {}, { name: g.name, size: g.size, cat: g.cat, cost: g.cost, road: true, gb: true, unique: true, stone: true, old: 1, time: g.time, desc: g.desc });
+    d.img = g.stages ? g.stages[0] : (IMG[g.img] ? g.img : (g.alt || g.img)); if (g.stages) d.stages = g.stages; else delete d.stages; if (g.terrain) d.terrain = g.terrain;
+    if (g.faith) d.faith = g.faith; d.hang = o.hang || undefined; d.def = o.def || undefined; d.pop = o.pop || undefined; d.prod = o.prod; delete d.tech; delete d.buildTime; d.bt = 2 * H;
+    S.gb = S.gb || {}; S.gb[id] = { lvl: lvl(id), pts: L(id).pts };
+  });
+}
+// a régi bónuszok helyett most az épület maga ad többet
+try { gbHang = () => 0; } catch (e) {} try { gbDef = () => 0; } catch (e) {} try { gbResMul = () => 1; } catch (e) {}
+// képek
+MINE.forEach(id => { const g = GBC[id]; [g.img, g.alt].concat(g.stages || []).filter(Boolean).forEach(n => { if (!IMG[n]) { try { imgNames.push(n + '.png'); loadOne(n + '.png'); } catch (e) {} } }); });
+apply();
+// ---------- fel- és leírás ----------
+const RN = k => (RES[k] && RES[k].name) || k;
+function fxChips(o, prev) {
+  const ch = []; const d = (a, b) => prev ? a - b : a;
+  Object.entries(o.prod).forEach(([k, v]) => { const x = d(v, prev ? prev.prod[k] || 0 : 0); if (x) ch.push(`<span class="gbc"><img src="img/${(RES[k] || {}).icon || 'ikon_hirnev'}.${(RES[k] || {}).file ? 'svg' : 'png'}" alt="">+${fmt(x)} ${RN(k)}</span>`); });
+  if (d(o.hang, prev && prev.hang)) ch.push(`<span class="gbc">😊 +${d(o.hang, prev && prev.hang)} ${tr('Hangulat')}</span>`);
+  if (d(o.def, prev && prev.def)) ch.push(`<span class="gbc">🛡 +${d(o.def, prev && prev.def)} ${tr('Védelem')}</span>`);
+  if (d(o.pop, prev && prev.pop)) ch.push(`<span class="gbc">👥 +${d(o.pop, prev && prev.pop)} ${tr('Lakos')}</span>`);
+  return ch.join('');
+}
+const topList = id => Object.entries(L(id).top).sort((a, b) => b[1].n - a[1].n);
+function cardHTML(id) {
+  const g = GBC[id], l = lvl(id), lv = L(id), n = need(l), max = l >= GB_TOP, me = S.res.hirnev || 0;
+  return `<div class="gbbox"><div class="gbhead"><span class="gbtag">${tr('NEVEZETES ÉPÜLET')}</span><b>${trf('{0}. szint', l)} <small>/ ${GB_TOP}</small></b></div>
+    <div class="gbrow"><small>${tr('Most ad')}</small><div>${fxChips(fx(id, l))}</div></div>
+    ${max ? `<p class="gbmax">${tr('Elérte a legmagasabb szintet!')}</p>` : `<div class="gbrow"><small>${tr('A következő szint még ennyit tesz hozzá')}</small><div>${fxChips(fx(id, l + 1), fx(id, l))}</div></div>
+    <div class="gbbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>
+    <div class="row gbbtns"><button class="btn teal" type="button" data-gbi="5" ${me ? '' : 'disabled'}>+5</button><button class="btn teal" type="button" data-gbi="25" ${me ? '' : 'disabled'}>+25</button><button class="btn coral" type="button" data-gbi="9999" ${me ? '' : 'disabled'}>${tr('Amennyi kell')}</button></div>
+    <small class="gbnote">${trf('Neked {0} Hírneved van. A szomszédaid és a szövetségeseid is beszállhatnak, az első három jutalmat kap, amikor a szint megtelik.', fmt(me))}</small>`}
+    ${topList(id).length ? `<div class="gbtop">${topList(id).slice(0, 5).map(([k, v], i) => `<span>${i + 1}. ${k === 'me' ? tr('Te') : esc(v.name || '?')} · ${v.n}</span>`).join('')}</div>` : ''}</div>`;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function levelUp(id) {
+  const lv = L(id); let ups = 0;
+  while (lv.lvl < GB_TOP && lv.pts >= need(lv.lvl)) {
+    lv.pts -= need(lv.lvl); lv.lvl++; ups++;
+    const rank = topList(id).slice(0, 3); lv.top = {};
+    rank.forEach(([k, v], i) => { if (k === 'me') return; const rew = { hirnev: Math.round(v.n * [1.6, 1.35, 1.15][i]), penz: Math.round(v.n * 20 * (typeof ERA_F !== 'undefined' ? 1 : 1)) }; if (k.startsWith('u_') && window.__gbNet) window.__gbNet.send(k, 'gbrew', { gb: id, name: GBC[id].name, rank: i + 1, rew, tr: i === 0 ? 1 : 0 }); });
+  }
+  if (lv.lvl >= GB_TOP) lv.pts = 0;
+  if (ups) { apply(); try { sfxCollect(); } catch (e) {} toast(trf('{0} elérte a(z) {1}. szintet! Mostantól többet ad.', GBC[id].name, lv.lvl)); }
+  return ups;
+}
+function invest(id, n) {
+  const lv = L(id); if (lv.lvl >= GB_TOP) return; n = Math.min(n, S.res.hirnev || 0, need(lv.lvl) - lv.pts); if (n <= 0) return;
+  S.res.hirnev -= n; lv.pts += n; lv.top.me = { n: ((lv.top.me || {}).n || 0) + n, name: 'me' }; try { dailyHit('hirnev', n); } catch (e) {}
+  levelUp(id); apply(); gsave(); save(); try { hud(); } catch (e) {}
+}
+// a régi infópanel a nevezetes épületeknél az új kártyát mutatja
+let cur = null;
+const _si = showInfo;
+showInfo = function (b) { cur = b && DEF[b.type] && DEF[b.type].gb && GBC[b.type] ? b.type : null; const r = _si.apply(this, arguments); try { if (cur) wireCard($('info'), () => showInfo(b)); } catch (e) {} return r; };
+gbHTML = function () { return cur ? cardHTML(cur) : ''; };
+gbInvest = function (n) { if (cur) invest(cur, n); };
+function wireCard(root, redo) { root.querySelectorAll('[data-gbi]').forEach(x => x.onclick = () => { invest(cur, +x.dataset.gbi); redo(); }); }
+// ---------- építés tervrajzból ----------
+const _sb = startBuild;
+let pending = null;
+startBuild = function (t) {
+  if (GBC[t] && !R.built[t]) { if ((R.tr[t] || 0) < NEED_TR) { toast(trf('Ehhez {0} tervrajz kell, neked {1} van. Szállj be a szomszédok nevezetes épületeibe!', NEED_TR, R.tr[t] || 0)); return; } pending = t; }
+  return _sb.apply(this, arguments);
+};
+// ---------- figyelő: új épület, kutatási ajándék, áthozott épületek ----------
+function tickGb() {
+  if (!S || !S.buildings) return; let ch = false;
+  MINE.forEach(id => {
+    const has = S.buildings.some(b => b.type === id);
+    if (has && !R.built[id]) { R.built[id] = { era: CUR_ERA }; if (pending === id) { R.tr[id] = Math.max(0, (R.tr[id] || 0) - NEED_TR); pending = null; } ch = true; }
+    const fr = GBC[id].free; if (fr && S.techs && S.techs[fr[0]] && !R.freeGot[id]) { R.freeGot[id] = 1; R.tr[id] = (R.tr[id] || 0) + fr[1]; ch = true; toast(trf('A kutatás {0} tervrajzot adott ehhez: {1}', fr[1], GBC[id].name)); }
+  });
+  if (ch) gsave();
+}
+// ami egy korábbi korban már felépült, az veled jön, a szintjével együtt
+function carryGb() {
+  if (!S.intro) return; let n = 0;
+  MINE.forEach(id => { if (!R.built[id] || R.built[id].era >= CUR_ERA || S.buildings.some(b => b.type === id)) return; if ((S.gbGone || {})[id]) return;
+    let sp = null; try { sp = freeSpot(id); } catch (e) {} if (!sp) return; S.buildings.push({ id: S.nextId++, type: id, i: sp[0], j: sp[1], t0: S.gt, built: S.gt, rot: 0 }); n++; });
+  if (n) { try { connCache = null; } catch (e) {} save(); toast(trf('{0} nevezetes épület veled jött az előző korból, a szintjével együtt.', n)); }
+}
+setInterval(() => { try { tickGb(); } catch (e) {} }, 1500);
+setTimeout(() => { try { carryGb(); } catch (e) {} }, 4000);
+// lebontás után ne jöjjön vissza magától
+setInterval(() => { try { MINE.forEach(id => { if (R.built[id] && R.built[id].era === CUR_ERA && !S.buildings.some(b => b.type === id) && !openModal) { S.gbGone = S.gbGone || {}; } }); } catch (e) {} }, 5000);
+// kalandokból néha tervrajz jár
+try { if (typeof miniGive === 'function') { const _mg = miniGive; miniGive = function () { const r = _mg.apply(this, arguments); try { if (Math.random() < 0.25) { const c = MINE.filter(id => !R.built[id]); if (c.length) { const id = c[Math.floor(Math.random() * c.length)]; R.tr[id] = (R.tr[id] || 0) + 1; gsave(); setTimeout(() => toast(trf('A kaland mellé egy tervrajz is járt: {0}', GBC[id].name)), 900); } } } catch (e) {} return r; }; } } catch (e) {}
+// ---------- szomszédok nevezetes épületei ----------
+const SOCx = () => (window.__SOC && window.__SOC.get && window.__SOC.get()) || null;
+function botGbs(b) {
+  let s = R.bots[b.id];
+  if (!s) { s = R.bots[b.id] = {}; const pool = MINE.slice().sort(() => Math.random() - 0.5).slice(0, 1 + (Math.random() < 0.6 ? 1 : 0)); pool.forEach(id => { const l = Math.floor(Math.random() * 6); s[id] = { lvl: l, pts: Math.floor(Math.random() * need(l) * 0.6), mine: 0, t: Date.now() }; }); }
+  // a gépi szomszédok is szintezik a sajátjukat, 6-18 óra alatt egy szintet
+  Object.entries(s).forEach(([id, g]) => {
+    if (!GBC[id]) { delete s[id]; return; } const now = Date.now(), dt = (now - (g.t || now)) / 3600e3; g.t = now; g.pts += Math.floor(dt * need(g.lvl) / (6 + (b.id.length % 12)));
+    while (g.pts >= need(g.lvl) && g.lvl < GB_TOP) { const n = need(g.lvl); g.pts -= n; g.lvl++; if (g.mine > 0) payBot(b, id, g.mine, n); g.mine = 0; }
+  });
+  return s;
+}
+function payBot(b, id, mine, n) {
+  const rank = mine >= n * 0.4 ? 1 : mine >= n * 0.2 ? 2 : 3, rew = { hirnev: Math.round(mine * [1.6, 1.35, 1.15][rank - 1]), penz: mine * 20 };
+  Object.entries(rew).forEach(([k, v]) => { S.res[k] = (S.res[k] || 0) + v; }); if (rank === 1) R.tr[id] = (R.tr[id] || 0) + 1;
+  R.log.unshift({ t: Date.now(), text: trf('{0} {1} épülete szintet lépett. {2}. helyen végeztél: +{3} Hírnév, +{4} Pénz{5}', b.name, GBC[id].name, rank, rew.hirnev, fmt(rew.penz), rank === 1 ? ' ' + tr('és egy tervrajz') : '') }); R.log = R.log.slice(0, 20);
+  toast(trf('{0} épülete szintet lépett, a {1}. helyen végeztél! +{2} Hírnév', GBC[id].name, rank, rew.hirnev));
+}
+function contrib(owner, id, n, real) {
+  n = Math.min(n, S.res.hirnev || 0); if (n < 1) return;
+  S.res.hirnev -= n; if (n >= 10) { R.tr[id] = (R.tr[id] || 0) + 1; toast(trf('Köszönik! Kaptál egy tervrajzot: {0} ({1}/{2})', GBC[id].name, R.tr[id], NEED_TR)); } else toast(tr('Köszönik! 10 Hírnévtől tervrajz is jár.'));
+  if (real) { window.__gbNet.send(owner.id, 'gbpts', { gb: id, n }); const t = window.__gbNet.town(owner.id); if (t && t.gbs && t.gbs[id]) t.gbs[id].pts += n; }
+  else { const g = botGbs(owner)[id]; g.mine += n; g.pts += n; while (g.pts >= need(g.lvl) && g.lvl < GB_TOP) { const nn = need(g.lvl); g.pts -= nn; g.lvl++; payBot(owner, id, g.mine, nn); g.mine = 0; } }
+  try { dailyHit('hirnev', n); } catch (e) {} gsave(); save(); try { hud(); } catch (e) {}
+}
+function neighbours() {
+  const soc = SOCx(); const out = [];
+  if (soc) soc.bots.forEach(b => { if (b.real) { const t = window.__gbNet && window.__gbNet.town(b.id); const g = (t && t.gbs) || {}; if (Object.keys(g).length) out.push({ b, real: 1, gbs: g }); } else out.push({ b, gbs: botGbs(b) }); });
+  return out;
+}
+// a saját állapot a szomszédoknak
+window.gbTown = () => { const o = {}; MINE.forEach(id => { if (S.buildings.some(b => b.type === id)) o[id] = { lvl: lvl(id), pts: L(id).pts, need: need(lvl(id)) }; }); return o; };
+window.gbRecv = (from, who, p) => { if (!p || !GBC[p.gb] || !R.built[p.gb]) return; const lv = L(p.gb), n = Math.max(0, Math.min(500, p.n | 0)); lv.pts += n; lv.top[from] = { n: ((lv.top[from] || {}).n || 0) + n, name: who }; R.log.unshift({ t: Date.now(), text: trf('{0} {1} Hírnevet tett a(z) {2} épületedbe.', who, n, GBC[p.gb].name) }); levelUp(p.gb); apply(); gsave(); save(); };
+window.gbGot = (who, p) => { if (!p || !p.rew) return; Object.entries(p.rew).forEach(([k, v]) => { if (RES[k]) S.res[k] = (S.res[k] || 0) + Math.min(v | 0, 5000); }); if (p.tr && GBC[p.gb]) R.tr[p.gb] = (R.tr[p.gb] || 0) + 1; R.log.unshift({ t: Date.now(), text: trf('{0} {1} épülete szintet lépett. {2}. helyen végeztél.', who, p.name || '', p.rank) }); gsave(); save(); try { hud(); } catch (e) {} toast(trf('{0} épülete szintet lépett, a {1}. helyen végeztél!', who, p.rank)); };
+// ---------- a Nevezetes épületek ablak ----------
+let tab = 'mine';
+function showGb() {
+  try { hideInfo(); closeDrawer(); } catch (e) {}
+  const mine = MINE.map(id => {
+    const g = GBC[id], built = S.buildings.find(b => b.type === id), t = R.tr[id] || 0, done = !!R.built[id], l = lvl(id);
+    const st = built ? `<span class="gbok">${trf('{0}. szint', l)}</span>` : done ? `<span class="gbok">${tr('Felépítve, lerakható')}</span>` : `<div class="gbtr"><i style="width:${Math.min(100, t / NEED_TR * 100)}%"></i><span>${trf('{0} / {1} tervrajz', Math.min(t, NEED_TR), NEED_TR)}</span></div>`;
+    const btn = built ? `<button class="btn teal" type="button" data-gbgo="${id}">${tr('Megnézem')}</button>` : (done || t >= NEED_TR) ? `<button class="btn coral" type="button" data-gbb="${id}">${tr('Felépítem')}</button><small>${costHTML(g.cost)}</small>` : `<small>${GBC[id].free && !R.freeGot[id] && typeof TECH !== 'undefined' && TECH.some(x => x.id === GBC[id].free[0]) ? trf('A(z) {0} kutatás {1} tervrajzot ad hozzá. ', TECH.find(x => x.id === GBC[id].free[0]).name, GBC[id].free[1]) : ''}${tr('Szállj be a szomszédok nevezetes épületeibe, vagy nyerj a kalandokban.')}</small>`;
+    return `<div class="gbcard${built ? ' on' : ''}"><img src="img/${imgOf(id)}.png" alt=""><div class="gbi"><b>${g.name}</b><small class="gbera">${g.era < CUR_ERA ? (done ? tr('Veled jött egy korábbi korból') : tr('Korábbi korból')) : tr('Ebből a korból')}</small><p>${tr(g.desc)}</p>
+      <div class="gbrow"><small>${tr(built ? 'Most ad' : 'Az 1. szinten ad')}</small><div>${fxChips(fx(id, built ? l : 0))}</div></div><div class="gbrow"><small>${tr('A 10. szinten ad')}</small><div>${fxChips(fx(id, GB_TOP))}</div></div>${st}<div class="row">${btn}</div></div></div>`;
+  }).join('');
+  const nb = neighbours().map(({ b, real, gbs }) => Object.entries(gbs).filter(([id]) => GBC[id]).map(([id, g]) => {
+    const n = g.need || need(g.lvl), you = real ? 0 : g.mine || 0;
+    return `<div class="gbn"><img src="img/${GBC[id].stages ? GBC[id].stages[Math.min(2, Math.floor(g.lvl / 4))] : (IMG[GBC[id].img] ? GBC[id].img : GBC[id].alt || GBC[id].img)}.png" alt=""><div class="gbi"><b>${esc(b.name)} · ${GBC[id].name}</b><small>${trf('{0}. szint', g.lvl)}${you ? ' · ' + trf('te már {0}-t tettél bele', you) : ''}</small>
+      <div class="gbbar sm"><i style="width:${Math.min(100, g.pts / n * 100)}%"></i><span>${g.pts} / ${n}</span></div>
+      <div class="row"><button class="btn teal" type="button" data-gbc="${b.id}|${id}|10" ${(S.res.hirnev || 0) >= 10 ? '' : 'disabled'}>${tr('+10 Hírnév · tervrajz')}</button><button class="btn ghost" type="button" data-gbc="${b.id}|${id}|30" ${(S.res.hirnev || 0) >= 30 ? '' : 'disabled'}>+30</button></div></div></div>`;
+  }).join('')).join('');
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('NEVEZETES ÉPÜLETEK')}</span><h2>${tr('Az ország büszkeségei')}</h2>
+    <p>${tr('A nevezetes épületek sokkal többet adnak, mint a sima épületek, és szintről szintre még többet. 5 tervrajzból építheted fel őket, utána Hírnévvel szintezed. Amit felépítesz, a következő korba is veled jön.')}</p>
+    <div class="gbtabs"><button type="button" class="tab" data-gbt="mine" aria-pressed="${tab === 'mine'}">${tr('Saját')}</button><button type="button" class="tab" data-gbt="nb" aria-pressed="${tab === 'nb'}">${tr('Szomszédok')}</button><span class="gbh">${trf('{0} Hírnév', fmt(S.res.hirnev || 0))}</span></div>
+    ${tab === 'mine' ? `<div class="gbgrid">${mine}</div>` : `<p class="gbnote">${tr('Szállj be a szomszédok és a szövetségeseid nevezetes épületeibe. Minden legalább 10 Hírnév után egy tervrajzot kapsz arra az épületre. Ha a szint megtelik, az első három beszálló a Hírneve többszörösét kapja vissza.')}</p><div class="gbgrid">${nb || `<p>${tr('A szomszédaidnak még nincs nevezetes épülete.')}</p>`}</div>
+      ${R.log.length ? `<div class="gblog">${R.log.slice(0, 6).map(x => `<div>${esc(x.text)}</div>`).join('')}</div>` : ''}`}
+  </div>`, '', 'gb');
+  const root = $('modalRoot');
+  root.querySelectorAll('[data-gbt]').forEach(x => x.onclick = () => { tab = x.dataset.gbt; showGb(); });
+  root.querySelectorAll('[data-gbb]').forEach(x => x.onclick = () => { const id = x.dataset.gbb; if (!canPay(costOf(id))) { toast(trf('Hiányzik · {0}', missText(costOf(id)))); return; } closeModal(); startBuild(id); });
+  root.querySelectorAll('[data-gbgo]').forEach(x => x.onclick = () => { const b = S.buildings.find(y => y.type === x.dataset.gbgo); closeModal(); if (b) { try { const [w, h] = dimsB(b); const [cx, cy] = tileTop(b.i + w / 2, b.j + h / 2); camX = cx - innerWidth / 2 / scale; camY = cy - innerHeight / 2 / scale; } catch (e) {} showInfo(b); } });
+  root.querySelectorAll('[data-gbc]').forEach(x => x.onclick = () => { const [bid, id, n] = x.dataset.gbc.split('|'); const soc = SOCx(); const b = soc && soc.bots.find(y => y.id === bid); if (!b) return; contrib(b, id, +n, !!b.real); showGb(); });
+}
+window.showGb = showGb;
+// gomb a bal oldalon, a Kalandok alatt
+const st = document.createElement('style');
+st.textContent = `#btnGb{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));z-index:7;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:8px;border-radius:14px;border:0;background:rgba(58,36,16,.88);color:#FFF4DF;font:800 15px Nunito,system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+  #btnGb img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}#btnGb .gbd{background:#C9472F;border-radius:999px;padding:0 7px;font-size:12px}
+  .gbbox{background:rgba(255,248,232,.75);border-radius:14px;padding:10px 12px;margin:8px 0;box-shadow:inset 0 0 0 2px #E2B33C}.gbhead{display:flex;justify-content:space-between;align-items:center}.gbtag{font-size:11px;letter-spacing:.12em;font-weight:900;color:#8A3A16}
+  .gbrow{margin:6px 0}.gbrow>small{display:block;color:var(--ink-soft);font-weight:800;font-size:12px}.gbrow>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
+  .gbc{display:inline-flex;align-items:center;gap:4px;background:#FFF4DF;border-radius:999px;padding:2px 9px;font-weight:900;font-size:13px;box-shadow:0 0 0 1px rgba(90,55,25,.15)}.gbc img{width:18px;height:18px;object-fit:contain}
+  .gbbar{position:relative;height:22px;border-radius:11px;background:rgba(90,55,25,.18);overflow:hidden;margin:8px 0}.gbbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#E2B33C,#C9472F)}.gbbar span{position:relative;display:block;text-align:center;font-weight:900;font-size:12px;line-height:22px}.gbbar.sm{height:18px}.gbbar.sm span{line-height:18px}
+  .gbbtns .btn{min-height:36px;padding:0 14px}.gbnote{display:block;color:var(--ink-soft);font-size:12px;margin:4px 0}.gbmax{color:var(--good);font-weight:900}
+  .gbtop{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:800;margin-top:6px}
+  .gbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:10px}
+  .gbcard,.gbn{display:flex;gap:10px;background:rgba(255,248,232,.7);border-radius:16px;padding:10px;box-shadow:0 0 0 2px rgba(90,55,25,.15)}.gbcard.on{box-shadow:0 0 0 3px #E2B33C}
+  .gbcard>img{width:110px;height:110px;object-fit:contain;flex:none}.gbn>img{width:70px;height:70px;object-fit:contain;flex:none}.gbi{min-width:0;flex:1}.gbi p{font-size:13px;margin:4px 0}.gbi>b{display:block}.gbi>small{display:block}.gbera{color:#8A3A16;font-weight:800}
+  .gbi .row{gap:6px;flex-wrap:wrap;align-items:center}.gbi .row .btn{min-height:34px;padding:0 12px;font-size:14px}
+  .gbtr{position:relative;height:20px;border-radius:10px;background:rgba(90,55,25,.18);overflow:hidden;margin:6px 0}.gbtr i{position:absolute;inset:0 auto 0 0;background:#3E8DA8}.gbtr span{position:relative;display:block;text-align:center;font-size:12px;font-weight:900;line-height:20px}
+  .gbok{display:inline-block;background:#E2B33C;border-radius:999px;padding:2px 10px;font-weight:900;margin:6px 0}
+  .gbtabs{display:flex;gap:6px;align-items:center;margin-top:8px}.gbh{margin-left:auto;font-weight:900}.gblog{margin-top:12px;font-size:13px}.gblog div{padding:4px 0;border-bottom:1px dashed rgba(90,55,25,.25)}
+  @media (max-width:560px){.gbcard>img{width:80px;height:80px}}`;
+document.head.appendChild(st);
+const bt = document.createElement('button'); bt.id = 'btnGb'; bt.type = 'button';
+bt.innerHTML = `<img src="img/${imgOf(MINE[MINE.length - 1])}.png" alt=""><span>${tr('Nevezetes')}</span><span class="gbd" hidden></span>`;
+bt.onclick = () => { tab = 'mine'; showGb(); };
+document.body.appendChild(bt);
+setInterval(() => {
+  try {
+    const ref = document.getElementById('btnMini') || document.getElementById('btnMiniE') || [...document.querySelectorAll('button')].find(x => /Kalandok|Adventures/.test(x.textContent) && x.getBoundingClientRect().left < 200);
+    if (ref) { const r = ref.getBoundingClientRect(); bt.style.top = (r.bottom + 10 + scrollY) + 'px'; bt.hidden = ref.hidden || getComputedStyle(ref).display === 'none'; }
+    const ready = MINE.filter(id => !S.buildings.some(b => b.type === id) && ((R.tr[id] || 0) >= NEED_TR || R.built[id])).length, d = bt.querySelector('.gbd'); d.hidden = !ready; d.textContent = ready;
+  } catch (e) {}
+}, 700);
+window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave(); }, GBC };
+})();
+
 // HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
 (function () {
   if (/github\.io$/.test(location.hostname)) return;
@@ -6262,6 +6496,7 @@ function rearUI() {
   const INF_KEY = 'hv-dev-inf'; let inf = false; try { inf = localStorage.getItem(INF_KEY) === '1'; } catch (e) {}
   const fill = () => { if (!inf || typeof S === 'undefined' || !S || !S.res) return; Object.keys(RES).forEach(k => { const v = k === 'tudas' ? 999 : k === 'kovako' || k === 'hirnev' ? 999 : 999999; if ((S.res[k] || 0) < v) S.res[k] = v; }); if ((S.korona || 0) < 999) S.korona = 999; };
   setInterval(() => { try { fill(); } catch (e) {} }, 400);
+  A.tervrajz = () => { if (!window.__gbDev) { say('Ebben a korban nincs nevezetes épület.'); return; } Object.keys(window.__gbDev.GBC).forEach(id => window.__gbDev.give(id, 5)); say('+5 tervrajz minden nevezetes épülethez.'); };
   A.inf = () => { inf = !inf; try { localStorage.setItem(INF_KEY, inf ? '1' : '0'); } catch (e) {} fill(); redraw(); say(inf ? 'Végtelen nyersanyag bekapcsolva, minden korszakban.' : 'Végtelen nyersanyag kikapcsolva.'); };
   let confirmReset = false;
   function render() {
@@ -6270,7 +6505,7 @@ function rearUI() {
       <div class="r" style="margin-top:5px"><button data-a="jump" data-v="600">+10 perc</button><button data-a="jump" data-v="${H}">+1 óra</button><button data-a="jump" data-v="${8 * H}">+8 óra</button><button data-a="jump" data-v="${24 * H}">+1 nap</button><button data-a="ready">Minden kész most</button></div>
       <h4>Korszak</h4><div class="r">${['Kőkor', 'Vándorlás', 'Honfoglalás', 'István', 'Béla', 'Anjou'].map((n, k) => `<button data-a="era" data-v="${k}" class="${k === ERA ? 'on' : ''}">${k}. ${n}</button>`).join('')}</div>
       <div class="i">A többi korszak mentése megmarad, csak átugrasz oda.</div>
-      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
+      <h4>Nyersanyag és haladás</h4><div class="r"><button data-a="inf" class="${inf ? 'on' : ''}">${inf ? '∞ Végtelen: BE' : '∞ Végtelen nyersanyag'}</button><button data-a="rich">+10 000 mindenből</button><button data-a="tervrajz">+5 tervrajz mindenhez</button>${typeof TECH !== 'undefined' ? '<button data-a="techs">Minden kutatás kész</button>' : ''}<button data-a="qPrev">◀ Küldetés</button><button data-a="qNext">Küldetés ▶</button></div>
       <div class="i">Most a(z) ${(S.quest || 0) + 1}. küldetésnél tartasz.</div>
       <h4>Újrajátszás</h4><div class="r"><button data-a="mini">Mai kalandok újra</button>${g$('hvnT1') ? '<button data-a="night">Éjszaka / Reggel</button><button data-a="ask">Esti kérdés</button>' : ''}${has('showIntro') ? '<button data-a="intro">Bevezető újra</button>' : ''}${has('showEraEnd') ? '<button data-a="eraEnd">Korszak vége ablak</button>' : ''}</div>
       ${ERA === 4 ? `<h4>Tatárjárás</h4><div class="r"><button data-a="tatar">Elölről</button>${w && !w.done ? '<button data-a="tatarWin">Ugrás a csatához</button>' : ''}<button data-a="honal">Második honalapító</button></div><div class="i">${w ? (w.done ? 'Lezajlott: ' + (w.outcome || '') + ', ' + (w.score || 0) + '%' : 'Folyamatban, ' + Math.max(0, Math.round((WINTER_LEN - (S.gt - w.start)) / H)) + ' óra van hátra') : 'Még nem kezdődött el.'}</div>` : ''}
