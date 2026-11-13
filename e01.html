@@ -4417,8 +4417,25 @@ function rearUI() {
       return r;
     };
   }
+  // saját gomb a bal oldali sávban, ha már áll az épület
+  const tb = document.createElement('button'); tb.id = 'btnTabla'; tb.type = 'button'; tb.hidden = true;
+  tb.innerHTML = `<span class="newdot" hidden>!</span><span style="font-size:20px;line-height:1">🎲</span><span>${tr(TM.game)}</span>`;
+  tb.onclick = () => { try { hideInfo(); } catch (e) {} start(); };
+  ((document.getElementById('btnDaily') || {}).parentNode || document.getElementById('app') || document.body).appendChild(tb);
+  setInterval(() => {
+    try {
+      const refs = ['btnGb', 'btnMini', 'btnMiniE', 'btnDaily'].map(id => document.getElementById(id)).filter(x => x && !x.hidden && x.offsetParent);
+      const ref = refs.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)[0];
+      const has = !!hostB(); tb.hidden = !has || !ref; if (tb.hidden) return;
+      const r = ref.getBoundingClientRect(), pr = tb.offsetParent ? tb.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
+      tb.style.top = (r.bottom + 10 - pr.top) + 'px'; tb.style.left = (r.left - pr.left) + 'px';
+      if (!tb.dataset.cls) { const k = document.getElementById('btnMini') || document.getElementById('btnMiniE'); if (k) { tb.className = k.className; tb.dataset.cls = 1; } }
+      tb.querySelector('.newdot').hidden = !!day().played || (G && !G.over);
+    } catch (e) {}
+  }, 700);
   const st = document.createElement('style');
-  st.textContent = `.tbinfo{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.75);box-shadow:inset 0 0 0 2px #E2B33C;margin:6px 0;flex-shrink:0}.tbinfo small{font-weight:700;color:var(--ink-soft)}
+  st.textContent = `#btnTabla{position:absolute!important;z-index:7;width:auto;height:44px;padding:0 14px 0 10px;display:flex;align-items:center;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3)}#btnTabla:not(.wood){background:rgba(58,36,16,.88)}#btnTabla .newdot{position:absolute;top:-9px;right:-12px}
+  .tbinfo{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.75);box-shadow:inset 0 0 0 2px #E2B33C;margin:6px 0;flex-shrink:0}.tbinfo small{font-weight:700;color:var(--ink-soft)}
   #tbWrap{min-width:0}
   .tbmain{display:flex;gap:16px;align-items:flex-start}
   .tbarena{flex:none;width:min(100%,max(300px,calc(100vh - 250px)),620px);display:flex;flex-direction:column;gap:6px}
