@@ -5974,6 +5974,9 @@ function rearUI() {
   document.head.appendChild(st);
   setInterval(() => { try { if (!zBand && scale < minS * 0.999) { scale = minS; clampCam(); } } catch (e) {} }, 400);
 })();
+
+// a meglepetések felszedése: kicsinyített térképen is pontosan eltalálható
+try { if (typeof surpAt === 'function' && typeof surpPos === 'function') surpAt = function (bx, by) { const r = Math.max(34, 30 / (typeof scale === 'number' && scale > 0 ? scale : 1)); let best = null, bd = r; (S.surp || []).forEach(x => { const [cx, cy] = surpPos(x); const d = Math.hypot(bx - cx, by - cy - 4); if (d < bd) { bd = d; best = x; } }); return best; }; } catch (e) {}
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {

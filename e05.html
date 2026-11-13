@@ -3404,8 +3404,8 @@ place = function (i, j) { const r = _placeWall(i, j); try { wallFix(); wallSig =
 // a kiskirályok közben elcsaklizták a város szélét: ezek az épületek az ő zászlójuk alatt állnak, nekik termelnek, Rozgony után visszakerülnek
 function baroGrab(s) {
   if (s.rozgony) return 0; const cx = N / 2, cy = N / 2, cands = s.buildings.filter(b => b.c4 && b.type !== 'fo' && !b.baro);
-  const dist = b => { const [w, h] = dimsT(b.type, b.rot || 0); return Math.hypot(b.i + w / 2 - cx, b.j + h / 2 - cy) + (b.far ? 100 : 0); };
-  cands.sort((a, b) => dist(b) - dist(a)); const n = Math.round(cands.length * 0.4);
+  const dist = b => { const [w, h] = dimsT(b.type, b.rot || 0); return Math.min(...BARONS.map(r => Math.hypot(b.i + w / 2 - r.i - 2.5, b.j + h / 2 - r.j - 2.5))) - (b.far ? 100 : 0); };
+  cands.sort((a, b) => dist(a) - dist(b)); const n = Math.round(cands.length * 0.4);
   cands.slice(0, n).forEach(b => { const [w, h] = dimsT(b.type, b.rot || 0); let best = null; BARONS.forEach(r => { const d = Math.hypot(b.i + w / 2 - r.i - 2.5, b.j + h / 2 - r.j - 2.5); if (!best || d < best[1]) best = [r.id, d]; }); b.baro = best[0]; });
   s.baroV = 1; return n;
 }
@@ -3441,7 +3441,7 @@ function carryCity(s, d) {
     else { refund += Math.round(((DEF[t].cost || {}).penz || 100) * 0.6); }
   });
   Object.keys(d.roads || {}).forEach(k => { const [i, j] = k.split(',').map(Number); if (i >= 0 && j >= 0 && i < N && j < N && !occ[k] && okTile(k) && !ROUGH[k]) s.roads[k] = d.roads[k]; });
-  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); autoRoads(s); s.layoutV = 2;
+  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); s.buildings.forEach(b => { if (b.baro && !b.exLot) delete b.baro; }); autoRoads(s); s.layoutV = 3;
   return s.carried;
 }
 
@@ -3517,7 +3517,32 @@ function autoRoads(s, keep) {
   });
 }
 // régi mentések: egyszer rendet rakunk
-setTimeout(() => { try { if (!S || !S.carry) return; if (!S.layoutV) { S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); } if (S.layoutV < 2) { S.layoutV = 2; autoRoads(S, true); try { roadCache = null; } catch (e) {} } connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
+setTimeout(() => { try { if (!S || !S.carry) return; if (!S.layoutV) { S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); } if (S.layoutV < 3) { S.layoutV = 3; S.buildings.forEach(b => { if (b.baro && !b.exLot) delete b.baro; }); autoRoads(S, true); try { roadCache = null; } catch (e) {} } connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
+
+// ---------- Raktár: a régi korokból áthozott épületek rendbetétele ----------
+{
+  const _ss = showStore;
+  const oldList = () => { const g = {}; S.buildings.forEach(b => { if (!b.c4 || b.baro || b.type === 'fo' || !DEF[b.type] || DEF[b.type].gb || DEF[b.type].unique) return; (g[b.type] = g[b.type] || []).push(b); }); return Object.entries(g).sort((a, b) => b[1].length - a[1].length); };
+  const prodTxt = d => Object.entries(d.prod || {}).map(([k, v]) => RES[k] ? `${v} ${RES[k].name}` : '').filter(Boolean).join(', ');
+  showStore = function () {
+    _ss.apply(this, arguments);
+    try {
+      const L = oldList(), inner = document.querySelector('#modalRoot .inner'); if (!L.length || !inner) return;
+      const box = document.createElement('div'); box.className = 'store-row'; box.style.cssText = 'flex-direction:column;align-items:stretch;gap:8px';
+      box.innerHTML = `<b>${tr('Régi épületek a Béla-kori városból')}</b><span style="font-size:14px">${tr('Ezek még az előző korból jöttek át. Ha szűk a hely, bontsd le őket, és a teljes építési árukat visszakapod.')}</span>`
+        + L.map(([t, bs]) => { const d = DEF[t]; return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><img src="img/${d.img}.png" alt="" style="width:52px;height:44px;object-fit:contain" onerror="this.remove()"><div class="grow" style="min-width:150px"><b>${bs.length} × ${tr(d.name)}</b>${prodTxt(d) ? `<br><span style="font-size:13px">${trf('darabonként {0}', prodTxt(d))}</span>` : ''}</div><button class="btn ghost" type="button" data-old1="${t}">${tr('Egyet lebontok')}</button>${bs.length > 1 ? `<button class="btn coral" type="button" data-oldall="${t}">${tr('Mindet lebontom')}</button>` : ''}</div>`; }).join('');
+      inner.insertBefore(box, inner.children[2] || null);
+      const kill = (t, all) => {
+        const d = DEF[t]; let bs = S.buildings.filter(b => b.type === t && b.c4 && !b.baro); if (!all) bs = bs.slice(-1);
+        let n = 0; for (const b of bs) { if (d.pop && pop() - d.pop < workers()) break; S.buildings = S.buildings.filter(x => x !== b); give(d.cost || {}); n++; }
+        connCache = null; save(); try { roadCache = null; } catch (e) {}
+        toast(n ? trf('{0} épületet lebontottunk, az áruk visszajött.', n) : tr('Ezt most nem bonthatod le, mert nem maradna elég ember a munkához.')); showStore();
+      };
+      box.querySelectorAll('[data-old1]').forEach(b => b.onclick = () => kill(b.dataset.old1, false));
+      box.querySelectorAll('[data-oldall]').forEach(b => b.onclick = () => kill(b.dataset.oldall, true));
+    } catch (e) {}
+  };
+}
 
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
 auraFits = function (a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz); if (a.to === 'arany') return !!(d.prod && d.prod.arany); return true; };
@@ -6261,6 +6286,9 @@ function rearUI() {
   document.head.appendChild(st);
   setInterval(() => { try { if (!zBand && scale < minS * 0.999) { scale = minS; clampCam(); } } catch (e) {} }, 400);
 })();
+
+// a meglepetések felszedése: kicsinyített térképen is pontosan eltalálható
+try { if (typeof surpAt === 'function' && typeof surpPos === 'function') surpAt = function (bx, by) { const r = Math.max(34, 30 / (typeof scale === 'number' && scale > 0 ? scale : 1)); let best = null, bd = r; (S.surp || []).forEach(x => { const [cx, cy] = surpPos(x); const d = Math.hypot(bx - cx, by - cy - 4); if (d < bd) { bd = d; best = x; } }); return best; }; } catch (e) {}
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {
