@@ -698,7 +698,7 @@ function load() {
   return fresh();
 }
 // sérült mentés javítása: ismeretlen vagy rossz helyen álló épület ki, a tábor mindig legyen meg
-function lotsOk(d, b) { const [w, h] = dimsB(b); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const i = b.i + a, j = b.j + c; if (!(i >= 0 && j >= 0 && i < N && j < N) && !(d.lots || []).some(id => { const l = LOTS.find(x => x.id === id) || OLD_LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + l.w && j >= l.j && j < l.j + l.h; })) return false; } return true; }
+function lotsOk(d, b) { if (b.exLot) return true; const [w, h] = dimsB(b); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const i = b.i + a, j = b.j + c; if (!(i >= 0 && j >= 0 && i < N && j < N) && !(d.lots || []).some(id => { const l = LOTS.find(x => x.id === id) || OLD_LOTS.find(x => x.id === id); return l && i >= l.i && i < l.i + l.w && j >= l.j && j < l.j + l.h; })) return false; } return true; }
 function migrateGrid(d) {
   if (d.gridV === 2) return; d.gridV = 2;
   (d.buildings || []).forEach(b => { b.i += 3; b.j += 3; });
@@ -848,7 +848,7 @@ function computeConn() {
   while (q.length) { const [i, j] = q.shift(); NB.forEach(([di, dj]) => { const kk = key(i + di, j + dj); if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([i + di, j + dj]); } }); }
   connCache = seen;
 }
-function connected(b) {
+function connected(b) { if (b.exLot) return true;
   if (!connCache) computeConn();
   const [w, h] = dimsB(b);
   for (let a = -1; a <= w; a++) for (let c = -1; c <= h; c++) {
@@ -3439,12 +3439,12 @@ function carryCity(s, d) {
     else { refund += Math.round(((DEF[t].cost || {}).penz || 100) * 0.6); }
   });
   Object.keys(d.roads || {}).forEach(k => { const [i, j] = k.split(',').map(Number); if (i >= 0 && j >= 0 && i < N && j < N && !occ[k] && okTile(k) && !ROUGH[k]) s.roads[k] = d.roads[k]; });
-  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) };
+  s.res.penz += refund; s.carried = kept + moved; s.carryInfo = { kept, moved, refund, baro: baroGrab(s) }; baroMove(s); autoRoads(s); s.layoutV = 1;
   return s.carried;
 }
 
 setTimeout(() => { try { if (!S || !S.carry || S.baroV || S.rozgony) return; const d = JSON.parse(localStorage.getItem('panelvar-e04-v1') || 'null'); const seen = new Set(((d && d.buildings) || []).map(b => b.type + '@' + b.i + ',' + b.j));
-  S.buildings.forEach(b => { if (b.type !== 'fo' && (DEF[b.type].b4 || seen.has(b.type + '@' + b.i + ',' + b.j))) b.c4 = 1; }); const n = baroGrab(S); save(); if (n) baroNews(n); } catch (e) {} }, 3200);
+  S.buildings.forEach(b => { if (b.type !== 'fo' && (DEF[b.type].b4 || seen.has(b.type + '@' + b.i + ',' + b.j))) b.c4 = 1; }); const n = baroGrab(S); baroMove(S); autoRoads(S); S.layoutV = 1; connCache = null; save(); if (n) baroNews(n); } catch (e) {} }, 3200);
 // aki már elkezdte az Anjou-kort üres várossal, annak is utánaköltözik Béla városa
 setTimeout(() => { try {
   if (!S || S.carry) return; const d = JSON.parse(localStorage.getItem('panelvar-e04-v1') || 'null'); if (!d || !Array.isArray(d.buildings) || d.buildings.length < 2) { S.carry = 1; return; }
@@ -3452,7 +3452,7 @@ setTimeout(() => { try {
   const show = () => { if (openModal) { setTimeout(show, 1500); return; }
     modal(`<div class="inner"><span class="eyebrow">${tr('MEGÉRKEZETT BÉLA VÁROSA')}</span><h2>${tr('Átköltöztünk!')}</h2>
       <p>${trf('{0} épület jött át Béla korából. A legtöbb ugyanott áll, ahol eddig. Ami a régi telkeken volt, az új helyet kapott, és ahol kellett, ingyen telket is adtam hozzá.', n)}</p>
-      ${ci.baro ? `<p><b>${trf('Csakhogy amíg költöztünk, a kiskirályok lecsaptak. {0} épületre a saját zászlójukat tűzték, és most nekik termelnek. Rozgonynál visszaszerezzük őket!', ci.baro)}</b></p>` : ''}
+      ${ci.baro ? `<p><b>${trf('Csakhogy amíg költöztünk, a kiskirályok lecsaptak. {0} épületet a saját váruk mellé vittek, és most nekik termelnek. Rozgonynál visszaszerezzük őket!', ci.baro)}</b></p>` : ''}
       ${ci.refund ? `<p>${trf('Ami sehogy sem fért el, azért {0} Pénzt kaptál.', fmt(ci.refund))}</p>` : ''}
       <p>${tr('A régi épületek tovább termelnek. A Vendégtelepből Polgárház, az Ércbányából Vashámor építhető, koppints rájuk, és nyomd meg az Átépítés gombot.')}</p>
       <div class="row"><button class="btn coral" type="button" id="cyOk">${tr('Nézzük!')}</button></div></div>`, '', 'carry');
@@ -3462,9 +3462,47 @@ setTimeout(() => { try {
 
 function baroNews(n) { const show = () => { if (openModal) { setTimeout(show, 1500); return; }
   modal(`<div class="inner"><span class="eyebrow">${tr('A KISKIRÁLYOK LECSAPTAK')}</span><h2>${tr('Elcsaklizták a város szélét!')}</h2>
-    <p>${trf('Csák Máté, Aba Amadé és Kőszegi Henrik emberei {0} épületre tűzték ki a saját zászlójukat. Ezek most nekik termelnek, nem neked.', n)}</p>
+    <p>${trf('Csák Máté, Aba Amadé és Kőszegi Henrik emberei {0} épületet szereltek szét, és a saját váruk tövében rakták össze újra. Ezek most nekik termelnek, nem neked.', n)}</p>
     <p>${tr('Ne bontsd le őket, Rozgony után visszakerülnek hozzád, ráadásul jutalommal.')}</p>
     <div class="row"><button class="btn coral" type="button" id="bnOk">${tr('Majd meglátják!')}</button></div></div>`, '', 'carry'); $('bnOk').onclick = closeModal; }; show(); }
+
+// ---------- a kiskirályok magukhoz vonszolják, amit elcsakliztak ----------
+function baroMove(s) {
+  const occ = {}; s.buildings.forEach(b => { const [w, h] = dimsT(b.type, b.rot || 0); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[(b.i + a) + ',' + (b.j + c)] = 1; });
+  Object.keys(s.roads || {}).forEach(k => { occ[k] = 1; });
+  const ok = (t, i, j, rot) => { const [w, h] = dimsT(t, rot), ter = DEF[t].terrain; let wet = 0;
+    for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const k = (i + a) + ',' + (j + c); if (!LANDSET.has(k) || BLOCKED.has(k) || BARON_TILES.has(k) || occ[k]) return false; if (ROUGH[k] && ROUGH[k] !== ter) return false; if (T_BANK.has(k)) { if (ter !== 'bank') return false; wet++; } }
+    return ter !== 'bank' || wet > 0; };
+  s.buildings.filter(b => b.baro && !b.exLot).forEach(b => {
+    const r = BARONS.find(x => x.id === b.baro); if (!r) return; const rot = b.rot || 0, [w, h] = dimsT(b.type, rot), cx = r.i + 2.5, cy = r.j + 2.5;
+    let best = null;
+    for (let i = r.i - 12; i <= r.i + 12; i++) for (let j = r.j - 12; j <= r.j + 12; j++) { const d = Math.hypot(i + w / 2 - cx, j + h / 2 - cy); if (best && d >= best[2]) continue; if (ok(b.type, i, j, rot)) best = [i, j, d]; }
+    if (!best) return; const [ow, oh] = [w, h]; for (let a = 0; a < ow; a++) for (let c = 0; c < oh; c++) delete occ[(b.i + a) + ',' + (b.j + c)];
+    b.i = best[0]; b.j = best[1]; b.exLot = 1; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[(b.i + a) + ',' + (b.j + c)] = 1;
+  });
+}
+// ---------- utak: a főépülettől minden épülethez, ami utat kér ----------
+function autoRoads(s) {
+  const fo = s.buildings.find(b => b.type === 'fo'); if (!fo) return; s.roads = {};
+  const occ = {}; s.buildings.forEach(b => { const [w, h] = dimsT(b.type, b.rot || 0); for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) occ[(b.i + a) + ',' + (b.j + c)] = 1; });
+  const own = new Set(); (s.lots || []).forEach(id => { const l = LOTS2.find(x => x.id === id); if (l) for (let a = 0; a < l.w; a++) for (let c = 0; c < l.h; c++) own.add((l.i + a) + ',' + (l.j + c)); });
+  const walk = (i, j) => { const k = i + ',' + j; return ((i >= 0 && j >= 0 && i < N && j < N) || own.has(k)) && !occ[k] && !BLOCKED.has(k) && !T_BANK.has(k) && !BARON_TILES.has(k); };
+  const ring = b => { const [w, h] = dimsT(b.type, b.rot || 0), out = []; for (let a = 0; a < w; a++) { out.push([b.i + a, b.j - 1], [b.i + a, b.j + h]); } for (let c = 0; c < h; c++) { out.push([b.i - 1, b.j + c], [b.i + w, b.j + c]); } return out; };
+  const net = new Set(), foR = new Set(ring(fo).map(([i, j]) => i + ',' + j));
+  const need = s.buildings.filter(b => b !== fo && !b.baro && !b.exLot && DEF[b.type] && DEF[b.type].road)
+    .sort((a, b) => Math.hypot(a.i - fo.i, a.j - fo.j) - Math.hypot(b.i - fo.i, b.j - fo.j));
+  need.forEach(b => {
+    const start = ring(b).filter(([i, j]) => walk(i, j)); if (!start.length) return;
+    if (start.some(([i, j]) => net.has(i + ',' + j))) return;
+    const prev = {}, q = []; start.forEach(([i, j]) => { const k = i + ',' + j; prev[k] = null; q.push([i, j]); });
+    let hit = null;
+    for (let h = 0; h < q.length && !hit; h++) { const [i, j] = q[h], k = i + ',' + j; if (net.has(k) || foR.has(k)) { hit = k; break; }
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ni = i + di, nj = j + dj, nk = ni + ',' + nj; if (nk in prev || !walk(ni, nj)) continue; prev[nk] = k; q.push([ni, nj]); } }
+    for (let k = hit; k; k = prev[k]) { net.add(k); s.roads[k] = 1; }
+  });
+}
+// régi mentések: egyszer rendet rakunk
+setTimeout(() => { try { if (!S || !S.carry || S.layoutV) return; S.layoutV = 1; if (!S.rozgony) baroMove(S); autoRoads(S); connCache = null; save(); } catch (e) { try { noteErr(e); } catch (e2) {} } }, 3600);
 
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
 auraFits = function (a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz); if (a.to === 'arany') return !!(d.prod && d.prod.arany); return true; };
@@ -3531,15 +3569,20 @@ draw = function (now) {
       ctx.drawImage(im, x0, yb - h + 6, w, h);
       if (!S.rozgony) { ctx.font = '800 20px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,8,.8)'; ctx.fillStyle = '#FFE9B8'; const [cx] = tileTop(b.i + 2.5, b.j + 2.5); ctx.strokeText(tr(BAR_NAME[b.id]), cx, yb - h + 2); ctx.fillText(tr(BAR_NAME[b.id]), cx, yb - h + 2); }
     });
-    if (!S.rozgony) S.buildings.forEach(b => { if (!b.baro) return; const [w, h] = dimsT(b.type, b.rot || 0), [x, y] = tileTop(b.i + w / 2, b.j + h / 2), col = BAR_COL[b.baro] || BAR_COL.aba, py = y - 40 - Math.max(w, h) * 34;
-      ctx.fillStyle = 'rgba(30,20,10,.35)'; ctx.beginPath(); ctx.ellipse(x, y + 2, w * 26, w * 13, 0, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#5A3A1A'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x, py); ctx.stroke();
-      const wv = Math.sin(now / 300 + b.id) * 4; ctx.fillStyle = col[0]; ctx.beginPath(); ctx.moveTo(x + 2, py); ctx.quadraticCurveTo(x + 30, py + 6 + wv, x + 58, py + 4 + wv); ctx.lineTo(x + 50, py + 20 + wv / 2); ctx.lineTo(x + 58, py + 36 + wv); ctx.quadraticCurveTo(x + 30, py + 38 + wv, x + 2, py + 34); ctx.closePath(); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(40,20,8,.7)'; ctx.stroke();
-      ctx.fillStyle = col[1]; ctx.font = '900 18px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(col[2], x + 26, py + 24 + wv / 2); });
+    if (!S.rozgony) S.buildings.forEach(b => { if (!b.baro) return; const [w, h] = dimsT(b.type, b.rot || 0), [x, y] = tileTop(b.i + w / 2, b.j + h / 2), py = y - 30 - Math.max(w, h) * 30;
+      const fl = BAR_FLAG[b.baro]; if (fl && fl.complete && fl.naturalWidth) { const fh = 120, fw = fh * fl.naturalWidth / fl.naturalHeight; ctx.drawImage(fl, x - fw * 0.2, py - fh * 0.35, fw, fh); return; }
+      const col = BAR_COL[b.baro] || BAR_COL.aba, wv = Math.sin(now / 320 + b.id) * 3;
+      ctx.strokeStyle = '#6B4420'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, py - 6); ctx.stroke();
+      ctx.fillStyle = '#E8B23A'; ctx.beginPath(); ctx.arc(x, py - 8, 5, 0, 7); ctx.fill();
+      ctx.fillStyle = col[0]; ctx.beginPath(); ctx.moveTo(x + 2, py); ctx.lineTo(x + 40, py + wv); ctx.lineTo(x + 40, py + 46 + wv); ctx.lineTo(x + 21, py + 36 + wv); ctx.lineTo(x + 2, py + 46); ctx.closePath(); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#C99A2E'; ctx.stroke();
+      if (col[3]) { ctx.fillStyle = col[1]; for (let k = 0; k < 3; k++) ctx.fillRect(x + 4, py + 6 + k * 12 + wv / 2, 34, 5); }
+      else { ctx.fillStyle = col[1]; ctx.font = '700 22px serif'; ctx.textAlign = 'center'; ctx.fillText(col[2], x + 21, py + 27 + wv / 2); } });
     ctx.restore();
   } catch (e) {}
 };
-const BAR_COL = { csak: ['#3E7D3A', '#F4EBD0', 'CS'], aba: ['#C9372C', '#FFF4E0', 'A'], koszegi: ['#2F5FA8', '#F4EBD0', 'K'] };
+const BAR_COL = { csak: ['#3E7D3A', '#F4EBD0', '✦'], aba: ['#C9372C', '#FFF4E0', '', 1], koszegi: ['#2F5FA8', '#F4EBD0', '⚜'] };
+const BAR_FLAG = {}; ['csak', 'aba', 'koszegi'].forEach(k => { const im = new Image(); im.onerror = () => { BAR_FLAG[k] = null; }; im.src = 'img/e05_zaszlo_' + k + '.png'; BAR_FLAG[k] = im; });
 // ---------- Rozgony, 1312 ----------
 function rozPrep() {
   const p = [
@@ -3561,7 +3604,7 @@ function showRozgony() {
 }
 function rozBattle(sum) {
   const big = sum >= 70, rew = { penz: 800 + sum * 25, hirnev: 5 + Math.round(sum / 10), tudas: 2 + Math.round(sum / 25) };
-  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; } }); S.rozgony = { at: S.gt, pct: sum, back }; Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
+  const back = S.buildings.filter(b => b.baro).length; S.buildings.forEach(b => { if (b.baro) { delete b.baro; b.t0 = S.gt; if (b.exLot) { const [w, h] = dimsB(b); LOTS2.forEach(l => { if (b.i < l.i + l.w && b.i + w > l.i && b.j < l.j + l.h && b.j + h > l.j && !(S.lots || []).includes(l.id)) { S.lots = S.lots || []; S.lots.push(l.id); } }); } } }); S.rozgony = { at: S.gt, pct: sum, back }; Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); S.res.vas = Math.max(0, (S.res.vas || 0) - 10);
   save(); hud();
   modal(`<img class="hero" src="img/e05_rozgony_utan.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('A GYŐZELEM')}</span><h2>${tr(big ? 'Fényes diadal Rozgonynál!' : 'Győztünk, ha nehezen is')}</h2>
     <p>${tr(big ? 'A kiskirályok serege szétfutott. Aba Amadé fiai elmenekültek, a várak kapui kinyíltak. Ma Károly Róbert lett az ország igazi királya.' : 'A csata nehéz volt, de a királyi sereg győzött. A kiskirályok hatalma megtört, bár Csák Máté még morog a Vág mentén.')}</p>
