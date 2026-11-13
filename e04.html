@@ -5984,6 +5984,8 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
   SURPRISES.forEach(t => { if (t.icon && !IMG[t.icon]) { const im = new Image(); im.src = 'img/' + t.icon + '.png'; IMG[t.icon] = im; } });
   if (S && S.surp) S.surp = S.surp.filter(x => SURPRISES.some(e => e.id === x.t));
 } } catch (e) {}
+
+(function () { const st = document.createElement('style'); st.textContent = '#info.panel::after{display:none}#info.panel{outline:2px dashed rgba(110,68,34,.55);outline-offset:-8px}'; document.head.appendChild(st); })();
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {

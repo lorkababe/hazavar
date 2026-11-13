@@ -3676,6 +3676,8 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
   SURPRISES.forEach(t => { if (t.icon && !IMG[t.icon]) { const im = new Image(); im.src = 'img/' + t.icon + '.png'; IMG[t.icon] = im; } });
   if (S && S.surp) S.surp = S.surp.filter(x => SURPRISES.some(e => e.id === x.t));
 } } catch (e) {}
+
+(function () { const st = document.createElement('style'); st.textContent = '#info.panel::after{display:none}#info.panel{outline:2px dashed rgba(110,68,34,.55);outline-offset:-8px}'; document.head.appendChild(st); })();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
