@@ -4503,8 +4503,8 @@ function badgesHTML() {
 // ---------- korszak vége után: továbblépés a Kutatásból ----------
 { const _sr = showResearch; showResearch = function () { _sr.apply(this, arguments); try { if (!S.eraDone) return; const inner = document.querySelector('#modalRoot .inner'); if (!inner || document.getElementById('rsBox')) return;
   const box = document.createElement('div'); box.id = 'rsBox'; box.className = 'store-row'; box.style.cssText = 'background:#F3E2BE;border:2px solid var(--ochre,#C98B2B);gap:12px;flex-wrap:wrap';
-  box.innerHTML = `<div class="grow" style="min-width:200px"><b>${tr('Az 5. korszak, az Anjouk kora hamarosan jön. Addig építkezhetsz tovább.')}</b></div>`;
-  inner.insertBefore(box, inner.children[2] || null); const b = document.getElementById('rsNext'); if (b) b.onclick = null; } catch (e) {} }; }
+  box.innerHTML = `<div class="grow" style="min-width:200px"><b>${tr('Vár az 5. korszak, az Anjouk kora. A városod veled jön.')}</b></div><button class="btn coral" type="button" id="rsNext">${tr('Tovább az 5. korszakba')}</button>`;
+  inner.insertBefore(box, inner.children[2] || null); const b = document.getElementById('rsNext'); if (b) b.onclick = () => { try { localStorage.setItem('panelvar-era', '5'); } catch (e) {} save(); location.href = 'e05.html'; }; } catch (e) {} }; }
 // ---------- indítás ----------
 function centerStart() { scale = Math.min(minS * 4, Math.max(minS * 1.2, 0.75)); const fo = S && S.buildings && S.buildings.find(b => b.type === 'fo'); const [x, y] = fo ? tileTop(fo.i + 1.5, fo.j + 1.5) : tileTop(N / 2, N / 2); centerOn(x, y + 40); }
 // a ciklus akkor se álljon le, ha valami hibát dob, a hibát pedig megjegyezzük a hibajelentéshez
