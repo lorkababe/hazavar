@@ -6714,6 +6714,174 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   document.head.appendChild(st);
 })();
 
+// ---------- Anjou-kori kockás kalandok: Hamis kocka, Oligarcha adója, Kockapóker ----------
+(function diceGames() {
+  if (typeof MINI === 'undefined' || typeof CUR_ERA !== 'number' || CUR_ERA !== 5) return;
+  MINI.push(
+    { id: 'hamiskocka', name: 'Hamis kocka', img: 'e05_mg_hamiskocka', sub: 'Hencegő Herold egyik kockája csal. Melyik?', rew: 'Aranyforint, Pénz, Tudás' },
+    { id: 'oligado', name: 'Az oligarcha adója', img: 'e05_mg_aranykupac', sub: 'Dobj, ameddig mersz, de az egyesnél viszik a kupacot', rew: 'Arany, Pénz' },
+    { id: 'kockapoker', name: 'Kockapóker a vámszedővel', img: 'e05_mg_vamszedo', sub: 'Öt kocka, három dobás, nyerd vissza a vámot', rew: 'Pénz, Bor, Aranyforint' }
+  );
+  const PLAY = { hamiskocka: playHamis, oligado: playAdo, kockapoker: playPoker };
+  const _sm = showMini;
+  showMini = function () { const r = _sm.apply(this, arguments); try { $('modalRoot').querySelectorAll('[data-mg]').forEach(b => { if (PLAY[b.dataset.mg]) b.onclick = () => PLAY[b.dataset.mg](); }); } catch (e) {} return r; };
+  const es = n => n + '-' + ({ 1: 'es', 2: 'es', 3: 'as', 4: 'es', 5: 'ös', 6: 'os' }[n]);
+  const R6 = () => 1 + Math.floor(Math.random() * 6);
+  const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+  const die = (v, cls) => `<span class="dk ${cls || ''}">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(n => `<i${(PIPS[v] || []).includes(n) ? ' class="on"' : ''}></i>`).join('')}</span>`;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const pic = (n, cls) => typeof mgImg === 'function' ? mgImg(n, cls) : '';
+  const bubble = (img, txt, id) => `<div class="dk-say">${pic(img, 'dk-face')}<div class="bub"${id ? ` id="${id}"` : ''}>${txt}</div></div>`;
+  function done(eyebrow, title, lines, id, rew, fact) {
+    const got = miniGive(id, rew);
+    miniEnd(eyebrow, title, lines.concat([got ? `<b>${tr('A jutalmad')}</b>${miniRewText(rew)}` : tr('A mai jutalmat ezért a kalandért már megkaptad. Holnap újra jár.')]), fact);
+  }
+
+  // ---------- 1. Hamis kocka ----------
+  function playHamis() {
+    if (!miniStart('hamiskocka')) return;
+    const bad = Math.floor(Math.random() * 3), face = R6(), MAXR = 45;
+    const cnt = [0, 1, 2].map(() => [0, 0, 0, 0, 0, 0, 0]), last = [null, null, null]; let left = MAXR;
+    const roll = d => { if (d !== bad) return R6(); return Math.random() < 0.35 ? face : R6(); };
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A FOGADÓ ASZTALÁNÁL')}</span><h2>${tr('Hamis kocka')}</h2>
+      ${bubble('e05_tabla_ellenfel', tr('Három kockám van, mind becsületes! Hát, majdnem mind. Az egyikbe egy icipici ólmot tettem, de úgysem jössz rá, melyikbe.'))}
+      <p>${trf('{0} dobásod van. Dobálj a kockákkal, figyeld, melyik szám hányszor jön ki, aztán mutass rá a csalóra. Egy becsületes kockán minden szám nagyjából ugyanannyiszor jön ki. Minél kevesebb dobásból találod el, annál nagyobb a jutalom.', MAXR)}</p>
+      <div class="mg-hud"><span id="hkLeft"></span><span>${tr('Kockánként legalább 12 dobás kell, hogy látszódjon valami')}</span></div>
+      <div class="hk-grid">${[0, 1, 2].map(d => `<div class="hk-col"><b>${['I.', 'II.', 'III.'][d]} ${tr('kocka')}</b><div class="hk-die" id="hkD${d}"></div><div class="hk-bars" id="hkB${d}"></div>
+        <button class="btn teal" type="button" data-hr="${d}">${tr('Dobás')}</button><button class="btn ghost" type="button" data-hr5="${d}">${tr('5 dobás')}</button><button class="btn coral" type="button" data-acc="${d}">${tr('Ez csal!')}</button></div>`).join('')}</div></div>`, '', 'hamis');
+    function bars(d) {
+      const c = cnt[d], n = c.reduce((a, b) => a + b, 0), mx = Math.max(3, ...c);
+      $('hkB' + d).innerHTML = [1, 2, 3, 4, 5, 6].map(v => `<span title="${v}"><i style="height:${c[v] / mx * 100}%"></i><em>${c[v] || ''}</em><small>${v}</small></span>`).join('') ;
+      $('hkD' + d).innerHTML = last[d] ? die(last[d]) : die(0, 'empty'); $('hkLeft').textContent = trf('Még {0} dobás', left) + (n ? '' : '');
+      $('modalRoot').querySelectorAll('[data-hr],[data-hr5]').forEach(b => b.disabled = left <= 0);
+    }
+    async function go(d, k) { for (let i = 0; i < k && left > 0; i++) { left--; const v = roll(d); cnt[d][v]++; last[d] = v; bars(d); await sleep(90); } }
+    [0, 1, 2].forEach(bars);
+    $('modalRoot').querySelectorAll('[data-hr]').forEach(b => b.onclick = () => go(+b.dataset.hr, 1));
+    $('modalRoot').querySelectorAll('[data-hr5]').forEach(b => b.onclick = () => go(+b.dataset.hr5, 5));
+    $('modalRoot').querySelectorAll('[data-acc]').forEach(b => b.onclick = () => {
+      const d = +b.dataset.acc, ok = d === bad, used = MAXR - left, nm = ['I.', 'II.', 'III.'];
+      const rew = ok ? { forint: 2 + Math.round(left / 8), penz: 260 + left * 12, tudas: 2 } : { penz: 120, tudas: 1 };
+      done(ok ? 'LEBUKOTT A HEROLD' : 'ÁTVERTEK', ok ? tr('Rajtakaptad!') : tr('Ez most nem jött be'),
+        [ok ? trf('A {0} kocka volt a cinkelt, és a {1} esett vele túl sokszor. {2} dobásból jöttél rá.', nm[bad], es(face), used) : trf('A {0} kocka csalt, nem a {1}. Az ólom a {2} felé húzta.', nm[bad], nm[d], es(face)),
+          tr(ok ? 'Hencegő Herold elpirult, és gyorsan zsebre tette a kockát. Most az egyszer ő fizet.' : 'Hencegő Herold elégedetten fütyörészik. Legközelebb több dobásból figyeld a számokat!')],
+        'hamiskocka', rew, 'Egy becsületes kockán hosszú távon minden szám nagyjából egyhatod részben jön ki. Kevés dobásnál nagy a szóródás, ezért kellett sokat dobni. A középkorban tényleg készítettek cinkelt kockákat, a régészek is találtak ilyeneket.');
+    });
+  }
+
+  // ---------- 2. Az oligarcha adója ----------
+  function playAdo() {
+    if (!miniStart('oligado')) return;
+    const DAYS = 5; let day = 1, pile = 0, bank = 0, lost = 0, busy = false, log = '';
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('CSÁK MÁTÉ FÖLDJÉN')}</span><h2>${tr('Az oligarcha adója')}</h2>
+      ${bubble('e05_mg_adoszedo', tr('Dobálj csak nyugodtan, gyűjtsd a szép aranyat! Én itt várok a zsákommal. Ha egyest dobsz, minden az enyém.'), 'oaBub')}
+      <p>${trf('Öt vásárnapod van. Minden dobás annyi aranyat tesz a kupacodba, amennyit dobtál, kivéve az egyest, mert annál Csák Máté embere elviszi az egész kupacot. Bármikor hazaviheted, ami a kupacban van, akkor az már biztonságban van.', DAYS)}</p>
+      <div class="mg-hud"><span id="oaDay"></span><span id="oaBank"></span></div>
+      <div class="oa-stage"><div id="oaDie">${die(0, 'empty')}</div><div class="oa-pile"><img id="oaImg" src="img/e05_mg_aranykupac.png" alt="" onerror="this.remove()"><b id="oaPile">0</b><small>${tr('arany a kupacban')}</small></div></div>
+      <p class="oa-hint" id="oaHint"></p>
+      <div class="row"><button class="btn coral" type="button" id="oaRoll">${tr('Dobok még')}</button><button class="btn teal" type="button" id="oaBankB">${tr('Hazaviszem')}</button></div></div>`, '', 'oligado');
+    function ui() {
+      $('oaDay').textContent = trf('{0}. vásárnap / {1}', Math.min(day, DAYS), DAYS); $('oaBank').textContent = trf('Otthon {0} arany', bank); $('oaPile').textContent = pile;
+      const im = $('oaImg'); if (im) im.style.transform = `scale(${0.55 + Math.min(1, pile / 30) * 0.5})`;
+      $('oaHint').textContent = pile ? trf('Minden dobásnál 1 a 6-hoz az esély, hogy elviszi. Most {0} aranyat kockáztatsz.', pile) + (pile >= 20 ? ' ' + tr('A matematikusok szerint nagyjából 20 körül érdemes hazavinni.') : '') : tr('Üres a kupac, dobj!');
+      $('oaBankB').disabled = !pile || busy; $('oaRoll').disabled = busy;
+    }
+    function next() { day++; pile = 0; if (day > DAYS) return finish(); ui(); }
+    function finish() {
+      const rew = { arany: Math.max(1, Math.round(bank / 6)), penz: 80 + bank * 7 };
+      if (bank >= 60) rew.tudas = 2; else if (bank >= 35) rew.tudas = 1;
+      done('VÉGE A VÁSÁRNAPOKNAK', trf('{0} aranyat vittél haza', bank),
+        [trf('Csák Máté embere {0} aranyat zsebelt be tőled.', lost), tr(bank >= 60 ? 'Ügyes vagy! Az oligarcha embere üres zsákkal ballag haza.' : bank >= 30 ? 'Szép fogás, a kincstár örül.' : 'Az oligarcha embere ma jól járt. Holnap bátrabban, vagy épp óvatosabban!')],
+        'oligado', rew, 'Csák Máté a 14. század elején a Felvidék nagy részét uralta, saját udvartartással és sereggel, mintha király lenne. Károly Róbert csak hosszú harcok után tudta megtörni az oligarchák hatalmát.');
+    }
+    $('oaRoll').onclick = async () => {
+      if (busy) return; busy = true; ui();
+      for (let k = 0; k < 6; k++) { $('oaDie').innerHTML = die(R6(), 'spin'); await sleep(60); }
+      const v = R6(); $('oaDie').innerHTML = die(v);
+      if (v === 1) { lost += pile; $('oaBub').textContent = pile ? trf('Egyes! Köszönöm szépen ezt a {0} aranyat!', pile) : tr('Egyes! Kár, hogy üres volt a kupac.'); pile = 0; busy = false; await sleep(700); next(); return; }
+      pile += v; $('oaBub').textContent = [tr('Na, még egyet, ne legyél nyuszi!'), tr('Szép kupac, de vajon meddig?'), tr('Hallom, ahogy csörög.'), tr('Én a helyedben még dobnék egyet.')][Math.floor(Math.random() * 4)];
+      busy = false; ui();
+    };
+    $('oaBankB').onclick = () => { if (busy || !pile) return; bank += pile; $('oaBub').textContent = trf('Hazavitted? Ejnye. Na sebaj, {0} arany biztonságban.', pile); next(); };
+    ui();
+  }
+
+  // ---------- 3. Kockapóker a vámszedővel ----------
+  const RANKS = ['Semmi', 'Pár', 'Két pár', 'Drill', 'Kis sor', 'Full', 'Nagy sor', 'Póker', 'Nagy póker'];
+  function score(d) {
+    const c = [0, 0, 0, 0, 0, 0, 0]; d.forEach(v => c[v]++); const s = c.slice(1).sort((a, b) => b - a), sum = d.reduce((a, b) => a + b, 0), u = d.slice().sort().join('');
+    let r = 0;
+    if (s[0] === 5) r = 8; else if (s[0] === 4) r = 7; else if (u === '23456') r = 6; else if (s[0] === 3 && s[1] === 2) r = 5; else if (u === '12345') r = 4; else if (s[0] === 3) r = 3; else if (s[0] === 2 && s[1] === 2) r = 2; else if (s[0] === 2) r = 1;
+    return { r, sum, v: r * 100 + sum };
+  }
+  function aiPlay() {
+    let d = Array.from({ length: 5 }, R6);
+    for (let t = 0; t < 2; t++) { const c = [0, 0, 0, 0, 0, 0, 0]; d.forEach(v => c[v]++); let best = 6; for (let v = 6; v >= 1; v--) if (c[v] > c[best]) best = v;
+      if (score(d).r >= 5) break; d = d.map(v => v === best && c[best] >= 2 ? v : R6()); }
+    return d;
+  }
+  function playPoker() {
+    if (!miniStart('kockapoker')) return;
+    const ROUNDS = 3; let round = 1, wins = 0, dice = [0, 0, 0, 0, 0], hold = [0, 0, 0, 0, 0], rolls = 0, busy = false, res = [];
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A VÁMHÁZNÁL')}</span><h2>${tr('Kockapóker a vámszedővel')}</h2>
+      ${bubble('e05_mg_vamszedo', tr('Vámot kell fizetni minden szekér után. Hacsak... nem játszol velem egy kis kockapókert. Ha nyersz, a vámot visszakapod!'), 'kpBub')}
+      <p>${trf('{0} szekér, mindegyiknél egy menet. Öt kockával dobsz, és még kétszer újradobhatod azokat, amelyeket nem tartasz meg. Koppints egy kockára, hogy megtartsd. Utána a vámszedő dob, és az erősebb kombináció nyer.', ROUNDS)}</p>
+      <div class="mg-hud"><span id="kpRound"></span><span id="kpWins"></span></div>
+      <div class="kp-row" id="kpDice"></div><p class="kp-rank" id="kpRank"></p>
+      <div class="row"><button class="btn coral" type="button" id="kpRoll"></button><button class="btn teal" type="button" id="kpStop">${tr('Ennyi, mutasd a tiédet')}</button></div>
+      <div class="kp-foe" id="kpFoe"></div>
+      <details class="kp-help"><summary>${tr('Kombinációk erősség szerint')}</summary><p>${RANKS.slice(1).map(tr).join(' · ')}</p><p>${tr('Kis sor 1-től 5-ig, nagy sor 2-től 6-ig. Egyenlő kombinációnál a pöttyök összege dönt.')}</p></details></div>`, '', 'poker');
+    function ui() {
+      $('kpRound').textContent = trf('{0}. szekér / {1}', Math.min(round, ROUNDS), ROUNDS); $('kpWins').textContent = trf('{0} vámot nyertél vissza', wins);
+      $('kpDice').innerHTML = dice.map((v, i) => `<button type="button" class="kp-d ${hold[i] ? 'hold' : ''}" data-kd="${i}" ${!rolls || rolls >= 3 || busy ? 'disabled' : ''}>${die(v, v ? '' : 'empty')}<small>${hold[i] ? tr('marad') : ''}</small></button>`).join('');
+      $('kpRank').textContent = rolls ? tr(RANKS[score(dice).r]) : '';
+      $('kpRoll').textContent = !rolls ? tr('Dobás') : trf('Újradobás ({0} maradt)', 3 - rolls); $('kpRoll').disabled = busy || rolls >= 3; $('kpStop').disabled = busy || !rolls;
+      $('modalRoot').querySelectorAll('[data-kd]').forEach(b => b.onclick = () => { hold[+b.dataset.kd] ^= 1; ui(); });
+    }
+    $('kpRoll').onclick = async () => {
+      if (busy || rolls >= 3) return; busy = true; $('kpFoe').innerHTML = '';
+      for (let k = 0; k < 6; k++) { dice = dice.map((v, i) => hold[i] && rolls ? v : R6()); ui(); await sleep(60); }
+      rolls++; busy = false; ui(); if (rolls >= 3) setTimeout(() => { if (rolls >= 3 && !busy) stop(); }, 500);
+    };
+    async function stop() {
+      if (busy || !rolls) return; busy = true; ui();
+      const me = score(dice), fd = aiPlay(), fo = score(fd), win = me.v > fo.v, tie = me.v === fo.v;
+      $('kpFoe').innerHTML = `<b>${tr('A vámszedő dobása')}</b><div class="kp-row small">${fd.map(v => die(v)).join('')}</div><p>${tr(RANKS[fo.r])}</p>`;
+      if (win) wins++; res.push(win ? 1 : 0);
+      $('kpBub').textContent = win ? [tr('Ejnye, ez a szekér most vámmentes.'), tr('Hogy csinálod ezt? Na jó, menjen.')][round % 2] : tie ? tr('Döntetlen? Akkor a vám marad, így szól a szabály. Az én szabályom.') : [tr('Hehe, a vám marad nálam!'), tr('A ládába vele, köszönöm szépen.')][round % 2];
+      await sleep(1700); round++; busy = false;
+      if (round > ROUNDS) return finish();
+      dice = [0, 0, 0, 0, 0]; hold = [0, 0, 0, 0, 0]; rolls = 0; $('kpFoe').innerHTML = ''; ui();
+    }
+    $('kpStop').onclick = stop;
+    function finish() {
+      const rew = { penz: 120 + wins * 160, bor: 2 + wins * 2 }; if (wins >= 2) rew.forint = wins; if (wins === 3) rew.tudas = 1;
+      done('A VÁMHÁZ ELŐTT', wins === 3 ? tr('Mindhárom szekér vámmentes!') : trf('{0} szekér vámját nyerted vissza', wins),
+        [tr(wins >= 2 ? 'A vámszedő a fejét vakarja, és bejegyzi a könyvbe, hogy ma rossz napja volt.' : 'A vámszedő elégedetten csörgeti a ládát. Legközelebb tartsd meg bátrabban a párokat!')],
+        'kockapoker', rew, 'A középkori Magyarországon az utakon, hidakon és réveken vámot szedtek, sokszor egymáshoz egészen közel is. Károly Róbert egységesítette a pénzt, és a kereskedelem fellendítéséért szabályozta a vámokat.');
+    }
+    ui();
+  }
+  const st = document.createElement('style');
+  st.textContent = `.dk{display:inline-grid;grid-template-columns:repeat(3,1fr);gap:3px;width:52px;height:52px;padding:7px;box-sizing:border-box;border-radius:12px;background:#FFF8EA;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 0 0 2px #8A5A2B;vertical-align:middle}
+  .dk i{border-radius:50%}.dk i.on{background:#3A2410}.dk.empty{opacity:.45}.dk.spin{transform:rotate(12deg)}
+  .dk-say{display:flex;gap:12px;align-items:center}.dk-say .dk-face{width:96px;height:auto;flex:none}.dk-say .bub{flex:1;min-width:0;background:rgba(255,248,232,.85);border-radius:14px;padding:10px 14px;font-weight:800;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}
+  .hk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+  .hk-col{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;border-radius:14px;background:rgba(255,244,223,.6);box-shadow:inset 0 0 0 2px rgba(138,90,43,.25);min-width:0}
+  .hk-col .btn{width:100%;min-height:36px;padding:4px 6px}
+  .hk-bars{display:flex;gap:3px;align-items:flex-end;height:90px;width:100%}.hk-bars span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+  .hk-bars i{display:block;width:100%;background:#C9893A;border-radius:4px 4px 0 0;min-height:2px}.hk-bars em{font:800 11px Nunito,sans-serif;font-style:normal;position:absolute;top:0}.hk-bars small{font-weight:900}
+  .oa-stage{display:flex;gap:20px;align-items:center;justify-content:center;margin:10px 0;flex-wrap:wrap}.oa-stage .dk{width:84px;height:84px;padding:12px}
+  .oa-pile{display:flex;flex-direction:column;align-items:center}.oa-pile img{width:150px;height:auto;transition:transform .3s}.oa-pile b{font-size:34px}.oa-hint{font-weight:800;min-height:2.6em}
+  .kp-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}.kp-row.small .dk{width:40px;height:40px;padding:5px}
+  .kp-d{border:0;background:none;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;border-radius:14px}.kp-d .dk{width:62px;height:62px;padding:9px}
+  .kp-d.hold{background:rgba(47,138,58,.2);box-shadow:inset 0 0 0 3px #2F8A3A}.kp-d small{font-weight:900;color:#1F6A2A;min-height:1.2em}
+  .kp-rank{text-align:center;font-weight:900;font-size:20px;margin:0;min-height:1.3em}.kp-foe{text-align:center;min-height:1em}.kp-foe p{font-weight:900;margin:0}
+  .kp-help summary{cursor:pointer;font-weight:800}
+  @media (max-width:520px){.hk-grid{gap:6px}.hk-bars{height:70px}.dk-say .dk-face{width:70px}.kp-d .dk{width:50px;height:50px;padding:7px}}`;
+  document.head.appendChild(st);
+})();
+
 // HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
 (function () {
   if (/github\.io$/.test(location.hostname)) return;
