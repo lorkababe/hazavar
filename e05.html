@@ -3639,6 +3639,38 @@ const MINERS = { aranymoso: 10, vashamor1: 15, vashamor2: 20, vashamor3: 25, ara
   };
 }
 
+// ---------- a bányaváros saját lépcsőkkel és ösvényekkel kapaszkodik a dombra, nem kell hozzá út ----------
+['banyavaros1', 'banyavaros2', 'banyavaros3'].forEach(t => { if (DEF[t]) DEF[t].road = false; });
+// ---------- a meglepetések nem bújnak a várak és romok alá ----------
+{ const _ot = outsideTiles; outsideTiles = function () { return _ot.apply(this, arguments).filter(([i, j]) => !BARON_TILES.has(i + ',' + j)); };
+  setTimeout(() => { try { if (S && S.surp) S.surp = S.surp.filter(x => !BARON_TILES.has(x.i + ',' + x.j)); } catch (e) {} }, 500); }
+// ---------- Rozgony után a romokat el lehet takarítani, és a hely a tiéd lesz ----------
+const RUIN_COST = { penz: 3000, termeny: 400 };
+function ruinTiles(b) { const t = []; for (let a = 0; a < 5; a++) for (let c = 0; c < 5; c++) t.push((b.i + a) + ',' + (b.j + c)); return t; }
+function ruinFree(b) {
+  ruinTiles(b).forEach(k => { BARON_TILES.delete(k); BLOCKED.delete(k); LANDSET.add(k); });
+  const id = 'rom_' + b.id; if (!LOTS.find(l => l.id === id)) LOTS.push({ id, i: b.i, j: b.j, w: 5, h: 5, k: 'rom' });
+  if (typeof LOTS2 !== 'undefined' && LOTS2 !== LOTS && !LOTS2.find(l => l.id === id)) LOTS2.push({ id, i: b.i, j: b.j, w: 5, h: 5, k: 'rom' });
+  S.lots = S.lots || []; if (!S.lots.includes(id)) S.lots.push(id);
+}
+function applyRuins() { try { Object.keys(S.ruinGone || {}).forEach(id => { const b = BARONS.find(x => x.id === id); if (b) ruinFree(b); }); connCache = null; } catch (e) {} }
+applyRuins(); setTimeout(applyRuins, 0); setTimeout(applyRuins, 400); setTimeout(applyRuins, 1500);
+{ const _lk = lotsOk; lotsOk = function (d, b) { if (_lk.apply(this, arguments)) return true; try { const [w, h] = dimsB(b); return Object.keys(d.ruinGone || {}).some(id => { const r = BARONS.find(x => x.id === id); return r && b.i >= r.i && b.j >= r.j && b.i + w <= r.i + 5 && b.j + h <= r.j + 5; }); } catch (e) { return false; } }; }
+function showRuin(b) {
+  const can = canPay(RUIN_COST);
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('ROM')}</span><h2>${trf('{0} romjai', BAR_WHO[b.id])}</h2>
+    <img src="img/e05_var_rom_${b.id}.png" alt="" style="width:100%;max-height:260px;object-fit:contain">
+    <p>${tr('A kiskirály vára Rozgony óta romokban hever. A falusiak már hordják el a köveit, de egy komoly takarítás kellene, hogy a helyére újra építkezni lehessen.')}</p>
+    <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px"><b>${tr('Romeltakarítás')}</b><span>${tr('A rom eltűnik, a helye, 5×5 mező, a tiéd lesz, és a kövek közül még némi Vas is előkerül.')}</span><span style="display:flex;gap:12px;align-items:center;font-weight:900">${Object.entries(RUIN_COST).map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:4px"><img src="img/${RES[k].icon}.png" alt="" style="width:26px;height:26px" onerror="this.remove()">${fmt(v)} ${RES[k].name}</span>`).join('')}</span>
+      <div><button class="btn coral" type="button" id="ruGo" ${can ? '' : 'disabled'}>${tr('Eltakarítom')}</button></div></div>
+    <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px;opacity:.75"><b>${tr('Újjáépítés királyi várrá')}</b><span>${tr('Hamarosan. A rom helyén a király hű várnagya új várat emelhet, amely védelmet és hírnevet ad.')}</span></div></div>`, '', 'ruin');
+  if ($('ruGo')) $('ruGo').onclick = () => { if (!canPay(RUIN_COST)) return; pay(RUIN_COST); S.ruinGone = S.ruinGone || {}; S.ruinGone[b.id] = 1; ruinFree(b); give({ vas: 25 }); connCache = null; save(); hud(); closeModal();
+    const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 60, tr('A rom eltűnt, a hely a tiéd!'), '#FFE9B8'); } catch (e) {} toast(trf('{0} romjait elhordták. Az 5×5 mező most a tiéd, és 25 Vas is előkerült a kövek közül.', BAR_WHO[b.id])); };
+}
+{ const _tp = tap; tap = function (sx, sy) {
+  try { if (S.rozgony && !tool) { const [bx, by] = toBg(sx, sy), [i, j] = tileAt(bx, by); const b = BARONS.find(r => !(S.ruinGone || {})[r.id] && i >= r.i && i < r.i + 5 && j >= r.j && j < r.j + 5); if (b && !pick(bx, by)) { showRuin(b); return; } } } catch (e) {}
+  return _tp.apply(this, arguments); }; }
+
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
 auraFits = function (a, dst, res) { const d = DEF[dst.type]; if (a.to === 'lak') return d.cat === 'lak'; if (a.to === 'termeny') return !!(d.prod && d.prod.termeny); if (a.to === 'penz') return !!(d.prod && d.prod.penz); if (a.to === 'arany') return !!(d.prod && d.prod.arany); return true; };
 auraMul = function (b, res) {
@@ -3718,6 +3750,7 @@ draw = function (now) {
   try {
     ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR);
     BARONS.forEach(b => {
+      if (S.ruinGone && S.ruinGone[b.id]) return;
       const n = BARONS.indexOf(b), cp = COLL ? (now - COLL.t0 - n * 3200) / 2600 : 2;
       const k = !S.rozgony || cp < 0.45 ? b.id : (barSoft('rom_' + b.id) ? 'rom_' + b.id : 'rom'), im = barSoft(k); if (!im) return;
       const [x0] = tileTop(b.i, b.j + 5), [x1] = tileTop(b.i + 5, b.j), [, yb] = tileTop(b.i + 5, b.j + 5), w = x1 - x0, h = w * im.height / im.width, [cx0, cy0] = tileTop(b.i + 2.5, b.j + 2.5);
