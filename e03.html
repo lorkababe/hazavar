@@ -2781,6 +2781,8 @@ function mark(kind, id) { dly()[kind + ':' + id] = 1; }
 function doKalaka(id) {
   if (!canDo('kalaka', id)) return; const b = bot(id); if (!b) return; mark('kalaka', id); b.friend++; SOC.stats.kalaka++;
   const r = { penz: amt(10), hirnev: 1 }; giveR(r); log(TF('Kalákáztál {0} szállásán. {1}', b.name, resTxt(r)), 'kalaka');
+  // a kaláka néha egy tervrajzot is hoz, és aki nálad kalákát kapott, az ma nem portyázik rád
+  try { if (typeof window.gbBonusTr === 'function' && Math.random() < 0.2) { const g = window.gbBonusTr(); if (g) setTimeout(() => toast(TF('{0} hálából egy tervrajzot is adott: {1}', b.name, g)), 1200); } } catch (e) {}
   if (b.real) netEvent(id, 'kalaka', { n: amt(10) }); else if (Math.random() < 0.4) later({ type: 'thanks', from: id }, rnd(5, 40) * 60e3);
   toast(TF('Segítettél {0} szállásán! {1}', b.name, resTxt(r))); sfxCollect(); commit(); refresh();
 }
@@ -2884,7 +2886,10 @@ function runQueue() {
   return true;
 }
 function botRaidsMe(b, betrayed) {
-  const d = dly(); if (d.raidedMe && !betrayed) return; const m = myDef() - (betrayed ? allyDef() : 0);
+  const d = dly(); if (d.raidedMe && !betrayed) return;
+  if (!betrayed && !canDo('kalaka', b.id)) return; // akinél ma kalákáztál, az ma nem bánt
+  if ((SOC.shield || 0) > NOW()) { log(TF('{0} rád portyázott, de a kalákások elkergették.', b.name), 'portya'); return; }
+  const m = myDef() - (betrayed ? allyDef() : 0);
   const chance = betrayed ? 0.9 : Math.max(0.1, Math.min(0.7, b.def / (b.def + Math.max(1, m))));
   if (Math.random() > chance) { log(TF('{0} rád portyázott, de az őreid visszaverték.', b.name), 'portya'); return; }
   d.raidedMe = 1; const lost = Math.min(Math.floor((S.res.penz || 0) * 0.05), amt(40)); S.res.penz -= lost;
@@ -3430,12 +3435,13 @@ function mergeReal() {
 }
 function applyEvent(e) {
   const from = 'u_' + e.from_id, who = NET.names[from] || T('Egy szomszéd'), p = e.payload || {};
-  if (e.kind === 'kalaka') { const r = { penz: p.n || amt(8) }; giveR(r); log(TF('{0} kalákázott nálad. {1}', who, resTxt(r)), 'kalaka'); }
+  if (e.kind === 'kalaka') { const r = { penz: p.n || amt(8) }; giveR(r); SOC.shield = Math.max(SOC.shield || 0, NOW() + 12 * HOUR); log(TF('{0} kalákázott nálad. {1}', who, resTxt(r)) + ' ' + T('A kalákások 12 órán át vigyáznak a városodra.'), 'kalaka'); }
   if (e.kind === 'ajandek' && p.k && RES[p.k]) { const r = { [p.k]: Math.min(p.n || 0, 500) }; giveR(r); log(TF('{0} ajándékot küldött: {1}', who, resTxt(r)), 'ajandek'); toast(TF('{0} ajándékot küldött! {1}', who, resTxt(r))); }
   if (e.kind === 'gbpts' && typeof window.gbRecv === 'function') window.gbRecv(from, who, p);
   if (e.kind === 'gbrew' && typeof window.gbGot === 'function') window.gbGot(who, p);
   if (e.kind === 'portya') {
-    if (p.ok) { const lost = Math.min(Math.floor((S.res.penz || 0) * 0.05), p.n || 0); S.res.penz -= lost; log(TF('{0} kifosztott! Elvittek {1} Pénzt.', who, lost), 'portya'); toast(TF('{0} kifosztott! -{1} Pénz', who, lost)); }
+    if (p.ok && (SOC.shield || 0) > NOW()) log(TF('{0} rád portyázott, de a kalákások elkergették.', who), 'portya');
+    else if (p.ok) { const lost = Math.min(Math.floor((S.res.penz || 0) * 0.05), p.n || 0); S.res.penz -= lost; log(TF('{0} kifosztott! Elvittek {1} Pénzt.', who, lost), 'portya'); toast(TF('{0} kifosztott! -{1} Pénz', who, lost)); }
     else log(TF('{0} rád portyázott, de az őreid visszaverték.', who), 'portya');
   }
 }
@@ -4712,6 +4718,8 @@ function showCard(id) {
   const root = $('modalRoot'); root.querySelectorAll('[data-gbi]').forEach(x => x.onclick = () => { invest(id, +x.dataset.gbi); showCard(id); });
 }
 window.gbShowCard = showCard;
+// egy tervrajz a kor egyik még meg nem épített nevezetes épületéhez (kaláka jutalma)
+window.gbBonusTr = () => { const c = MINE.filter(id => !R.built[id]); if (!c.length) return null; const id = c[Math.floor(Math.random() * c.length)]; R.tr[id] = (R.tr[id] || 0) + 1; gsave(); return GBC[id].name; };
 gbInvest = function (n) { if (cur) invest(cur, n); };
 function wireCard(root, redo) { root.querySelectorAll('[data-gbopen]').forEach(x => x.onclick = () => { const id = x.dataset.gbopen; try { hideInfo(); } catch (e) {} showCard(id); }); }
 // ---------- építés tervrajzból ----------
