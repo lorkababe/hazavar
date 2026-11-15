@@ -6001,20 +6001,20 @@ const GBK = 'panelvar-gb-v1', NEED_TR = 5, GB_TOP = 10;
 const H = 3600, MN = 60;
 const need = l => 30 + 20 * l;
 const GBC = {
-  vezeri: { era: 3, name: 'Pannonhalmi apátság', img: 'e03_pannonhalma', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 500, termeny: 250 }, base: { hang: 10, pop: 6, prod: { penz: 90 } }, per: { hang: 4, pop: 2, mul: 0.6 }, time: 20 * MN, free: ['apatsag', 3],
+  vezeri: { era: 3, name: 'Pannonhalmi apátság', img: 'e03_pannonhalma', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 500, termeny: 250 }, base: { hang: 10, pop: 6, prod: { penz: 250 } }, per: { hang: 4, pop: 3, mul: 0.4 }, time: 20 * MN, free: ['apatsag', 3],
     desc: 'Géza kezdte, István fejezte be. A bencések ezer évig itt lesznek, és közben hangulatot és pénzt hoznak a városnak.' },
-  jak: { era: 4, name: 'Jáki templom', img: 'e04_jak_1', stages: ['e04_jak_1', 'e04_jak_2', 'e04_jak_3'], size: 3, cat: 'hang', faith: 'pog', cost: { penz: 2500, fa: 100 }, base: { hang: 10, pop: 4, prod: { penz: 200 } }, per: { hang: 4, pop: 2, mul: 0.6 }, time: H, free: ['jak', 3],
+  jak: { era: 4, name: 'Jáki templom', img: 'e04_jak_1', stages: ['e04_jak_1', 'e04_jak_2', 'e04_jak_3'], size: 3, cat: 'hang', faith: 'pog', cost: { penz: 2500, fa: 100 }, base: { hang: 10, pop: 6, prod: { penz: 600 } }, per: { hang: 4, pop: 3, mul: 0.4 }, time: H, free: ['jak', 3],
     desc: 'A Ják nemzetség temploma, kapuján a tizenkét apostol. Rengeteg hangulatot és pénzt ad, szintenként egyre többet.' },
-  visegrad: { era: 4, name: 'Visegrádi vár', img: 'e04_visegrad_1', stages: ['e04_visegrad_1', 'e04_visegrad_2', 'e04_visegrad_3'], size: 3, cat: 'ved', faith: 'ker', cost: { penz: 4000, fa: 120 }, base: { def: 8, hang: 4, pop: 6, prod: { termeny: 120 } }, per: { def: 3, mul: 0.6 }, time: H, free: ['visegrad', 5],
+  visegrad: { era: 4, name: 'Visegrádi vár', img: 'e04_visegrad_1', stages: ['e04_visegrad_1', 'e04_visegrad_2', 'e04_visegrad_3'], size: 3, cat: 'ved', faith: 'ker', cost: { penz: 4000, fa: 120 }, base: { def: 8, hang: 4, pop: 6, prod: { termeny: 400 } }, per: { def: 3, pop: 2, mul: 0.4 }, time: H, free: ['visegrad', 5],
     desc: 'A tatárjárás után épült fellegvár a Duna fölött. Védelmet és Terményt ad, szintenként egyre többet.' },
-  palota1: { era: 5, name: 'Visegrádi királyi palota', img: 'e05_palota1', stages: ['e05_palota1', 'e05_palota2', 'e05_palota3'], size: 5, cat: 'hang', faith: 'ker', cost: { penz: 4000, fa: 150, vas: 30 }, base: { hang: 12, pop: 10, prod: { hirnev: 2 } }, per: { hang: 4, pop: 3, add: { hirnev: 1 } }, time: H, free: ['palota', 3],
+  palota1: { era: 5, name: 'Visegrádi királyi palota', img: 'e05_palota1', stages: ['e05_palota1', 'e05_palota2', 'e05_palota3'], size: 5, cat: 'hang', faith: 'ker', cost: { penz: 4000, fa: 150, vas: 30 }, base: { hang: 12, pop: 12, prod: { hirnev: 4 } }, per: { hang: 5, pop: 5, add: { hirnev: 2 } }, time: H, free: ['palota', 3],
     desc: 'Károly Róbert székhelye, Nagy Lajos fényes udvara. Hírnevet termel, amivel a többi nevezetes épületet is szintezheted.' },
-  pecs: { era: 5, name: 'Pécsi egyetem', img: 'e05_pecsi_egyetem', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 3000, fa: 80, forint: 10 }, base: { hang: 6, pop: 4, prod: { tudas: 2 } }, per: { hang: 2, add: { tudas: 1 } }, time: H,
+  pecs: { era: 5, name: 'Pécsi egyetem', img: 'e05_pecsi_egyetem', size: 3, cat: 'hang', faith: 'ker', cost: { penz: 3000, fa: 80, forint: 10 }, base: { hang: 6, pop: 4, prod: { tudas: 6 } }, per: { hang: 2, pop: 1, add: { tudas: 3 } }, time: H,
     desc: 'Az első magyar egyetem, Nagy Lajos alapította 1367-ben. Tudást ad, szintenként egyre többet.' },
-  diosgyor: { era: 5, name: 'Diósgyőri vár', img: 'e05_diosgyori_var', size: 3, cat: 'ved', faith: 'ker', cost: { penz: 3500, fa: 100, vas: 30 }, base: { def: 8, hang: 4, prod: { vas: 4 } }, per: { def: 3, add: { vas: 2 } }, time: H,
+  diosgyor: { era: 5, name: 'Diósgyőri vár', img: 'e05_diosgyori_var', size: 3, cat: 'ved', faith: 'ker', cost: { penz: 3500, fa: 100, vas: 30 }, base: { def: 8, hang: 4, prod: { vas: 40 } }, per: { def: 3, add: { vas: 16 } }, time: H,
     desc: 'Nagy Lajos kedvenc vára, négy saroktoronnyal. Védelmet és Vasat ad, szintenként egyre többet.' },
-  kormoc: { era: 5, name: 'Körmöci aranybánya', img: 'e05_kormoci_banya', size: 3, cat: 'term', terrain: 'hill', cost: { penz: 3000, fa: 120, vas: 20 }, base: { prod: { arany: 6 } }, per: { add: { arany: 3 } }, time: H,
-    desc: 'Európa leggazdagabb aranybányája. Aranyat ad, szintenként egyre többet, és kiváltja a kis bányákat.' }
+  kormoc: { era: 5, name: 'Körmöci aranybánya', img: 'e05_kormoci_banya', size: 3, cat: 'term', terrain: 'hill', cost: { penz: 3000, fa: 120, vas: 20 }, base: { prod: { arany: 36 } }, per: { add: { arany: 14 } }, time: H,
+    desc: 'Európa leggazdagabb aranybányája. Már az első szinten annyi aranyat ad, mint a legjobb aranybánya, a 10. szinten pedig ötször annyit. Utána a kis bányákat nyugodtan lebonthatod.' }
 };
 const MINE = Object.keys(GBC).filter(k => GBC[k].era <= CUR_ERA);
 // ---------- közös tár: szint, tervrajz, beszállók ----------
@@ -6095,10 +6095,18 @@ let cur = null;
 const _si = showInfo;
 showInfo = function (b) { cur = b && DEF[b.type] && DEF[b.type].gb && GBC[b.type] ? b.type : null; const r = _si.apply(this, arguments); try { if (cur) wireCard($('info'), () => showInfo(b)); } catch (e) {} return r; };
 gbHTML = function () { return cur ? miniHTML(cur) : ''; };
+// mennyi sima épületet vált ki: a legjobb hasonló épület óránkénti termelésével vetjük össze
+const REF = { vezeri: ['kolostor', 'penz'], jak: ['kuria', 'penz'], visegrad: ['szanto', 'termeny'], palota1: ['kuria', 'pop'], pecs: ['kolostor', 'tudas'], diosgyor: ['vashamor3', 'vas'], kormoc: ['aranybanya3', 'arany'] };
+function worth(id) {
+  try { const r = REF[id]; if (!r) return ''; const cand = [r[0], 'haromnyomasos_szanto', 'banyavaros1', 'polgarhaz'].find(t => DEF[t] && !DEF[t].gb && (r[1] === 'pop' ? DEF[t].pop : DEF[t].prod && DEF[t].prod[r[1]])); if (!cand) return '';
+    const d = DEF[cand], o = fx(id, lvl(id)); let mine, ref;
+    if (r[1] === 'pop') { mine = o.pop; ref = d.pop; } else { mine = (o.prod[r[1]] || 0) * 3600 / (GBC[id].time || 3600); ref = d.prod[r[1]] * 3600 / (d.time || 3600); }
+    const n = mine / ref; if (!(n >= 0.8)) return ''; return `<div class="gbworth">${trf('Most annyit ér, mint {0} db {1}', (Math.round(n * 2) / 2).toString().replace('.', ','), tr(d.name))}</div>`; } catch (e) { return ''; }
+}
 function miniHTML(id) {
   const l = lvl(id), lv = L(id), n = need(l), max = l >= GB_TOP;
   return `<div class="gbbox"><div class="gbhead"><span class="gbtag">${tr('NEVEZETES ÉPÜLET')}</span><b>${trf('{0}. szint', l)} <small>/ ${GB_TOP}</small></b></div>
-    <div class="gbrow"><div>${fxChips(fx(id, l))}</div></div>
+    <div class="gbrow"><div>${fxChips(fx(id, l))}</div></div>${worth(id)}
     ${max ? '' : `<div class="hvgbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>`}
     <button class="btn coral" type="button" data-gbopen="${id}" style="width:100%">${max ? tr('Részletek') : tr('Szintezés és beszállók')}</button></div>`;
 }
@@ -6215,7 +6223,7 @@ st.textContent = `#btnGb{position:absolute!important;left:calc(16px + env(safe-a
   .gbtop{display:block!important;margin-top:10px}.gbtop table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.gbtop td{padding:4px 6px;border-bottom:1px dashed rgba(90,55,25,.25);color:#3A2410!important;background:none}.gbtop tr.me{font-weight:900;background:rgba(226,179,60,.25)}.gbtop td:nth-child(3),.gbtop td:nth-child(4){text-align:right;white-space:nowrap}.gbtop td:last-child{color:#2F7A3A!important;font-weight:800;font-size:12px}.gbtop p{margin:4px 0;font-size:13px}
   @media (max-width:560px){.gbbig img{width:90px;height:90px}}
   #info{max-height:calc(100vh - var(--toph,72px) - 140px - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}
-  .gbbox{box-sizing:border-box;max-width:100%;overflow:hidden;background:rgba(255,248,232,.75);border-radius:14px;padding:8px 10px;margin:4px 0;box-shadow:inset 0 0 0 2px #E2B33C}#info .gbc{font-size:12px;padding:1px 7px}#info .gbrow{margin:4px 0}#info .gbrow>div{gap:4px}#info .hvgbar{margin:6px 0}#info .gbnote{font-size:11px}.gbhead{display:flex;justify-content:space-between;align-items:center}.gbtag{font-size:11px;letter-spacing:.12em;font-weight:900;color:#8A3A16}
+  .gbworth{font-weight:800;font-size:13px;color:#2F6B3A;margin:2px 0 4px}.gbbox{box-sizing:border-box;max-width:100%;overflow:hidden;background:rgba(255,248,232,.75);border-radius:14px;padding:8px 10px;margin:4px 0;box-shadow:inset 0 0 0 2px #E2B33C}#info .gbc{font-size:12px;padding:1px 7px}#info .gbrow{margin:4px 0}#info .gbrow>div{gap:4px}#info .hvgbar{margin:6px 0}#info .gbnote{font-size:11px}.gbhead{display:flex;justify-content:space-between;align-items:center}.gbtag{font-size:11px;letter-spacing:.12em;font-weight:900;color:#8A3A16}
   .gbrow{margin:6px 0}.gbrow>small{display:block;color:var(--ink-soft);font-weight:800;font-size:12px}.gbrow>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:3px}
   .gbc{display:inline-flex;align-items:center;gap:4px;background:#FFF4DF;border-radius:999px;padding:2px 9px;font-weight:900;font-size:13px;box-shadow:0 0 0 1px rgba(90,55,25,.15)}.gbc img{width:18px;height:18px;object-fit:contain}
   .hvgbar{position:relative;display:block;width:100%;height:22px;flex:none;border-radius:11px;background:rgba(90,55,25,.18);overflow:hidden;margin:8px 0}.hvgbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#E2B33C,#C9472F)}.hvgbar span{position:relative;display:block;text-align:center;font-weight:900;font-size:12px;line-height:22px}.hvgbar.sm{height:18px}.hvgbar.sm span{line-height:18px}
