@@ -2651,6 +2651,90 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
   new MutationObserver(() => requestAnimationFrame(fit)).observe(c, { childList: true });
   window.addEventListener('resize', () => { H = 0; HC = 0; requestAnimationFrame(fit); });
 })();
+// ---------- heti hadjárat: hétfőtől szombatig nyitva, vasárnap pihen a sereg ----------
+const HJ_SZAK = ['Az előőrs', 'A gázló', 'A palánkvár', 'A fővezér tábora'], HJ_N = 8, HJ_MAXT = 8, HJ_TT = 2 * HOUR;
+const HJ_FOE = [['Kardfogú tigris', 'Barlangi medve', 'A szomszéd törzs', 'Mamutcsorda'], ['Besenyő portyázók', 'Kazár vámszedők', 'Bolgár lovasok', 'Farkasfalka'], ['Morva gyalogság', 'Bajor páncélosok', 'Bizánci zsoldosok', 'Itáliai őrség'],
+  ['Koppány harcosai', 'Egy lázadó törzsfő', 'Besenyő határőrök', 'Rablólovagok'], ['Tatár előőrs', 'Tatár íjászok', 'Osztrák zsoldosok', 'Kóbor rablók'], ['Csák Máté emberei', 'Aba-familiárisok', 'Kőszegi zsoldosok', 'Rablólovagok']];
+const hjWeek = () => { const d = new Date(NOW()), m = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return m.getFullYear() + '-' + (m.getMonth() + 1) + '-' + m.getDate(); };
+const hjStart = () => { const d = new Date(NOW()); return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)).getTime(); };
+const hjRest = () => new Date(NOW()).getDay() === 0;
+const hjHash = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
+const hjEra = () => Math.max(0, Math.min(5, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
+function hjBots(wk) { const A = SOC.ally; if (!A) return 0; const hrs = (Math.min(NOW(), hjStart() + 6 * 24 * HOUR) - hjStart()) / HOUR; return A.members.filter(m => m !== 'me').reduce((s, m) => s + Math.min(HJ_N * 4, Math.floor(hrs / (3 + hjHash(m + wk) % 6))), 0); }
+function hjState() {
+  const wk = hjWeek(); let H = SOC.hj;
+  if (H && H.wk !== wk) { // a múlt heti hadjárat lezárása
+    const team = H.st + (H.ally ? hjBots(H.wk) : 0), tier = !H.ally ? 0 : team >= 100 ? 3 : team >= 60 ? 2 : team >= 30 ? 1 : 0;
+    if (tier) { const r = { penz: amt([0, 200, 450, 800][tier]) }; if (RES.hirnev) r.hirnev = [0, 5, 10, 20][tier]; giveR(r); if (tier === 3 && typeof window.gbBonusTr === 'function') window.gbBonusTr();
+      setTimeout(() => toast(TF('Véget ért a heti hadjárat! A szövetség {0} állomást vett be. A közös jutalom: {1}', team, resTxt(r))), 1500); log(TF('A heti hadjárat jutalma: {0}', resTxt(r)), 'portya'); }
+    H = null; }
+  if (!H) H = SOC.hj = { wk, st: 0, tries: HJ_MAXT, tt: NOW(), ally: !!SOC.ally };
+  if (SOC.ally) H.ally = true;
+  while (H.tries < HJ_MAXT && NOW() - H.tt >= HJ_TT) { H.tries++; H.tt += HJ_TT; } if (H.tries >= HJ_MAXT) H.tt = NOW();
+  return H;
+}
+function hjStation(i) {
+  const sz = Math.floor(i / HJ_N), k = i % HJ_N, foes = HJ_FOE[hjEra()], kind = k === HJ_N - 1 ? 'csata' : ['csata', 'szeker', 'parbaj'][k % 3];
+  return { i, sz, k, kind, foe: foes[(i + sz) % foes.length], need: 4 + i * 1.2, cost: { penz: amt(60 + i * 20), termeny: amt(30 + i * 10) } };
+}
+function hjRew(st) { const r = { penz: amt(40 + st.i * 12) }; if (RES.hirnev) r.hirnev = 1 + Math.floor(st.sz / 2); if (st.k % 4 === 3) r.tudas = 1 + (st.sz > 1 ? 1 : 0); if (st.k === HJ_N - 1) r.penz += amt(200 + st.sz * 100); return r; }
+function hjPower() { return Math.max(1, myDef()) + (SOC.ally ? allyDef() : 0) + 4 + hjEra() * 2; }
+function hjChance(st) { return Math.max(0.3, Math.min(0.95, 0.5 + (hjPower() - st.need) / (st.need * 1.6))); }
+function hjWin(st, how) {
+  const H = hjState(), r = hjRew(st); giveR(r); H.st = st.i + 1; SOC.stats.hj = (SOC.stats.hj || 0) + 1;
+  let extra = ''; if (st.k === HJ_N - 1 && typeof window.gbBonusTr === 'function') { const g = window.gbBonusTr(); if (g) extra = ' ' + TF('A zsákmányban egy tervrajz is volt: {0}', g); }
+  log(TF('Hadjárat: {0}. {1}', how, resTxt(r)) + extra, 'portya'); toast(TF('{0}! {1}', how, resTxt(r)) + extra); sfxCollect(); commit(); showHj();
+}
+function hjLose(txt) { const H = hjState(); H.tries--; if (H.tries === HJ_MAXT - 1) H.tt = NOW(); log(TF('Hadjárat: {0}', txt), 'portya'); toast(txt); commit(); showHj(); }
+function hjAct(kind) {
+  const H = hjState(); if (hjRest() || H.st >= HJ_N * 4) return; const st = hjStation(H.st);
+  if (kind === 'szeker') { if (!canPay(st.cost)) return; pay(st.cost); hjWin(st, TF('Utánpótlás érkezett, a {0} visszavonult', st.foe)); return; }
+  if (H.tries <= 0) { toast(T('Elfáradt a sereg. Pár óra múlva újra próbálhatod.')); return; }
+  if (kind === 'csata') { if (Math.random() < hjChance(st)) hjWin(st, TF('Legyőzted: {0}', st.foe)); else hjLose(TF('{0} most visszavert. Ha erősebb a védelmed, könnyebb lesz.', st.foe)); return; }
+  if (kind === 'parbaj') { hjDuel(st); }
+}
+function hjDuel(st) {
+  const R6 = () => 1 + Math.floor(Math.random() * 6); let me = 0, him = 0, round = 0; const rows = [];
+  const draw = () => modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('PÁRVIADAL')}</span><h2>${TF('A te bajnokod {0} bajnoka ellen', st.foe)}</h2>
+    <p>${T('Három kör, két kockával. Akinek nagyobb a dobása, viszi a kört. A te bajnokod a védelmedből kap egy kis előnyt.')}</p>
+    <div style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:17px">${rows.map(r => `<div>${r}</div>`).join('')}</div>
+    <p style="font-size:20px;font-weight:900">${TF('Állás {0} : {1}', me, him)}</p>
+    <div class="row">${round < 3 && me < 2 && him < 2 ? btn(T('Dobás!'), 'id="hjRoll"', true, 'coral') : btn(T('Tovább'), 'id="hjEnd"', true, 'coral')}</div></div>`, '', 'soc');
+  const wireD = () => { if ($('hjRoll')) $('hjRoll').onclick = () => { const bonus = Math.min(3, Math.floor(hjPower() / Math.max(4, st.need) * 1.5)), a = R6() + R6() + bonus, b = R6() + R6() + Math.floor(st.sz / 2) + 1; round++;
+      if (a > b) me++; else if (b > a) him++; rows.push(`${TF('{0}. kör', round)}: ${TF('te {0}', a)}${bonus ? ` <small>(+${bonus})</small>` : ''} · ${TF('ő {0}', b)} ${a > b ? '✅' : b > a ? '❌' : '🤝'}`); draw(); wireD(); };
+    if ($('hjEnd')) $('hjEnd').onclick = () => { if (me > him) hjWin(st, TF('Megnyerted a párviadalt {0} ellen', st.foe)); else hjLose(me === him ? T('Döntetlen lett a párviadal, a bajnokok kezet fogtak és hazamentek.') : TF('{0} bajnoka nyert. Legközelebb több szerencse!', st.foe)); }; };
+  draw(); wireD();
+}
+function hjCard() {
+  const H = hjState(), done = H.st >= HJ_N * 4, team = H.st + (SOC.ally ? hjBots(H.wk) : 0);
+  return `<div class="store-row" style="gap:12px;background:linear-gradient(90deg,rgba(122,46,26,.14),rgba(255,248,232,.6))"><span style="font-size:40px">⚔️</span><div class="grow"><b>${T('Heti hadjárat')}</b><br><span style="font-size:13px">${hjRest() ? T('Vasárnap pihen a sereg. Hétfőn új hadjárat indul.') : done ? T('Mind a négy szakaszt bevetted. Szép munka!') : TF('{0}. állomás a 32-ből · {1} próbálkozás', H.st + 1, H.tries)}${SOC.ally ? ' · ' + TF('a szövetség eddig {0} állomást vett be', team) : ''}</span></div>${btn(T('Megnyitom'), 'id="hjOpen"', true, 'coral', 'portya')}</div>`;
+}
+function showHj() {
+  const H = hjState(), cur = H.st, sz = Math.min(3, Math.floor(cur / HJ_N)), st = cur < HJ_N * 4 ? hjStation(cur) : null, rest = hjRest();
+  const team = H.st + (SOC.ally ? hjBots(H.wk) : 0), tier = team >= 100 ? 3 : team >= 60 ? 2 : team >= 30 ? 1 : 0;
+  const nextT = H.tries < HJ_MAXT ? remain(H.tt + HJ_TT) : '';
+  const path = Array.from({ length: HJ_N }, (_, k) => { const i = sz * HJ_N + k, s = hjStation(i); const c = i < cur ? 'done' : i === cur ? 'cur' : 'lock';
+    return `<div class="hjn ${c}" title="${esc(s.foe)}">${i < cur ? '✓' : { csata: '⚔️', szeker: '🛒', parbaj: '🎲' }[s.kind]}</div>`; }).join('<i class="hjl"></i>');
+  let act = '';
+  if (rest) act = `<p><b>${T('Vasárnap pihen a sereg.')}</b> ${T('Hétfőn új hadjárat indul, és akkor kapjátok meg a közös jutalmat is.')}</p>`;
+  else if (!st) act = `<p><b>${T('Mind a 32 állomást bevetted ezen a héten!')}</b> ${T('Hétfőn új hadjárat indul.')}</p>`;
+  else { const ch = Math.round(hjChance(st) * 100), r = hjRew(st);
+    act = `<div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px"><b style="font-size:18px">${TF('{0}. állomás · {1}', cur + 1, st.foe)}</b>
+      <span>${st.kind === 'csata' ? TF('Csata. A sereged ereje {0}, az esélyed kb. {1}%. Ha elveszted, egy próbálkozás elmegy, de mást nem veszítesz.', hjPower(), ch) : st.kind === 'szeker' ? TF('Ide nem kard kell. Ha utánpótlást küldesz ({0}), az ellenfél harc nélkül visszavonul.', resTxt(st.cost)) : T('Párviadal. A két sereg bajnoka megküzd egymással, három kör kockadobással.')}</span>
+      <span style="font-size:13px">${TF('Jutalom: {0}', resTxt(r))}${st.k === HJ_N - 1 ? ' · ' + T('és egy tervrajz') : ''}</span>
+      <div>${st.kind === 'szeker' ? btn(T('Utánpótlást küldök'), 'data-hj="szeker"', canPay(st.cost), 'coral') : btn(st.kind === 'csata' ? T('Rohamra!') : T('Kiállok'), `data-hj="${st.kind}"`, H.tries > 0, 'coral', 'portya')}</div></div>`; }
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('HETI HADJÁRAT')}</span><h2>${TF('{0}. szakasz · {1}', sz + 1, T(HJ_SZAK[sz]))}</h2>
+    <p style="font-size:14px">${T('Hétfőtől szombatig nyitva, minden héten új. Négy szakasz, mindegyikben nyolc állomás. Nem kell mindennap jönnöd, a próbálkozások maguktól visszatöltődnek.')}</p>
+    <div class="hjpath">${path}</div>
+    <p style="font-weight:800">${TF('Próbálkozás {0} / {1}', H.tries, HJ_MAXT)}${nextT ? ' · ' + TF('a következő {0} múlva', nextT) : ''}</p>
+    ${act}
+    ${SOC.ally ? `<div class="store-row" style="flex-direction:column;align-items:stretch"><b>${TF('A szövetség ezen a héten: {0} állomás', team)}</b><div style="height:10px;border-radius:6px;background:rgba(90,55,25,.15);margin:6px 0"><div style="height:100%;width:${Math.min(100, team)}%;border-radius:6px;background:var(--ochre,#C98B2B)"></div></div><span style="font-size:13px">${T('Közös jutalom a hét végén: 30 állomástól bronz, 60-tól ezüst, 100-tól arany, tervrajzzal.')} ${tier ? TF('Most a {0} szintnél tartotok.', [T('bronz'), T('ezüst'), T('arany')][tier - 1]) : ''}</span></div>` : `<p style="font-size:13px">${T('Egyedül is mehetsz, de a hét végi közös jutalom csak szövetségben jár.')}</p>`}
+    </div>`, '', 'soc');
+  document.querySelectorAll('[data-hj]').forEach(b => b.onclick = () => hjAct(b.dataset.hj));
+}
+{ const _ah = allyHTML; allyHTML = function () { return hjCard() + _ah.apply(this, arguments); }; }
+document.addEventListener('click', e => { const t = e.target && e.target.closest && e.target.closest('#hjOpen'); if (!t) return; e.stopPropagation(); showHj(); }, true);
+{ const st = document.createElement('style'); st.textContent = '.hjpath{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:10px 0}.hjn{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;background:rgba(90,55,25,.12);box-shadow:inset 0 0 0 2px rgba(90,55,25,.25)}.hjn.done{background:#5E8C3A;color:#fff}.hjn.cur{background:#FFE7A8;box-shadow:inset 0 0 0 3px #C9893A;animation:hjP 1.2s infinite}.hjn.lock{opacity:.5}.hjl{width:10px;height:3px;background:rgba(90,55,25,.3);border-radius:2px}@keyframes hjP{50%{transform:scale(1.1)}}'; document.head.appendChild(st); }
 // a Beállítások hibajelentés gombja is a visszajelzés ablakot nyitja, ahol a hiba már benne van
 document.addEventListener('click', e => { const t = e.target && e.target.closest && e.target.closest('#sReport'); if (!t) return; e.stopPropagation(); e.preventDefault(); try { closeModal(); } catch (x) {} showFeedback(); }, true);
 })();
