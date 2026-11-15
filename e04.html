@@ -6665,6 +6665,128 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   document.head.appendChild(st);
 })();
 
+// ---------- Kun telep: külön térkép a kunoknak, Kun Erzsébet kérései, a végén Kunszállás a fővárosba ----------
+(function kunTelep() {
+  if (typeof DEF === 'undefined') return;
+  if (!DEF.kunszallas) DEF.kunszallas = { name: 'Kunszállás', size: 3, img: 'e04_kunszallas', cat: 'hang', cost: {}, hang: 10, prod: { penz: 300 }, time: 30 * 60, bt: 60, road: true, old: 1, unique: true,
+    desc: 'Jurta és nádtetős ház egymás mellett, egy büszke paripával. A kunok hálája, amiért befogadtad őket. Hangulatot ad, és a kun kereskedők pénzt is hoznak.' };
+  if (typeof CUR_ERA !== 'number' || CUR_ERA !== 4) return;
+  const MIN = 60, V = '?v=2611151';
+  const B = {
+    kansator: { n: 'A kán nagy sátra', idx: 0, pop: 6, d: 'Itt lakik a kán családja. Innen indul minden, ami a telepen történik.' },
+    jurta: { n: 'Családi jurta', idx: 1, pop: 5, cost: { penz: 300, fa: 20 }, bt: 10 * MIN, d: 'Nemezből készült kerek sátor. Öt kun lakik benne, meg egy kutya, aki nem dolgozik.' },
+    nyerges: { n: 'Nyerges műhely', idx: 3, work: 4, cost: { penz: 600, fa: 40, termeny: 60 }, bt: 30 * MIN, prod: 'nyereg', per: 45 * MIN, cap: 8, d: 'A kun nyereg könnyű és erős. A magyar lovasok is szívesen vették.' },
+    ijasz: { n: 'Íjász sátor', idx: 4, work: 4, cost: { penz: 500, fa: 40 }, bt: 30 * MIN, prod: 'nyil', per: 30 * MIN, cap: 10, d: 'Visszacsapó íjak és tollas nyílvesszők. A kun íjászok vágtából is célba találtak.' },
+    menes: { n: 'Ménes', idx: 2, work: 3, cost: { penz: 800, termeny: 150 }, bt: 45 * MIN, d: 'Szívós pusztai lovak. Ahol jó a ló, ott a nyerges is gyorsabban dolgozik, a nyergek 50%-kal gyorsabban készülnek.' },
+    kunhalom: { n: 'Kunhalom', idx: 5, cost: { penz: 400 }, bt: 20 * MIN, d: 'Ősi halom kőbálvánnyal. A kunok tisztelik az őseiket, és ettől jobb kedvvel dolgoznak, minden műhely 20%-kal gyorsabb.' },
+    vasar: { n: 'Kun vásártér', idx: 6, work: 3, cost: { penz: 900, fa: 60 }, bt: 45 * MIN, d: 'Nyereg, nemez, sajt, kumisz. Itt a kun áruért pénzt és tudást kapsz a városodba.' },
+    gemeskut: { n: 'Gémeskút', idx: 7, cost: { penz: 200, fa: 10 }, bt: 10 * MIN, d: 'Az Alföld jelképe. Víz kell embernek, lónak egyaránt, minden műhely 10%-kal gyorsabb.' }
+  };
+  const SLOTS = [['kansator', 50, 56, 22], ['jurta', 31, 41, 13], ['jurta', 69, 39, 13], ['jurta', 82, 58, 13], ['nyerges', 27, 68, 16], ['ijasz', 43, 82, 15], ['menes', 64, 86, 19], ['vasar', 48, 33, 16], ['kunhalom', 15, 52, 12], ['gemeskut', 80, 74, 9]];
+  const INV = { nyereg: ['Nyereg', 1], nyil: ['Nyílvessző', 2] };
+  const Q = [
+    { t: 'Kunok vagyunk, a pusztáról jöttünk. A király földet adott nekünk, de jurta nélkül nehéz. Segítesz felállítani egyet?', goal: 'Építs egy családi jurtát.', ok: K => cnt(K, 'jurta') >= 1, rew: { penz: 200 }, mood: 0 },
+    { t: 'A mi nyergeink a legjobbak a világon. Na jó, a pusztán biztosan. Állítsunk fel egy nyerges műhelyt!', goal: 'Építs nyerges műhelyt, és gyűjts be 3 nyerget.', ok: K => (K.got.nyereg || 0) >= 3, rew: { penz: 300, fa: 30 }, mood: 1 },
+    { t: 'Nyereg már van, de mit ér a lovas íj nélkül? Az öreg Toktamis tud a legjobb íjakat faragni.', goal: 'Építs íjász sátrat, és gyűjts be 6 nyílvesszőt.', ok: K => (K.got.nyil || 0) >= 6, rew: { penz: 300, termeny: 100 }, mood: 0 },
+    { t: 'Apám mindig mondta, hogy a kun ember két dologra büszke, a lovaira és az őseire. Kellene egy ménes, és egy halom az őseinknek.', goal: 'Építs ménest és kunhalmot.', ok: K => cnt(K, 'menes') >= 1 && cnt(K, 'kunhalom') >= 1, rew: { tudas: 2 }, mood: 2 },
+    { t: 'A magyarok kíváncsiak ránk, de még jobban az árunkra. Nyissunk vásárt!', goal: 'Építs vásárteret, és köss rajta egy cserét.', ok: K => (K.trades || 0) >= 1, rew: { penz: 500 }, mood: 3 },
+    { t: 'Béla király sereget gyűjt, ha a tatár visszatér. Mi, kunok, megmutatjuk, hogy hűségesek vagyunk. Küldjünk neki felszerelést!', goal: 'Küldj a királynak 10 nyerget és 20 nyílvesszőt.', give: { nyereg: 10, nyil: 20 }, rew: { penz: 800, tudas: 3 }, mood: 1 }
+  ];
+  const DONE_T = 'A király megköszönte, és a kunok a városodban is szállást kaptak. Én pedig... nos, azt beszélik, egyszer még királyné lehetek. Képzeld!';
+  function K() { if (!S.kun) S.kun = { b: {}, inv: { nyereg: 0, nyil: 0 }, got: {}, q: 0, trades: 0, td: '', tn: 0 }; const k = S.kun; if (!k.b[0]) k.b[0] = { t: 'kansator', at: 0, done: 0 }; return k; }
+  const cnt = (k, t) => Object.values(k.b).filter(x => x.t === t && S.gt >= x.done).length;
+  const ready = x => S.gt >= x.done;
+  const pop = k => Object.values(k.b).filter(ready).reduce((s, x) => s + (B[x.t].pop || 0), 0);
+  const work = k => Object.values(k.b).reduce((s, x) => s + (B[x.t].work || 0), 0);
+  const mul = (k, t) => 1 + (cnt(k, 'kunhalom') ? 0.2 : 0) + (cnt(k, 'gemeskut') ? 0.1 : 0) + (t === 'nyerges' && cnt(k, 'menes') ? 0.5 : 0);
+  function made(k, x) { const d = B[x.t]; if (!d.prod || !ready(x)) return 0; const per = d.per / mul(k, x.t); return Math.min(d.cap, Math.floor((S.gt - x.at) / per)); }
+  function collect(k, s) { const x = k.b[s], d = B[x.t], n = made(k, x); if (!n) return 0; const per = d.per / mul(k, x.t);
+    x.at = n >= d.cap ? S.gt : x.at + n * per; k.inv[d.prod] = (k.inv[d.prod] || 0) + n; k.got[d.prod] = (k.got[d.prod] || 0) + n; save(); return n; }
+  const sprite = (idx) => `background-image:url(img/e04_kun_epuletek.png${V});background-size:400% 200%;background-position:${(idx % 4) * 100 / 3}% ${idx < 4 ? 0 : 100}%`;
+  const ico = (n, sz) => `<i class="kunico" style="width:${sz || 26}px;height:${sz || 26}px;background-position:${n * 50}% 0"></i>`;
+  const left = s => { s = Math.max(0, Math.ceil(s)); const h = Math.floor(s / 3600), m = Math.ceil((s % 3600) / 60); return h ? trf('{0} óra {1} perc', h, m) : trf('{0} perc', Math.max(1, m)); };
+  let sel = null, timer = null;
+  function costTxt(c) { return Object.entries(c).map(([k, v]) => `${v} ${RES[k] ? RES[k].name : k}`).join(', '); }
+  function questHTML(k) {
+    const done = k.q >= Q.length, q = Q[Math.min(k.q, Q.length - 1)], mood = done ? 3 : q.mood;
+    const okNow = !done && (q.give ? Object.entries(q.give).every(([r, n]) => (k.inv[r] || 0) >= n) : q.ok(k));
+    return `<div class="kunq"><i class="kunface" style="background-position:${mood * 100 / 3}% 0"></i><div class="bub"><b>${tr('Kun Erzsébet')}</b><p>${tr(done ? DONE_T : q.t)}</p>${done ? '' : `<p class="goal">${tr(q.goal)} <small>(${k.q + 1}/${Q.length})</small></p><p class="rw">${tr('Jutalom')} ${costTxt(q.rew)}${k.q === Q.length - 1 ? ' + ' + tr('a Kunszállás a városodba') : ''}</p>
+      ${okNow ? `<button class="btn coral" type="button" id="kunQ">${q.give ? tr('Elküldöm a királynak') : tr('Kész, kérem a jutalmat')}</button>` : ''}`}
+      ${k.gift === 1 ? `<button class="btn coral" type="button" id="kunGift">${tr('Lerakom a Kunszállást a városban')}</button>` : ''}</div></div>`;
+  }
+  function slotHTML(k, s) {
+    const [t, x, y, w] = SLOTS[s], b = k.b[s], d = B[t];
+    const st = `left:${x - w / 2}%;bottom:${100 - y}%;width:${w}%;z-index:${Math.round(y)}`;
+    if (!b) return `<button type="button" class="kuns empty${sel === s ? ' on' : ''}" data-s="${s}" style="left:${x - w / 2}%;bottom:${100 - y}%;width:${w}%;z-index:${Math.round(y)}"><span>+</span><small>${tr(d.n)}</small></button>`;
+    const n = made(k, b), bld = !ready(b);
+    return `<button type="button" class="kuns${bld ? ' bld' : ''}${sel === s ? ' on' : ''}" data-s="${s}" style="${st}"><i class="spr" style="${sprite(d.idx)}"></i>${n ? `<b class="kunbad">${ico(INV[d.prod][1], 20)}${n}</b>` : ''}${bld ? `<b class="kunbad t">⏳ ${left(b.done - S.gt)}</b>` : ''}</button>`;
+  }
+  function detailHTML(k) {
+    if (sel == null) return `<p class="kunhint">${tr('Koppints egy épületre vagy egy üres helyre. A kész nyergeket és nyílvesszőket koppintással gyűjtöd be.')}</p>`;
+    const [t] = SLOTS[sel], b = k.b[sel], d = B[t];
+    let h = `<div class="kundet"><i class="spr" style="${sprite(d.idx)}"></i><div class="grow"><b>${tr(d.n)}</b><p>${tr(d.d)}</p>`;
+    if (!b) { const free = pop(k) - work(k), needW = (d.work || 0) > free; const can = canPay(d.cost) && !needW;
+      h += `<p>${tr('Ára')} ${costTxt(d.cost)}${d.work ? ' · ' + trf('{0} kun dolgozik benne', d.work) : ''}${d.pop ? ' · ' + trf('{0} kun lakik benne', d.pop) : ''} · ${trf('{0} alatt épül fel', left(d.bt))}</p>${needW ? `<p class="warn">${tr('Nincs elég szabad kun a munkához. Építs még jurtát!')}</p>` : ''}
+        <button class="btn coral" type="button" id="kunBuild" ${can ? '' : 'disabled'}>${tr('Felépítem')}</button>`; }
+    else if (!ready(b)) h += `<p>${trf('Még {0}, és kész.', left(b.done - S.gt))}</p>`;
+    else if (d.prod) { const n = made(k, b), per = d.per / mul(k, t); h += `<p>${trf('Óránként kb. {0} darab. Legfeljebb {1} vár begyűjtésre.', (3600 / per).toFixed(1).replace('.', ','), d.cap)}</p>${n ? `<button class="btn coral" type="button" id="kunCol">${trf('Begyűjtök {0} darabot', n)}</button>` : `<p>${trf('A következő {0} múlva lesz kész.', left(per - (S.gt - b.at) % per))}</p>`}`; }
+    else if (t === 'vasar') { const today = new Date().toDateString(); if (k.td !== today) { k.td = today; k.tn = 0; } const can = k.inv.nyereg >= 2 && k.inv.nyil >= 3 && k.tn < 5;
+      h += `<p>${trf('2 nyereg és 3 nyílvessző 400 Pénzt és 1 Tudást ér a városodban. Ma még {0} cserét köthetsz.', 5 - k.tn)}</p><button class="btn coral" type="button" id="kunTrade" ${can ? '' : 'disabled'}>${tr('Cserélek')}</button>`; }
+    return h + `</div></div>`;
+  }
+  function render() {
+    const k = K(), w = $('kunWrap'); if (!w) { clearInterval(timer); return; }
+    w.innerHTML = `${questHTML(k)}
+      <div class="kuninv"><span>${ico(1)} <b>${k.inv.nyereg || 0}</b> ${tr('nyereg')}</span><span>${ico(2)} <b>${k.inv.nyil || 0}</b> ${tr('nyílvessző')}</span><span>👥 <b>${work(k)} / ${pop(k)}</b> ${tr('kun dolgozik')}</span></div>
+      <div class="kunscroll"><div class="kunmap">${SLOTS.map((_, s) => slotHTML(k, s)).join('')}</div></div>${detailHTML(k)}`;
+    w.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const s = +b.dataset.s; const x = k.b[s]; if (x && collect(k, s)) { sel = s; render(); return; } sel = s; render(); });
+    const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
+    on('kunBuild', () => { const d = B[SLOTS[sel][0]]; if (!canPay(d.cost)) return; pay(d.cost); k.b[sel] = { t: SLOTS[sel][0], at: S.gt + d.bt, done: S.gt + d.bt }; save(); hud(); render(); });
+    on('kunCol', () => { collect(k, sel); render(); });
+    on('kunTrade', () => { k.inv.nyereg -= 2; k.inv.nyil -= 3; k.tn++; k.trades = (k.trades || 0) + 1; give({ penz: 400, tudas: 1 }); save(); hud(); toast(tr('Jó vásár volt! +400 Pénz, +1 Tudás.')); render(); });
+    on('kunQ', () => { const q = Q[k.q]; if (q.give) Object.entries(q.give).forEach(([r, n]) => k.inv[r] -= n); give(q.rew); k.q++; if (k.q >= Q.length) k.gift = 1; save(); hud(); toast(trf('Kun Erzsébet hálás! {0}', costTxt(q.rew))); render(); });
+    on('kunGift', () => { closeModal(); startBuild('kunszallas'); });
+  }
+  function open() {
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KUN TELEP · NAGYKUNSÁG')}</span><h2>${tr('A kunok szállása')}</h2><div id="kunWrap"></div></div>`, '', 'kunmodal');
+    render(); clearInterval(timer); timer = setInterval(() => { if (!$('kunWrap')) { clearInterval(timer); return; } if (!document.querySelector('#kunWrap button:hover')) render(); }, 5000);
+  }
+  window.kunOpen = open;
+  // a Kunszállás lerakása után a gomb eltűnik
+  setInterval(() => { try { const k = S.kun; if (k && k.gift === 1 && S.buildings.some(b => b.type === 'kunszallas')) { k.gift = 2; save(); } } catch (e) {} }, 2000);
+  // gomb a bal oldali sávban
+  const tb = document.createElement('button'); tb.id = 'btnKun'; tb.type = 'button';
+  tb.innerHTML = `<span class="newdot" hidden>!</span>${ico(0, 28)}<span>${tr('Kun telep')}</span>`; tb.onclick = () => { try { hideInfo(); } catch (e) {} open(); };
+  ((document.getElementById('btnDaily') || {}).parentNode || document.body).appendChild(tb);
+  setInterval(() => { try {
+    const refs = ['btnTabla', 'btnGb', 'btnMini', 'btnMiniE', 'btnDaily'].map(id => document.getElementById(id)).filter(x => x && !x.hidden && x.offsetParent);
+    const ref = refs.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)[0]; tb.hidden = !ref; if (!ref) return;
+    const r = ref.getBoundingClientRect(), pr = tb.offsetParent ? tb.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
+    tb.style.top = (r.bottom + 10 - pr.top) + 'px'; tb.style.left = (r.left - pr.left) + 'px';
+    if (!tb.dataset.cls) { const m = document.getElementById('btnMini') || document.getElementById('btnMiniE'); if (m) { tb.className = m.className; tb.dataset.cls = 1; } }
+    const k = K(); tb.querySelector('.newdot').hidden = !(Object.entries(k.b).some(([s, x]) => made(k, x) > 0) || (k.q < Q.length && !Q[k.q].give && Q[k.q].ok(k)) || k.gift === 1);
+  } catch (e) {} }, 800);
+  const st = document.createElement('style');
+  st.textContent = `#btnKun{position:absolute!important;z-index:7;width:auto;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3)}#btnKun:not(.wood){background:rgba(58,36,16,.88)}#btnKun .newdot{position:absolute;top:-9px;right:-12px}
+  .kunico{display:inline-block;vertical-align:middle;background:url(img/e04_kun_ikonok.png${V}) 0 0/300% 100% no-repeat}
+  .kunmodal{max-width:min(1100px,calc(100vw - 24px))!important}.kunmodal .inner{min-width:0}
+  #kunWrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .kunq{display:flex;gap:12px;align-items:flex-end}.kunface{flex:none;width:110px;height:117px;background:url(img/e04_kunerzsebet.png${V}) 0 0/400% 100% no-repeat}
+  .kunq .bub{flex:1;min-width:0;background:rgba(255,248,232,.85);border-radius:14px;padding:10px 14px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25)}.kunq .bub p{margin:4px 0}.kunq .goal{font-weight:900}.kunq .rw{font-size:13px;opacity:.8}.kunq .btn{margin-top:4px;margin-right:6px}
+  .kuninv{display:flex;flex-wrap:wrap;gap:8px 18px;font-weight:700}.kuninv span{display:inline-flex;align-items:center;gap:6px}
+  .kunscroll{overflow-x:auto;border-radius:16px;box-shadow:inset 0 0 0 3px rgba(74,42,16,.4)}
+  .kunmap{position:relative;min-width:620px;aspect-ratio:2/1;background:url(img/e04_kun_terkep.jpg${V}) center/cover}
+  .kuns{position:absolute;aspect-ratio:1;border:0;background:none;padding:0;cursor:pointer}.kuns .spr{position:absolute;inset:0;filter:drop-shadow(0 4px 3px rgba(0,0,0,.3))}
+  .kuns.bld .spr{filter:grayscale(1) brightness(1.1) opacity(.85)}.kuns.on .spr{filter:drop-shadow(0 0 6px #FFE06A) drop-shadow(0 0 2px #FFE06A)}
+  .kuns.empty{aspect-ratio:2/1;display:flex;flex-direction:column;align-items:center;justify-content:center;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:rgba(255,248,220,.35);outline:none}
+  .kuns.empty span{font:900 22px Nunito,sans-serif;color:#6A4520;line-height:1}.kuns.empty small{font-weight:800;font-size:10px;color:#4A2A10;text-align:center;line-height:1.1;padding:0 18%}.kuns.empty.on,.kuns.empty:hover{background:rgba(255,236,150,.7)}
+  .kunbad{position:absolute;left:50%;top:6%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:3px;padding:2px 8px 2px 4px;border-radius:999px;background:#FFF4DF;color:#3A2410;font:900 13px Nunito,sans-serif;box-shadow:0 2px 0 rgba(0,0,0,.25);white-space:nowrap;animation:kunB 1.2s infinite}.kunbad.t{animation:none;font-size:11px;padding:2px 8px}
+  @keyframes kunB{50%{transform:translateX(-50%) translateY(-4px)}}
+  .kundet{display:flex;gap:12px;align-items:flex-start;background:rgba(255,248,232,.7);border-radius:14px;padding:10px 12px}.kundet .spr{flex:none;width:90px;height:90px}.kundet p{margin:4px 0}.kundet .warn{color:#B8402C;font-weight:800}.kunhint{font-weight:700;opacity:.8;margin:0}
+  @media (max-width:560px){.kunface{width:76px;height:81px}}`;
+  document.head.appendChild(st);
+})();
+
 // HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
 (function () {
   if (/github\.io$/.test(location.hostname)) return;
