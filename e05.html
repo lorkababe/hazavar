@@ -6518,7 +6518,7 @@ function rearUI() {
 })();
 
 // eseményképek: mindig a teljes kép látszik, vágás és elmosott szél nélkül
-(function () { const st = document.createElement('style'); st.textContent = '.modal .hero{aspect-ratio:auto!important;width:100%!important;height:auto!important;max-height:min(38vh,420px)!important;object-fit:contain!important;background:rgba(58,36,16,.12);border-radius:14px}.herow{height:auto!important;aspect-ratio:auto!important;background:none!important}.herow .bg{display:none!important}.herow .fg{height:auto!important;filter:none!important}'; document.head.appendChild(st); })();
+(function () { const st = document.createElement('style'); st.textContent = '.modal .hero{aspect-ratio:auto!important;width:100%!important;height:auto!important;max-height:min(38vh,420px)!important;object-fit:contain!important;background:transparent!important;border-radius:0!important;position:relative;z-index:1}.herow{height:auto!important;aspect-ratio:auto!important;background:none!important}.herow .bg{display:none!important}.herow .fg{height:auto!important;filter:none!important}'; document.head.appendChild(st); })();
 
 // az épület ablaka: tömörebb, a Hiba? gomb alá nem csúszik be, és a térkép nem kicsinyíthető a széle fölé
 (function () {
@@ -6543,6 +6543,20 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
 
 // a beírós mezők szövege mindig sötét, jól olvasható legyen
 (function () { const st = document.createElement('style'); st.textContent = 'input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{color:#2E1C0C!important;-webkit-text-fill-color:#2E1C0C;caret-color:#2E1C0C;background-color:#FFF8EA!important}input::placeholder,textarea::placeholder{color:#8A6A48!important;-webkit-text-fill-color:#8A6A48;opacity:1}'; document.head.appendChild(st); })();
+
+// a nyitókép két oldalán ne maradjon üres sáv: ugyanaz a kép elmosva tölti ki a hátteret
+(function () {
+  const st = document.createElement('style');
+  st.textContent = '.herobox{position:relative;flex:none;overflow:hidden;border-radius:24px 30px 0 0;background:#3A2410}.herobox::before{content:"";position:absolute;inset:-30px;background:var(--hb) center/cover no-repeat;filter:blur(22px) saturate(1.1) brightness(.8)}';
+  document.head.appendChild(st);
+  const wrap = () => document.querySelectorAll('#modalRoot img.hero').forEach(im => {
+    if (im.parentElement.classList.contains('herobox')) return;
+    const b = document.createElement('div'); b.className = 'herobox'; b.style.setProperty('--hb', 'url("' + im.getAttribute('src') + '")');
+    im.parentNode.insertBefore(b, im); b.appendChild(im);
+  });
+  const go = () => { const r = document.getElementById('modalRoot'); if (!r) return setTimeout(go, 300); new MutationObserver(wrap).observe(r, { childList: true, subtree: true }); wrap(); };
+  go();
+})();
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {
