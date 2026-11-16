@@ -3920,7 +3920,7 @@ function rearUI() {
 })();
 
 // eseményképek: mindig a teljes kép látszik, vágás és elmosott szél nélkül
-(function () { const st = document.createElement('style'); st.textContent = '.modal .hero{aspect-ratio:auto!important;height:auto!important;max-height:none!important;object-fit:contain!important}.herow{height:auto!important;aspect-ratio:auto!important;background:none!important}.herow .bg{display:none!important}.herow .fg{height:auto!important;filter:none!important}'; document.head.appendChild(st); })();
+(function () { const st = document.createElement('style'); st.textContent = '.modal .hero{aspect-ratio:auto!important;width:100%!important;height:auto!important;max-height:min(38vh,420px)!important;object-fit:contain!important;background:rgba(58,36,16,.12);border-radius:14px}.herow{height:auto!important;aspect-ratio:auto!important;background:none!important}.herow .bg{display:none!important}.herow .fg{height:auto!important;filter:none!important}'; document.head.appendChild(st); })();
 
 // az épület ablaka: tömörebb, a Hiba? gomb alá nem csúszik be, és a térkép nem kicsinyíthető a széle fölé
 (function () {
@@ -3942,6 +3942,9 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
 } } catch (e) {}
 
 (function () { const st = document.createElement('style'); st.textContent = '#info.panel::after{display:none}#info.panel{outline:2px dashed rgba(110,68,34,.55);outline-offset:-8px}'; document.head.appendChild(st); })();
+
+// a beírós mezők szövege mindig sötét, jól olvasható legyen
+(function () { const st = document.createElement('style'); st.textContent = 'input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{color:#2E1C0C!important;-webkit-text-fill-color:#2E1C0C;caret-color:#2E1C0C;background-color:#FFF8EA!important}input::placeholder,textarea::placeholder{color:#8A6A48!important;-webkit-text-fill-color:#8A6A48;opacity:1}'; document.head.appendChild(st); })();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
@@ -4625,10 +4628,9 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
   function draw() {
     const w = $('tbWrap'); if (!w || !G) return;
     const pot = Object.entries(G.pot).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${RES[k].name}`).join(', ');
-    w.innerHTML = `<div class="tbmain"><div class="tbarena">${jailHTML('a')}<div class="tbboard">${Array.from({ length: N }, (_, i) => cellHTML(i)).join('')}${centerHTML()}${toksHTML()}</div>${jailHTML('p')}</div>
-      <div class="tbside"><div class="tbtop"><span>${trf('{0}. kör / {1}', Math.min(G.round, ROUNDS), ROUNDS)}</span>${DEV ? `<button class="btn ghost" type="button" id="tbFast">${fast ? tr('Normál tempó') : tr('Gyorsítás')}</button>` : ''}</div>
-      ${scoreHTML('a')}${scoreHTML('p')}<div class="tbpot">💰 ${tr('Zsák')} <b>${pot || tr('üres')}</b></div>
-      <div class="tblog">${G.log.map(l => `<p>${l}</p>`).join('')}</div></div></div>`;
+    w.innerHTML = `<div class="tbtop"><span>${trf('{0}. kör / {1}', Math.min(G.round, ROUNDS), ROUNDS)}</span><span class="tbpot">💰 ${tr('Zsák')} <b>${pot || tr('üres')}</b></span>${DEV ? `<button class="btn ghost" type="button" id="tbFast">${fast ? tr('Normál tempó') : tr('Gyorsítás')}</button>` : ''}</div>
+      <div class="tbmain"><div class="tbside a">${scoreHTML('a')}${jailHTML('a')}</div><div class="tbarena"><div class="tbboard">${Array.from({ length: N }, (_, i) => cellHTML(i)).join('')}${centerHTML()}${toksHTML()}</div></div>
+      <div class="tbside p">${scoreHTML('p')}${jailHTML('p')}<div class="tblog">${G.log.map(l => `<p>${l}</p>`).join('')}</div></div></div>`;
     placeAll(); requestAnimationFrame(placeAll);
     w.querySelectorAll('[data-tbp]').forEach(b => { b.onclick = () => pMove(+b.dataset.tbp);
       b.onmouseenter = () => { if (G.phase !== 'pmove') return; const pc = G.p[+b.dataset.tbp]; const c = w.querySelector(`[data-c="${(pc.at + G.roll) % N}"]`); if (c && legal('p', pc, G.roll)) c.classList.add('tg'); };
@@ -4656,7 +4658,7 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
     $('tbGo').onclick = () => { if (!DEV) { d.played = 1; save(); } newGame(); open(); };
   }
   function open() {
-    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><div id="tbWrap"></div></div>`, '', 'tabla'); draw();
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(TM.game).toUpperCase()}</span><div id="tbWrap"></div></div>`, 'tbmodal-wide', 'tabla'); draw();
   }
   window.tablaOpen = start;
   // a Kalandok listájában is megjelenik
@@ -4713,10 +4715,12 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
   st.textContent = `#btnTabla{position:absolute!important;z-index:7;width:auto;height:44px;padding:0 14px 0 10px;display:flex;align-items:center;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3)}#btnTabla:not(.wood){background:rgba(58,36,16,.88)}#btnTabla .newdot{position:absolute;top:-9px;right:-12px}
   .tbinfo{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.75);box-shadow:inset 0 0 0 2px #E2B33C;margin:6px 0;flex-shrink:0}.tbinfo small{font-weight:700;color:var(--ink-soft)}
   #tbWrap{min-width:0}
-  .tbmain{display:flex;gap:16px;align-items:flex-start}
-  .tbarena{flex:none;width:min(100%,max(300px,calc(100vh - 250px)),620px);display:flex;flex-direction:column;gap:6px}
-  .tbside{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-  @media (max-width:760px){.tbmain{flex-direction:column;align-items:stretch}.tbarena{width:min(100%,max(300px,calc(100vh - 330px)));margin:0 auto}.tbside{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tbside .tbtop,.tbside .tbpot,.tbside .tblog{grid-column:1/-1}}
+  .tbmain{display:grid;grid-template-columns:minmax(150px,1fr) auto minmax(150px,1fr);gap:14px;align-items:start}
+  .tbarena{width:min(calc(100vw - 420px),calc(100vh - 170px),720px);min-width:300px}
+  .tbside{min-width:0;display:flex;flex-direction:column;gap:8px}.tbside .tbsc{flex-direction:column;text-align:center}.tbside .tbsc>div{align-items:center}.tbside .tbface{width:96px}.tbside .tbme{font-size:56px;width:auto}
+  .tbside .tbjail{flex-wrap:wrap;justify-content:center}
+  .modal.tbmodal-wide{width:min(1280px,100%)!important;max-width:none!important}
+  @media (max-width:820px){.tbmain{grid-template-columns:1fr}.tbarena{width:min(100%,calc(100vh - 330px));margin:0 auto;order:2}.tbside.a{order:1}.tbside.p{order:3}.tbside .tbsc{flex-direction:row;text-align:left}.tbside .tbsc>div{align-items:flex-start}.tbside .tbface{width:48px}.tbside .tbme{font-size:30px}}
   .tbtop{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-weight:900}.tbtop .btn{min-height:32px;padding:2px 12px;margin-left:auto}
   .tbsc{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:rgba(255,248,232,.7);box-shadow:inset 0 0 0 2px rgba(138,90,43,.2)}.tbsc.p{box-shadow:inset 0 0 0 2px #2C6FB0}.tbsc.a{box-shadow:inset 0 0 0 2px #B8402C}
   .tbsc>div{display:flex;flex-direction:column;min-width:0}.tbsc b{font-size:15px}.tbpts{font-weight:900;font-size:20px}.tbsc small{font-weight:700;opacity:.75}
@@ -4838,4 +4842,5 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
 /*SOCIAL-END*/
 })();
 </script>
+
 </body></html>
