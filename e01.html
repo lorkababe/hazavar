@@ -480,16 +480,16 @@ const DEF = {
 const CATS = [['all','Mind'],['telek','Terület'],['lak','Lakóház'],['term','Termelő'],['hang','Hangulat'],['ved','Védelem'],['ut','Ösvény']];
 
 const TECH = [
-  { id: 'nemez', name: 'Nemezkészítés', cost: { tudas: 3, penz: 40 }, req: [], unl: 'nagyjurta' },
-  { id: 'allat', name: 'Állattartás', cost: { tudas: 3, termeny: 40 }, req: [], unl: 'karam' },
-  { id: 'halasz', name: 'Halászat', cost: { tudas: 4, penz: 60 }, req: [], unl: 'halasz' },
-  { id: 'lo', name: 'Lótenyésztés', cost: { tudas: 5, penz: 100 }, req: ['allat'], unl: 'menes' },
-  { id: 'taltos', name: 'Táltoshit', cost: { tudas: 5, termeny: 80 }, req: [], unl: 'taltos' },
-  { id: 'faragas', name: 'Fafaragás', cost: { tudas: 6, termeny: 80 }, req: ['taltos'], unl: null, bonus: 'Az Életfa-oszlopok +4 Hangulatot adnak.' },
-  { id: 'nyereg', name: 'Nyeregkészítés', cost: { tudas: 6, penz: 100, kovako: 1 }, req: ['lo'], unl: 'nyerges' },
-  { id: 'orseg', name: 'Őrség', cost: { tudas: 6, penz: 120 }, req: ['nemez'], unl: 'orhely' },
-  { id: 'ijasz', name: 'Íjászat', cost: { tudas: 7, penz: 150, kovako: 2 }, req: ['lo'], unl: 'ijasz' },
-  { id: 'ver', name: 'Vérszerződés', cost: { tudas: 10, termeny: 150, kovako: 3 }, req: ['nyereg', 'ijasz', 'orseg'], key: true }
+  { id: 'nemez', name: 'Nemezkészítés', cost: { tudas: 4, penz: 50 }, req: [], unl: 'nagyjurta' },
+  { id: 'allat', name: 'Állattartás', cost: { tudas: 4, termeny: 50 }, req: [], unl: 'karam' },
+  { id: 'halasz', name: 'Halászat', cost: { tudas: 6, penz: 80 }, req: [], unl: 'halasz' },
+  { id: 'lo', name: 'Lótenyésztés', cost: { tudas: 8, penz: 130 }, req: ['allat'], unl: 'menes' },
+  { id: 'taltos', name: 'Táltoshit', cost: { tudas: 8, termeny: 100 }, req: [], unl: 'taltos' },
+  { id: 'faragas', name: 'Fafaragás', cost: { tudas: 9, termeny: 100 }, req: ['taltos'], unl: null, bonus: 'Az Életfa-oszlopok +4 Hangulatot adnak.' },
+  { id: 'nyereg', name: 'Nyeregkészítés', cost: { tudas: 9, penz: 130, kovako: 1 }, req: ['lo'], unl: 'nyerges' },
+  { id: 'orseg', name: 'Őrség', cost: { tudas: 9, penz: 160 }, req: ['nemez'], unl: 'orhely' },
+  { id: 'ijasz', name: 'Íjászat', cost: { tudas: 10, penz: 200, kovako: 2 }, req: ['lo'], unl: 'ijasz' },
+  { id: 'ver', name: 'Vérszerződés', cost: { tudas: 15, termeny: 200, kovako: 3 }, req: ['nyereg', 'ijasz', 'orseg'], key: true }
 ];
 
 const QUESTS = [
@@ -683,7 +683,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611095' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611162' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -796,7 +796,7 @@ function endTool() { hover = null; tool = null; $('placebar').hidden = true; $('
 function riverOk(type, i, j) { const d = DEF[type]; return !d.river || j + d.size === N; }
 function place(i, j) {
   const d = DEF[tool.type];
-  if (!riverOk(tool.type, i, j)) { toast('A Halászhely csak a folyópartra, a térkép bal alsó szélére építhető.'); return; }
+  if (!riverOk(tool.type, i, j)) { toast('A Halászhely csak a patak partjára, a térkép bal alsó szélére építhető.'); return; }
   if (tool.mode === 'move') {
     const b = S.buildings.find(x => x.id === tool.id);
     if (!free(tool.type, i, j, b)) { toast('Ide nem fér el, keress neki másik helyet.'); return; }
@@ -1184,6 +1184,42 @@ function checkQuest() {
   }
 }
 
+// patak a város bal alsó szélén: ide épül a Halászhely, és a nagy folyóba ömlik
+function creekPts() {
+  const top = [], bot = [], a = -7, b = N + 0.6;
+  for (let i = a; i <= b + 1e-6; i += 0.2) {
+    const taper = Math.min(1, (b - i) / 1.6), wob = Math.sin(i * 1.3) * 0.07 + Math.sin(i * 0.55 + 1) * 0.05;
+    const mid = N + 0.42 + wob + (i < -2 ? (-2 - i) * 0.1 : 0), half = (0.28 + (i < 0 ? -i * 0.025 : 0)) * taper;
+    top.push(tileTop(i, mid - half)); bot.push(tileTop(i, mid + half));
+  }
+  return [top, bot];
+}
+let creekCv = null;
+function drawCreek(t) {
+  if (!creekCv) { // egyszer megfestjük egy külön vászonra, utána csak rátesszük
+    const [top, bot] = creekPts(), c = document.createElement('canvas'); c.width = BGW + 800; c.height = BGH + 800; const g = c.getContext('2d'); g.translate(400, 400);
+    const path = (dy) => { g.beginPath(); g.moveTo(top[0][0], top[0][1] + (dy || 0)); top.forEach(p => g.lineTo(p[0], p[1] + (dy || 0))); for (let k = bot.length - 1; k >= 0; k--) g.lineTo(bot[k][0], bot[k][1] + (dy || 0)); g.closePath(); };
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.filter = 'blur(7px)'; path(); g.strokeStyle = 'rgba(70,90,30,0.45)'; g.lineWidth = 30; g.stroke();
+    g.filter = 'blur(3px)'; path(); g.strokeStyle = 'rgba(196,164,104,0.95)'; g.lineWidth = 18; g.stroke();
+    g.filter = 'none'; path(); g.strokeStyle = 'rgba(110,84,44,0.55)'; g.lineWidth = 6; g.stroke();
+    const gr = g.createLinearGradient(0, 0, 0, BGH); gr.addColorStop(0, '#4E9EC2'); gr.addColorStop(1, '#2C6F96'); path(); g.fillStyle = gr; g.fill();
+    g.save(); path(); g.clip(); g.filter = 'blur(4px)'; g.strokeStyle = 'rgba(160,220,240,0.55)'; g.lineWidth = 8; g.beginPath(); top.forEach((p, k) => { const q = bot[k], x = p[0] + (q[0] - p[0]) * 0.3, y = p[1] + (q[1] - p[1]) * 0.3; k ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); g.restore();
+    g.filter = 'none';
+    // nád a part mentén
+    for (let k = 2; k < top.length - 4; k += 4) { [top[k], bot[k + 2]].forEach((p, s2) => { if (!p) return; const r = Math.sin(k * 12.9898 + s2 * 78.233) * 43758.5453, f = r - Math.floor(r); if (f < 0.45) return;
+      const x = p[0] + (f - 0.5) * 14, y = p[1] + (s2 ? 6 : -2); for (let n = 0; n < 5; n++) { const h = 14 + n * 3 + f * 8, dx = (n - 2) * 3; g.strokeStyle = n % 2 ? '#6E8E2A' : '#8BA83A'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + dx, y); g.quadraticCurveTo(x + dx * 1.6, y - h * 0.6, x + dx * 2.2, y - h); g.stroke(); }
+      g.fillStyle = '#7A5230'; g.beginPath(); g.ellipse(x + 2, y - 20 - f * 6, 2.2, 5, 0.2, 0, 7); g.fill(); }); }
+    creekCv = c;
+  }
+  ctx.drawImage(creekCv, -400, -400);
+  // csillogás a vízen
+  const [top, bot] = creekPts(); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  const ph = ((t || 0) / 1600) % 1;
+  for (let k = 1; k < top.length - 3; k += 3) { const f = ((k / 3 + ph * 3) % 3) / 3, p = top[k], q = bot[k], u = 0.35 + 0.3 * ((k * 7) % 5) / 5, x = p[0] + (q[0] - p[0]) * u + f * 12, y = p[1] + (q[1] - p[1]) * u + f * 6; ctx.globalAlpha = 0.5 * Math.sin(f * Math.PI); ctx.beginPath(); ctx.moveTo(x - 6, y - 3); ctx.lineTo(x + 6, y + 3); ctx.stroke(); }
+  ctx.restore();
+}
+
 // ---------- rajzolás ----------
 function draw(now) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -1195,6 +1231,7 @@ function draw(now) {
     ctx.drawImage(M, 0, M.naturalHeight - E * sy, M.naturalWidth, E * sy, 0, -BGH - E, BGW, E);
     ctx.restore(); ctx.drawImage(M, 0, 0, BGW, BGH);
   }
+  drawCreek(now);
   if (S.snow) { ctx.fillStyle = 'rgba(210,230,255,0.18)'; ctx.fillRect(0, 0, BGW, BGH); }
 
   const m = occ();
@@ -3032,7 +3069,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611095'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611162'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
