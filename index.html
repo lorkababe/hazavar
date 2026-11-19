@@ -3237,15 +3237,15 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
 (function () {
   const st = document.createElement('style');
   st.textContent = '#modalRoot .modal img.hero{display:block;width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto!important;object-fit:fill!important;border-radius:24px 30px 0 0!important;background:none!important}'
-    + '#modalRoot .modal.herowide{width:min(1180px,calc(100vw - 32px))!important;max-width:none!important}#modalRoot .modal.herowide>.mscroll{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:center}'
-    + '#modalRoot .modal.herowide>.mscroll>img.hero{grid-column:1;grid-row:1/span 9;align-self:center;width:calc(100% - 36px)!important;margin:18px 0 18px 18px;border-radius:18px!important;box-shadow:0 0 0 4px #FFF4DF,0 0 0 6px rgba(138,90,43,.55),0 10px 24px rgba(40,20,0,.3)}'
-    + '#modalRoot .modal.herowide>.mscroll>:not(img.hero):not(.close){grid-column:2;min-width:0}';
+    + '#modalRoot .modal.herowide{width:min(1180px,calc(100vw - 32px))!important;max-width:none!important}#modalRoot .modal.herowide .herogrid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:center}'
+    + '#modalRoot .modal.herowide .herogrid>img.hero{grid-column:1;grid-row:1/span 9;align-self:center;width:calc(100% - 36px)!important;margin:18px 0 18px 18px;border-radius:18px!important;box-shadow:0 0 0 4px #FFF4DF,0 0 0 6px rgba(138,90,43,.55),0 10px 24px rgba(40,20,0,.3)}'
+    + '#modalRoot .modal.herowide .herogrid>:not(img.hero):not(.close){grid-column:2;min-width:0}';
   document.head.appendChild(st);
   const fit = () => document.querySelectorAll('#modalRoot img.hero').forEach(im => {
     const m = im.closest('.modal'); if (!m) return;
     const go = () => { if (!im.naturalWidth) return; const r = im.naturalWidth / im.naturalHeight;
-      if (window.innerWidth >= 900 && r > 1.2) { m.classList.add('herowide'); m.style.maxWidth = ''; m.style.width = ''; return; }
-      m.classList.remove('herowide'); const maxH = Math.max(180, window.innerHeight * 0.4), w = Math.min(860, window.innerWidth - 24, Math.max(420, maxH * r)); m.style.maxWidth = w + 'px'; m.style.width = w + 'px'; };
+      if (window.innerWidth >= 900 && r > 1.2) { im.parentElement.classList.add('herogrid'); m.classList.add('herowide'); m.style.maxWidth = ''; m.style.width = ''; return; }
+      m.classList.remove('herowide'); im.parentElement.classList.remove('herogrid'); const maxH = Math.max(180, window.innerHeight * 0.4), w = Math.min(860, window.innerWidth - 24, Math.max(420, maxH * r)); m.style.maxWidth = w + 'px'; m.style.width = w + 'px'; };
     if (im.complete) go(); else im.addEventListener('load', go, { once: true });
   });
   const run = () => { const r = document.getElementById('modalRoot'); if (!r) return setTimeout(run, 300); new MutationObserver(fit).observe(r, { childList: true, subtree: true }); fit(); addEventListener('resize', fit); };
@@ -3282,6 +3282,42 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
 
 // a törzsfők képén a fej mindig teljesen látszódjon: magasabb keret, a kép teteje igazodik a kerethez
 (function () { const st = document.createElement('style'); st.textContent = '.chief .pt{height:clamp(190px,24vw,240px)!important}.chief .pt img{object-fit:cover!important;object-position:50% 0!important}'; document.head.appendChild(st); })();
+
+// ---------- Shift lenyomva tartva több ugyanolyan épületet is lerakhatsz egymás után ----------
+(function multiPlace() {
+  if (typeof place !== 'function' || typeof startBuild !== 'function') return;
+  let shift = false;
+  addEventListener('keydown', e => { if (e.key === 'Shift') shift = true; });
+  addEventListener('keyup', e => { if (e.key === 'Shift') shift = false; });
+  addEventListener('blur', () => { shift = false; });
+  let hinted = false;
+  const _pl = place;
+  place = function (i, j) {
+    const t = tool; if (!t || t.mode !== 'build' || t.type === 'ut') return _pl.apply(this, arguments);
+    const type = t.type, rot = t.rot || 0, n0 = S.buildings.length;
+    const r = _pl.apply(this, arguments);
+    try {
+      if (S.buildings.length > n0 && !tool) {
+        const d = DEF[type], c = typeof costOf === 'function' ? costOf(type) : d.cost, ok = !c || typeof canPay !== 'function' || canPay(c);
+        if (shift && ok) { startBuild(type); if (tool) { tool.rot = rot; try { rotBtn(); } catch (e) {} } }
+        else if (!hinted && ok && !('ontouchstart' in window)) { hinted = true; try { toast(tr('Tipp: ha lerakáskor nyomva tartod a Shift billentyűt, egymás után több ugyanilyen épületet is lerakhatsz.')); } catch (e) {} }
+      }
+    } catch (e) {}
+    return r;
+  };
+})();
+
+// ---------- a kalandokból nem lehet véletlenül kikattintani, csak az X gombbal ----------
+(function keepGames() {
+  if (typeof modal !== 'function') return;
+  const GAME = new Set(['minigame', 'minimodal', 'tabla', 'poker', 'oligado', 'hamis', 'kunmodal']);
+  const _m = modal;
+  modal = function (html, cls, id) {
+    const r = _m.apply(this, arguments);
+    try { if (GAME.has(id)) { const s = document.querySelector('#modalRoot .scrim'); if (s) s.onpointerdown = null; } } catch (e) {}
+    return r;
+  };
+})();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
