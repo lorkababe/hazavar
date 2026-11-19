@@ -3946,18 +3946,19 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
 // a beírós mezők szövege mindig sötét, jól olvasható legyen
 (function () { const st = document.createElement('style'); st.textContent = 'input:not([type=range]):not([type=checkbox]):not([type=radio]),textarea,select{color:#2E1C0C!important;-webkit-text-fill-color:#2E1C0C;caret-color:#2E1C0C;background-color:#FFF8EA!important}input::placeholder,textarea::placeholder{color:#8A6A48!important;-webkit-text-fill-color:#8A6A48;opacity:1}'; document.head.appendChild(st); })();
 
-// a nyitókép két oldalán ne maradjon üres sáv: ugyanaz a kép elmosva tölti ki a hátteret
+// a nyitókép mindig teljesen látszik, vágás és oldalsáv nélkül: az ablak szélessége igazodik a képhez, így a kép a teljes szélességet kitölti
 (function () {
   const st = document.createElement('style');
-  st.textContent = '.herobox{position:relative;flex:none;overflow:hidden;border-radius:24px 30px 0 0;background:#3A2410}.herobox::before{content:"";position:absolute;inset:-30px;background:var(--hb) center/cover no-repeat;filter:blur(22px) saturate(1.1) brightness(.8)}';
+  st.textContent = '#modalRoot .modal img.hero{display:block;width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto!important;object-fit:fill!important;border-radius:24px 30px 0 0!important;background:none!important}';
   document.head.appendChild(st);
-  const wrap = () => document.querySelectorAll('#modalRoot img.hero').forEach(im => {
-    if (im.parentElement.classList.contains('herobox')) return;
-    const b = document.createElement('div'); b.className = 'herobox'; b.style.setProperty('--hb', 'url("' + im.getAttribute('src') + '")');
-    im.parentNode.insertBefore(b, im); b.appendChild(im);
+  const fit = () => document.querySelectorAll('#modalRoot img.hero').forEach(im => {
+    const m = im.closest('.modal'); if (!m) return;
+    const go = () => { if (!im.naturalWidth) return; const r = im.naturalWidth / im.naturalHeight, maxH = Math.max(180, window.innerHeight * 0.4), w = Math.min(860, window.innerWidth - 24, Math.max(420, maxH * r));
+      m.style.maxWidth = w + 'px'; m.style.width = w + 'px'; };
+    if (im.complete) go(); else im.addEventListener('load', go, { once: true });
   });
-  const go = () => { const r = document.getElementById('modalRoot'); if (!r) return setTimeout(go, 300); new MutationObserver(wrap).observe(r, { childList: true, subtree: true }); wrap(); };
-  go();
+  const run = () => { const r = document.getElementById('modalRoot'); if (!r) return setTimeout(run, 300); new MutationObserver(fit).observe(r, { childList: true, subtree: true }); fit(); addEventListener('resize', fit); };
+  run();
 })();
 
 // ---------- jobban ki lehet nagyítani, ha a korszaknak van távoli, szélesebb tájképe ----------
