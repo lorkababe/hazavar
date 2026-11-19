@@ -683,7 +683,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611162' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611194' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
