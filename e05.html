@@ -3648,6 +3648,20 @@ const MINERS = { aranymoso: 10, vashamor1: 15, vashamor2: 20, vashamor3: 25, ara
   setTimeout(() => { try { if (S && S.surp) S.surp = S.surp.filter(x => !BARON_TILES.has(x.i + ',' + x.j)); } catch (e) {} }, 500); }
 // ---------- Rozgony után a romokat el lehet takarítani, és a hely a tiéd lesz ----------
 const RUIN_COST = { penz: 3000, termeny: 400 };
+const KING_COST = { penz: 6000, termeny: 800, fa: 80, vas: 60 }, KING_PROD = { hirnev: 3, penz: 500, vas: 12 }, KING_T = 8 * 3600;
+const kingOf = id => !!(S.ruinKing && S.ruinKing[id]);
+const kingReady = id => kingOf(id) && (S.gt - ((S.kingAt || {})[id] || 0)) >= KING_T;
+function showKing(b) {
+  const ready = kingReady(b.id), left = Math.max(0, KING_T - (S.gt - ((S.kingAt || {})[b.id] || 0)));
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KIRÁLYI VÁR')}</span><h2>${trf('{0} helyén királyi vár', BAR_WHO[b.id])}</h2>
+    <img src="img/e05_var_${b.id}.png" alt="" style="width:100%;max-height:260px;object-fit:contain">
+    <p>${tr('A régi kiskirályi vár újra áll, de most már a királyé. A várnagy rendet tart a környéken, a vámot is beszedi, és minden harmadik nap panaszkodik, hogy hideg van a toronyban.')}</p>
+    <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px"><b>${tr('A vár hozama')}</b><span>${typeof miniRewText === 'function' ? miniRewText(KING_PROD) : ''}</span>
+      <div>${ready ? `<button class="btn coral" type="button" id="kgGet">${tr('Begyűjtöm')}</button>` : `<span style="font-weight:800">${trf('Legközelebb {0} múlva', fmtT(left))}</span>`}</div></div></div>`, '', 'ruin');
+  if ($('kgGet')) $('kgGet').onclick = () => { if (!kingReady(b.id)) return; S.kingAt = S.kingAt || {}; S.kingAt[b.id] = S.gt; give(KING_PROD); try { sfxCollect(); } catch (e) {} save(); hud(); closeModal();
+    const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 80, '+' + KING_PROD.hirnev + ' ' + RES.hirnev.name + ' · +' + fmt(KING_PROD.penz) + ' ' + RES.penz.name, '#FFE9B8'); } catch (e) {} };
+}
+const fmtT = s => { s = Math.ceil(s); const h = Math.floor(s / 3600), m = Math.ceil((s % 3600) / 60); return h ? trf('{0} óra {1} perc', h, m) : trf('{0} perc', m); };
 function ruinTiles(b) { const t = []; for (let a = 0; a < 5; a++) for (let c = 0; c < 5; c++) t.push((b.i + a) + ',' + (b.j + c)); return t; }
 function ruinFree(b) {
   ruinTiles(b).forEach(k => { BARON_TILES.delete(k); BLOCKED.delete(k); LANDSET.add(k); });
@@ -3665,12 +3679,15 @@ function showRuin(b) {
     <p>${tr('A kiskirály vára Rozgony óta romokban hever. A falusiak már hordják el a köveit, de egy komoly takarítás kellene, hogy a helyére újra építkezni lehessen.')}</p>
     <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px"><b>${tr('Romeltakarítás')}</b><span>${tr('A rom eltűnik, a helye, 5×5 mező, a tiéd lesz, és a kövek közül még némi Vas is előkerül.')}</span><span style="display:flex;gap:12px;align-items:center;font-weight:900">${Object.entries(RUIN_COST).map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:4px"><img src="img/${RES[k].icon}.png" alt="" style="width:26px;height:26px" onerror="this.remove()">${fmt(v)} ${RES[k].name}</span>`).join('')}</span>
       <div><button class="btn coral" type="button" id="ruGo" ${can ? '' : 'disabled'}>${tr('Eltakarítom')}</button></div></div>
-    <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px;opacity:.75"><b>${tr('Újjáépítés királyi várrá')}</b><span>${tr('Hamarosan. A rom helyén a király hű várnagya új várat emelhet, amely védelmet és hírnevet ad.')}</span></div></div>`, '', 'ruin');
+    <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px"><b>${tr('Újjáépítés királyi várrá')}</b><span>${tr('A király hű várnagya újra felhúzza a falakat, és a tornyon ezután a piros-fehér királyi zászló leng. A királyi vár nyolc óránként Hírnevet, Pénzt és Vasat ad, és a nép is büszkébb lesz.')}</span><span style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-weight:900">${Object.entries(KING_COST).map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:4px"><img src="img/${RES[k].icon}.png" alt="" style="width:26px;height:26px" onerror="this.remove()">${fmt(v)} ${RES[k].name}</span>`).join('')}</span>
+      <div><button class="btn teal" type="button" id="ruKing" ${canPay(KING_COST) ? '' : 'disabled'}>${tr('Újjáépítem')}</button></div></div></div></div>`, '', 'ruin');
+  if ($('ruKing')) $('ruKing').onclick = () => { if (!canPay(KING_COST)) return; pay(KING_COST); S.ruinKing = S.ruinKing || {}; S.ruinKing[b.id] = 1; S.kingAt = S.kingAt || {}; S.kingAt[b.id] = S.gt - KING_T; give({ hirnev: 10 }); connCache = null; save(); hud(); closeModal();
+    const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 90, tr('Újra áll a vár, most már a királyé!'), '#FFE9B8'); } catch (e) {} toast(trf('{0} egykori várán már a királyi zászló leng. 10 Hírnevet kaptál, és a vár nyolc óránként hoz még.', BAR_WHO[b.id])); };
   if ($('ruGo')) $('ruGo').onclick = () => { if (!canPay(RUIN_COST)) return; pay(RUIN_COST); S.ruinGone = S.ruinGone || {}; S.ruinGone[b.id] = 1; ruinFree(b); give({ vas: 25 }); connCache = null; save(); hud(); closeModal();
     const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 60, tr('A rom eltűnt, a hely a tiéd!'), '#FFE9B8'); } catch (e) {} toast(trf('{0} romjait elhordták. Az 5×5 mező most a tiéd, és 25 Vas is előkerült a kövek közül.', BAR_WHO[b.id])); };
 }
 { const _tp = tap; tap = function (sx, sy) {
-  try { if (S.rozgony && !tool) { const [bx, by] = toBg(sx, sy), [i, j] = tileAt(bx, by); const b = BARONS.find(r => !(S.ruinGone || {})[r.id] && i >= r.i && i < r.i + 5 && j >= r.j && j < r.j + 5); if (b && !pick(bx, by)) { showRuin(b); return; } } } catch (e) {}
+  try { if (S.rozgony && !tool) { const [bx, by] = toBg(sx, sy), [i, j] = tileAt(bx, by); const b = BARONS.find(r => !(S.ruinGone || {})[r.id] && i >= r.i && i < r.i + 5 && j >= r.j && j < r.j + 5); if (b && !pick(bx, by)) { if (kingOf(b.id)) showKing(b); else showRuin(b); return; } } } catch (e) {}
   return _tp.apply(this, arguments); }; }
 
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
@@ -3714,6 +3731,7 @@ function klapka() {
 }
 
 // ---------- a kiskirályok várai ----------
+const KING_FLAG = new Image(); KING_FLAG.src = 'img/e05_mg_zaszlo.png';
 const BAR_IMG = {}; ['csak', 'aba', 'koszegi', 'rom', 'rom_csak', 'rom_aba', 'rom_koszegi'].forEach(k => { const im = new Image(); im.src = 'img/e05_var_' + k + '.png'; BAR_IMG[k] = im; });
 // a várak leomlása Rozgony után: sorban, rázkódással, porfelhővel
 let COLL = null;
@@ -3754,11 +3772,14 @@ draw = function (now) {
     BARONS.forEach(b => {
       if (S.ruinGone && S.ruinGone[b.id]) return;
       const n = BARONS.indexOf(b), cp = COLL ? (now - COLL.t0 - n * 3200) / 2600 : 2;
-      const k = !S.rozgony || cp < 0.45 ? b.id : (barSoft('rom_' + b.id) ? 'rom_' + b.id : 'rom'), im = barSoft(k); if (!im) return;
+      const king = kingOf(b.id), k = !S.rozgony || cp < 0.45 || king ? b.id : (barSoft('rom_' + b.id) ? 'rom_' + b.id : 'rom'), im = barSoft(k); if (!im) return;
       const [x0] = tileTop(b.i, b.j + 5), [x1] = tileTop(b.i + 5, b.j), [, yb] = tileTop(b.i + 5, b.j + 5), w = x1 - x0, h = w * im.height / im.width, [cx0, cy0] = tileTop(b.i + 2.5, b.j + 2.5);
-      if (S.rozgony && cp >= 0 && cp < 1) { collFx(b, cp, x0, yb, w, cx0, cy0, now); return; }
+      if (S.rozgony && !king && cp >= 0 && cp < 1) { collFx(b, cp, x0, yb, w, cx0, cy0, now); return; }
       ctx.save(); const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); sg.addColorStop(0, 'rgba(30,25,10,.38)'); sg.addColorStop(1, 'rgba(30,25,10,0)'); ctx.translate(cx0, cy0 + 40); ctx.scale(w * 0.46, w * 0.2); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 7); ctx.fill(); ctx.restore();
       ctx.drawImage(im, x0, yb - h + 6, w, h);
+      if (king) { const fl = KING_FLAG; if (fl.complete && fl.naturalWidth) { const fh = w * 0.28, fw = fh * fl.naturalWidth / fl.naturalHeight, sw = Math.sin(now / 900 + n) * 0.03; ctx.save(); ctx.translate(cx0 - w * 0.04, yb - h * 0.62); ctx.rotate(sw); ctx.drawImage(fl, -fw * 0.16, -fh, fw, fh); ctx.restore(); }
+        ctx.font = '800 20px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,8,.8)'; ctx.fillStyle = '#FFE9B8'; ctx.strokeText(tr('Királyi vár'), cx0, yb - h + 2); ctx.fillText(tr('Királyi vár'), cx0, yb - h + 2);
+        if (kingReady(b.id)) { const by = yb - h - 26 + Math.sin(now / 300) * 4; ctx.fillStyle = '#F5C542'; ctx.strokeStyle = '#6A4520'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx0, by, 20, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#6A4520'; ctx.font = '900 24px Nunito, sans-serif'; ctx.textBaseline = 'middle'; ctx.fillText('!', cx0, by + 1); ctx.textBaseline = 'alphabetic'; } }
       if (!S.rozgony) { ctx.font = '800 20px Nunito, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,8,.8)'; ctx.fillStyle = '#FFE9B8'; const [cx] = tileTop(b.i + 2.5, b.j + 2.5); ctx.strokeText(tr(BAR_NAME[b.id]), cx, yb - h + 2); ctx.fillText(tr(BAR_NAME[b.id]), cx, yb - h + 2); }
     });
     if (!S.rozgony) S.buildings.forEach(b => { if (!b.baro) return; const [w, h] = dimsT(b.type, b.rot || 0), [x, y] = tileTop(b.i + w / 2, b.j + h / 2), py = y - 30 - Math.max(w, h) * 30;
@@ -6958,7 +6979,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   function end() {
     const pa = G.p.every(x => x.out), aa = G.a.every(x => x.out);
     if (!pa && !aa && G.round <= ROUNDS) return false;
-    G.over = true; G.phase = 'over'; G.win = aa || (!pa && G.sc.p > G.sc.a); G.tie = !aa && !pa && G.sc.p === G.sc.a; finish(); return true;
+    G.over = true; G.phase = 'over'; G.win = aa || (!pa && G.sc.p > G.sc.a); G.tie = !aa && !pa && G.sc.p === G.sc.a; if (G.win) try { window.erdemInc && window.erdemInc('tabla'); } catch (e) {} finish(); return true;
   }
   const fmtN = v => typeof fmt === 'function' ? fmt(v) : v;
   function finish() {
@@ -7147,6 +7168,175 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   document.head.appendChild(st);
 })();
 
+// ---------- érdemrendek: korszakokon átívelő kitüntetések, bronz, ezüst és arany fokozattal ----------
+(function () {
+  const EK = 'hazavar-erdem-v1';
+  const ERAN = +((location.pathname.match(/e0(\d)\.html/) || [0, 0])[1]);
+  const TIER = [['Bronz', '#B8733A', '#F0C08A'], ['Ezüst', '#8C9AA6', '#E4ECF2'], ['Arany', '#C9961A', '#FFE58A']];
+  const REW = [5, 10, 25];
+  const L = [
+    { id: 'epito', ic: '🔨', name: 'Építőmester', desc: 'felhúzott épület', at: [10, 40, 120] },
+    { id: 'arato', ic: '🧺', name: 'Szorgos kéz', desc: 'begyűjtés', at: [50, 300, 1000] },
+    { id: 'nep', ic: '👪', name: 'Népes város', desc: 'lakos egyszerre', at: [40, 150, 400] },
+    { id: 'kor', ic: '⏳', name: 'Időutazó', desc: 'korszak bejárva', at: [1, 3, 5] },
+    { id: 'tabla', ic: '🎲', name: 'Kockavető', desc: 'megnyert táblajáték', at: [1, 5, 20] },
+    { id: 'kaland', ic: '🗺️', name: 'Kalandor', desc: 'végigjátszott kaland', at: [5, 25, 80] },
+    { id: 'kincs', ic: '💎', name: 'Kincsvadász', desc: 'megtalált meglepetés', at: [5, 30, 100] },
+    { id: 'szerencse', ic: '🍀', name: 'Szerencsés flótás', desc: 'ajándék a szerencse-épülettől', at: [5, 30, 100] },
+    { id: 'szomszed', ic: '🤝', name: 'Jó szomszéd', desc: 'kaláka a szomszédoknak', at: [5, 20, 60] }
+  ];
+  let E; try { E = JSON.parse(localStorage.getItem(EK) || '{}') || {}; } catch (e) { E = {}; }
+  E.c = E.c || {}; E.got = E.got || {}; E.seen = E.seen || {}; E.mini = E.mini || {};
+  const keep = () => { try { localStorage.setItem(EK, JSON.stringify(E)); } catch (e) {} };
+  const T = s => { try { return tr(s); } catch (e) { return s; } };
+  const val = id => {
+    if (id === 'kor') { let m = E.c.kor || 0; try { m = Math.max(m, +localStorage.getItem('panelvar-era') || 0, ERAN); } catch (e) {} return m; }
+    if (id === 'szomszed') { try { return Math.max(E.c.szomszed || 0, (SOC && SOC.stats && SOC.stats.kalaka) || 0); } catch (e) { return E.c.szomszed || 0; } }
+    return E.c[id] || 0;
+  };
+  const tierOf = (l, v) => l.at.filter(a => v >= a).length;
+  window.erdemInc = (id, n) => { E.c[id] = (E.c[id] || 0) + (n || 1); keep(); check(); };
+
+  // a mentésből olvasható számlálók: épület, begyűjtés, lakos, kalandok
+  function sync() {
+    try {
+      if (typeof S === 'undefined' || !S) return;
+      const sv = E.seen[ERAN] = E.seen[ERAN] || { built: 0, collected: 0 };
+      const st = S.stats || {};
+      ['built', 'collected'].forEach(k => {
+        const cur = st[k] || 0, d = cur - (sv[k] || 0);
+        if (d > 0) E.c[k === 'built' ? 'epito' : 'arato'] = (E.c[k === 'built' ? 'epito' : 'arato'] || 0) + d;
+        sv[k] = cur; // új játéknál a számláló visszaesik, ilyenkor csak újra felvesszük
+      });
+      try { E.c.nep = Math.max(E.c.nep || 0, pop()); } catch (e) {}
+      E.c.kor = val('kor');
+      if (S.mini && S.mini.day) {
+        const mk = ERAN + '|' + S.mini.day, had = E.mini[mk] || [];
+        const now = Object.keys(S.mini.done || {}).filter(k => S.mini.done[k]);
+        const fresh = now.filter(k => !had.includes(k));
+        if (fresh.length) { E.c.kaland = (E.c.kaland || 0) + fresh.length; E.mini = { [mk]: now }; }
+      }
+      keep(); check();
+      if (ERAN === 0 && S.korona != null) { const n = document.querySelector('.korona .num'); if (n && n.textContent !== String(S.korona)) n.textContent = S.korona; }
+    } catch (e) {}
+  }
+
+  function check() {
+    L.forEach(l => {
+      const v = val(l.id), t = tierOf(l, v), had = E.got[l.id] || 0;
+      if (t > had) {
+        E.got[l.id] = t; keep();
+        let kr = 0; for (let k = had; k < t; k++) kr += REW[k];
+        try { S.korona = (S.korona == null ? 25 : S.korona) + kr; save(); } catch (e) {}
+        try { if (typeof hud === 'function') hud(); if (typeof renderBar === 'function') renderBar(); } catch (e) {}
+        party(l, t, kr); setTimeout(sync, 50);
+      }
+    });
+  }
+
+  function medal(l, t, size) {
+    const c = TIER[Math.max(0, t - 1)], on = t > 0;
+    return `<span class="erm${on ? '' : ' off'}" style="--m1:${on ? c[2] : '#D9CBB4'};--m2:${on ? c[1] : '#A8957A'};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.48)}px">${l.ic}${on ? `<i>${'★'.repeat(t)}</i>` : ''}</span>`;
+  }
+
+  function party(l, t, kr) {
+    const old = document.getElementById('ermPop'); if (old) old.remove();
+    const el = document.createElement('div'); el.id = 'ermPop'; el.setAttribute('role', 'status');
+    el.innerHTML = `${medal(l, t, 76)}<div><small>${T('ÚJ ÉRDEMREND')} · ${T(TIER[t - 1][0]).toUpperCase()}</small><b>${T(l.name)}</b><span>${l.at[t - 1]} ${T(l.desc)}. ${T('Jutalmad')} ${kr} 👑</span></div>`;
+    document.body.appendChild(el); el.onclick = () => el.remove();
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, 4800);
+  }
+
+  window.erdemHTML = function () {
+    const n = L.reduce((a, l) => a + (E.got[l.id] || 0), 0);
+    return `<div class="store-row ermlist"><b>${T('Érdemrendek')} · ${n} / ${L.length * 3} ★</b>
+      <div class="ermgrid">${L.map(l => { const v = val(l.id), t = E.got[l.id] || 0, nx = l.at[t];
+        return `<div class="ermrow">${medal(l, t, 44)}<div><b>${T(l.name)}</b><small>${t ? T(TIER[t - 1][0]) + ' · ' : ''}${nx != null ? `${Math.min(v, nx)} / ${nx} ${T(l.desc)}` : `${v} ${T(l.desc)} · ${T('minden fokozat megvan')}`}</small>${nx != null ? `<span class="ermbar"><span style="width:${Math.min(100, v / nx * 100)}%"></span></span>` : ''}</div></div>`; }).join('')}</div></div>`;
+  };
+
+  const st = document.createElement('style');
+  st.textContent = `.erm{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--m1),var(--m2));box-shadow:0 0 0 3px #FFF4DF,0 0 0 5px var(--m2),0 3px 6px rgba(0,0,0,.3);line-height:1}
+  .erm.off{filter:grayscale(1);opacity:.55}.erm i{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-style:normal;font-size:11px;letter-spacing:-1px;color:#C9961A;text-shadow:0 0 2px #fff,0 1px 0 #6A4520;white-space:nowrap}
+  .ermlist{display:block!important}.ermlist>b{display:block}.ermgrid{display:grid;align-items:start;grid-auto-rows:min-content;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px 12px;margin-top:10px}
+  .ermrow{display:flex;gap:12px;align-items:center;min-width:0}.ermrow>div{display:flex;flex-direction:column;min-width:0;gap:2px}.ermrow small{font-weight:700;opacity:.8;font-size:12px}
+  .ermbar{display:block;height:6px;border-radius:9px;background:rgba(90,55,25,.18);overflow:hidden}.ermbar span{display:block;height:100%;background:linear-gradient(90deg,#E2B33C,#C9961A)}
+  @keyframes ermIn{0%{transform:translate(-50%,-40px) scale(.3) rotate(-20deg);opacity:0}60%{transform:translate(-50%,0) scale(1.08);opacity:1}100%{transform:translate(-50%,0) scale(1)}}@keyframes ermOut{to{transform:translate(-50%,-20px) scale(.9);opacity:0}}
+  #ermPop{position:fixed;left:50%;top:calc(var(--toph,72px) + 40px);z-index:73;display:flex;align-items:center;gap:18px;min-width:min(360px,88vw);max-width:92vw;padding:16px 24px 16px 18px;border-radius:22px 26px 20px 24px;background:linear-gradient(135deg,#FFF4DF,#F3DDB0);color:#3A2410;box-shadow:0 0 0 4px #FFF4DF,0 0 0 7px #8A5A2B,0 18px 40px rgba(40,20,0,.45);animation:ermIn .6s cubic-bezier(.2,1.4,.4,1) both;cursor:pointer}
+  #ermPop.out{animation:ermOut .4s ease-in forwards}#ermPop small{display:block;font-weight:900;letter-spacing:.12em;font-size:11px;opacity:.8}#ermPop b{display:block;font-size:22px;line-height:1.15;margin:2px 0 4px}#ermPop span{font-size:14px;font-weight:600}`;
+  document.head.appendChild(st);
+
+  // a profil ablakban a kitűzők alatt jelenjenek meg
+  setTimeout(() => {
+    try { if (typeof window.kitHTML === 'function' && !window.kitHTML.__erm) { const k = window.kitHTML; window.kitHTML = function () { return k.apply(this, arguments) + window.erdemHTML(); }; window.kitHTML.__erm = 1; } } catch (e) {}
+    try { if (typeof takeSurp === 'function') { const o = takeSurp; takeSurp = function () { const r = o.apply(this, arguments); window.erdemInc('kincs'); return r; }; } } catch (e) {}
+    sync();
+  }, 1500);
+  setInterval(sync, 6000);
+})();
+
+// ---------- szerencse-épület: korszakonként egy, nyolc óránként véletlen jutalmat ad ----------
+(function szerencse() {
+  if (typeof DEF === 'undefined' || typeof IMG === 'undefined') return;
+  const ERAN = +((location.pathname.match(/e0(\d)\.html/) || [0, 0])[1]);
+  const ID = 'szerencse', KEY = 'szerencse_e0' + ERAN, V = '?v=2611192';
+  const C = [
+    { name: 'Szerencsekő', desc: 'Egy nagy lyukas kő a tűz mellett. Samu szerint aki átnéz rajta, meglátja a jövőt. Eddig csak a másik oldalt látta, de a kő néha ajándékot hoz.' },
+    { name: 'Táltosfa', desc: 'Színes szalagokkal teleaggatott öreg fa, alatta a táltos dobja. A szél néha meglengeti a szalagokat, és olyankor valami jó történik.' },
+    { name: 'Kincses halom', desc: 'Egy füves domb, amit a nép titokzatosnak tart. Ha valaki ásni kezd körülötte, mindig talál valamit. Hogy mit, azt senki sem tudja előre.' },
+    { name: 'Csodakút', desc: 'Kőkáva, fölötte kis fakereszt. A zarándokok pénzt dobnak bele, és a kút néha visszaad valamit. Asztrik apát szerint ez csoda, a kútásó szerint huzat.' },
+    { name: 'Vásári szerencsekerék', desc: 'Pörgesd meg, és meglátod, mit hoz a szerencse! A vásáros esküszik, hogy nincs benne trükk. A kerék kicsit nyikorog, de nem árulja el.' },
+    { name: 'Udvari bolond sátra', desc: 'A király udvari bolondja itt lakik. Minden nap más tréfát talál ki, és a tréfa végén mindig ad valamit. Egyszer egy aranyforintot, egyszer egy döglött halat.' }
+  ][ERAN];
+  if (!C) return;
+  const COST = [{ penz: 80 }, { penz: 150, termeny: 30 }, { penz: 250, termeny: 50 }, { penz: 400, termeny: 80 }, { penz: 700, termeny: 120 }, { penz: 1200, termeny: 200 }][ERAN];
+  const SC = [1, 1.8, 3, 4.5, 7, 11][ERAN];
+  const TABLE = [
+    { w: 40, r: { penz: Math.round(60 * SC) }, t: 'Egy kis zacskó pénz' },
+    { w: 15, r: { penz: Math.round(180 * SC) }, t: 'Egy nagy zsák pénz!' },
+    { w: 22, r: { termeny: Math.round(40 * SC) }, t: 'Egy kosár finomság' },
+    { w: 12, r: { tudas: 1 + Math.floor(ERAN / 2) }, t: 'Egy jó ötlet' },
+    { w: 8, r: { kovako: 1 + Math.floor(ERAN / 2) }, t: 'Egy ritka kincs' },
+    { w: 3, r: {}, k: 5, t: 'Öt Korona!' }
+  ];
+  const sheet = new Image();
+  sheet.onload = () => {
+    try {
+      const cw = sheet.naturalWidth / 3, ch = sheet.naturalHeight / 2, c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      c.getContext('2d').drawImage(sheet, (ERAN % 3) * cw, Math.floor(ERAN / 3) * ch, cw, ch, 0, 0, cw, ch);
+      const url = c.toDataURL('image/png'), im = new Image();
+      im.onload = () => {
+        IMG[KEY] = im; window.__szerencseUrl = url;
+        DEF[ID] = { name: C.name, size: 2, img: KEY, cat: 'hang', cost: COST, hang: 2, prod: { penz: TABLE[0].r.penz }, time: 8 * 3600, bt: 60, road: false, desc: C.desc + ' ' + tr('Nyolc óránként véletlen jutalmat ad, egy városban csak egy lehet.') };
+        if (ERAN >= 1) DEF[ID].workers = 0;
+        fix(document.body);
+        try { if (!$('drawer').hidden) renderDrawer(); } catch (e) {}
+      };
+      im.src = url;
+    } catch (e) {}
+  };
+  sheet.src = 'img/szerencse.png' + V;
+  // a kártyákon és ablakokban a kivágott képet mutassuk
+  const fix = root => { try { root.querySelectorAll('img[src*="' + KEY + '"]').forEach(i => { if (window.__szerencseUrl && i.src !== window.__szerencseUrl) i.src = window.__szerencseUrl; }); } catch (e) {} };
+  new MutationObserver(ms => { if (!window.__szerencseUrl) return; ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.tagName === 'IMG') fix(n.parentNode || n); else fix(n); } })); }).observe(document.body, { childList: true, subtree: true });
+  // csak egy lehet belőle
+  try { const _sb = startBuild; startBuild = function (t) { if (t === ID && S.buildings.some(b => b.type === ID)) { toast(tr('Szerencse-épületből egy városban csak egy lehet.')); return; } return _sb.apply(this, arguments); }; } catch (e) {}
+  // begyűjtéskor sorsolunk
+  try {
+    const _col = collect;
+    collect = function (b) {
+      if (!b || b.type !== ID || !DEF[ID]) return _col.apply(this, arguments);
+      let r = Math.random() * TABLE.reduce((a, x) => a + x.w, 0), p = TABLE[0]; for (const x of TABLE) { if ((r -= x.w) < 0) { p = x; break; } }
+      if (p.k) { DEF[ID].prod = { penz: Math.round(20 * SC) }; S.korona = (S.korona == null ? 25 : S.korona) + p.k; }
+      else DEF[ID].prod = Object.assign({}, p.r);
+      const out = _col.apply(this, arguments);
+      try { toast(C.name + ' · ' + tr(p.t)); } catch (e) {}
+      try { if (window.erdemInc) window.erdemInc('szerencse'); } catch (e) {}
+      try { hud(); } catch (e) {}
+      return out;
+    };
+  } catch (e) {}
+})();
+
 // ---------- Anjou-kori kockás kalandok: Hamis kocka, Oligarcha adója, Kockapóker ----------
 (function diceGames() {
   if (typeof MINI === 'undefined' || typeof CUR_ERA !== 'number' || CUR_ERA !== 5) return;
@@ -7313,6 +7503,247 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .kp-help summary{cursor:pointer;font-weight:800}
   @media (max-width:520px){.hk-grid{gap:6px}.hk-bars{height:70px}.dk-say .dk-face{width:70px}.kp-d .dk{width:50px;height:50px;padding:7px}}`;
   document.head.appendChild(st);
+})();
+
+// ---------- Anjou-kori kalandok: Aranymosás, Pénzverés, Lovagi torna, Zászlóvédés, Terítés ----------
+(function anjouGames() {
+  if (typeof MINI === 'undefined' || typeof CUR_ERA !== 'number' || CUR_ERA !== 5) return;
+  const V = '?v=2611191';
+  const AT = {"zaszlo": [0, 0, 192, 359], "tal": [196, 0, 320, 336], "lovag_kek": [520, 0, 384, 260], "lovag_piros": [0, 363, 384, 248], "ullo": [388, 363, 256, 240], "katona": [648, 363, 160, 206], "kalapacs": [812, 363, 160, 178], "tal_kenyer": [0, 615, 160, 121], "tal_bor": [164, 615, 160, 120], "tal_gyumolcs": [328, 615, 160, 110], "tal_hus": [492, 615, 160, 108], "forint_szep": [656, 615, 96, 100], "forint_ferde": [756, 615, 96, 92], "rog2": [856, 615, 72, 70], "rog0": [932, 615, 64, 67], "pirit": [0, 740, 72, 65], "rog1": [76, 740, 64, 55]};
+  const AW = 1024, AH = 805;
+  const spr = (n, w, cls, st) => { const a = AT[n], s = w / a[2]; return `<span class="as ${cls || ''}" style="width:${w}px;height:${Math.round(a[3] * s)}px;background-size:${AW * s}px ${AH * s}px;background-position:-${a[0] * s}px -${a[1] * s}px;${st || ''}"></span>`; };
+  MINI.forEach(g => { if (['aranymosas', 'penzveres', 'torna'].includes(g.id)) g.soon = false; });
+  MINI.push(
+    { id: 'zaszlo', name: 'Zászlóvédés', img: 'e05_mg_zaszlo', sub: 'Ne hagyd, hogy az Aba-fiak katonái elérjék a királyi zászlót', rew: 'Pénz, Hírnév, Vas' },
+    { id: 'terites', name: 'Terítés a királytalálkozón', img: 'e05_kiralytalalkozo.jpg', sub: 'Jegyezd meg, mit kér a király, és hozd a tálakat sorban', rew: 'Bor, Termény, Pénz' }
+  );
+  const PLAY = { aranymosas: playMosas, penzveres: playVeres, torna: playTorna, zaszlo: playZaszlo, terites: playTerites };
+  const _sm = showMini;
+  showMini = function () { const r = _sm.apply(this, arguments); try { $('modalRoot').querySelectorAll('[data-mg]').forEach(b => { if (PLAY[b.dataset.mg]) b.onclick = () => PLAY[b.dataset.mg](); }); } catch (e) {} return r; };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const alive = id => !!document.getElementById(id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function done(eyebrow, title, lines, id, rew, fact) {
+    const got = miniGive(id, rew);
+    miniEnd(eyebrow, title, lines.concat([got ? `<b>${tr('A jutalmad')}</b>${miniRewText(rew)}` : tr('A mai jutalmat ezért a kalandért már megkaptad. Holnap újra jár.')]), fact);
+  }
+  const pop = (host, x, y, txt, cls) => { const e = document.createElement('b'); e.className = 'ag-pop ' + (cls || ''); e.textContent = txt; e.style.left = x + 'px'; e.style.top = y + 'px'; host.appendChild(e); setTimeout(() => e.remove(), 900); };
+
+  const st = document.createElement('style');
+  st.textContent = `.as{display:inline-block;background-image:url(img/e05_mg_atlas.png${V});background-repeat:no-repeat;flex:none}
+  .ag-hud{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;font-weight:900;margin:8px 0}
+  .ag-stage{position:relative;overflow:hidden;border-radius:18px;box-shadow:inset 0 0 0 3px rgba(74,42,16,.6);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+  .ag-pop{position:absolute;transform:translate(-50%,-50%);font:900 20px Nunito,sans-serif;color:#FFE58A;text-shadow:0 2px 0 #6A4520,0 0 6px #000;pointer-events:none;animation:agUp .9s ease-out forwards;z-index:9}.ag-pop.bad{color:#FF8A70}
+  @keyframes agUp{to{transform:translate(-50%,-160%);opacity:0}}
+  .am-stage{height:min(440px,52vh);background:url(img/e05_mg_patak.jpg${V}) center/cover}
+  .am-tal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
+  .am-it{position:absolute;border:0;padding:0;background:none;cursor:pointer;transform:translate(-50%,-50%) scale(.2);transition:transform .18s ease-out,opacity .3s;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}.am-it.on{transform:translate(-50%,-50%) scale(1)}.am-it.off{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+  .am-sand{width:26px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#C9B48A,#8C7650);display:block}
+  .pv-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px;background:linear-gradient(#5A3A1E,#3A2410);color:#FFF1D8}
+  .pv-anv{position:relative;height:200px;width:260px}.pv-anv .ullo{position:absolute;left:0;bottom:0}.pv-anv .kal{position:absolute;right:-6px;top:-10px;transform-origin:80% 90%;transform:rotate(25deg);transition:transform .08s}.pv-anv .kal.hit{transform:rotate(-38deg)}
+  .pv-bar{position:relative;width:min(420px,90%);height:30px;border-radius:15px;background:#2A1A0C;box-shadow:inset 0 0 0 3px #8A5A2B}.pv-zone{position:absolute;top:3px;bottom:3px;border-radius:12px;background:linear-gradient(#7BD47B,#2F8A3A)}.pv-zone i{position:absolute;inset:0 33%;background:rgba(255,255,255,.45);border-radius:8px}
+  .pv-mark{position:absolute;top:-6px;width:8px;height:42px;margin-left:-4px;border-radius:4px;background:#FFE58A;box-shadow:0 0 0 2px #6A4520}
+  .pv-tray .bent{filter:grayscale(.7) brightness(.8);transform:rotate(-24deg) scaleY(.8)}.pv-tray{display:flex;flex-wrap:wrap;gap:4px;min-height:52px;justify-content:center}
+  .tn-stage{height:min(380px,48vh);background:linear-gradient(rgba(150,205,240,.0),rgba(150,205,240,0)),url(img/e05_alapterkep_ures.jpg${V}) center 62%/240%}.tn-stage::before{content:'';position:absolute;left:0;right:0;bottom:22%;height:12px;background:linear-gradient(#A0703A,#6A4520);box-shadow:0 3px 0 rgba(0,0,0,.25)}.tn-stage::after{content:'';position:absolute;left:0;right:0;top:8px;height:22px;background:repeating-linear-gradient(90deg,transparent 0 6px,#B8402C 6px 26px,transparent 26px 40px,#FFF4DF 40px 60px,transparent 60px 74px,#2C6FB0 74px 94px);clip-path:polygon(0 0,100% 0,100% 30%,0 30%,0 0);opacity:.9}
+  .tn-k{position:absolute;bottom:14%;transition:transform 1.1s cubic-bezier(.5,0,.6,1)}
+  .tn-shield{position:absolute;left:50%;top:36%;width:min(190px,40vw);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50% 50% 50% 50%/40% 40% 60% 60%;background:radial-gradient(circle,#E2B33C 0 10%,#B8402C 10% 30%,#FFF4DF 30% 52%,#2C6FB0 52% 76%,#E2B33C 76% 80%,#5A3A1E 80%);box-shadow:0 6px 0 rgba(0,0,0,.3)}
+  .tn-tip{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #3A2410,0 0 10px #fff;pointer-events:none}
+  .zv-stage{height:min(420px,52vh);background:url(img/e05_alapterkep_ures.jpg${V}) 30% 60%/260%;cursor:crosshair}
+  .zv-flag{position:absolute;right:2%;bottom:6%;pointer-events:none}
+  .zv-k{position:absolute;border:0;padding:0;background:none;cursor:pointer;transform:translate(-50%,-100%)}.zv-k.run{transition:left .6s ease-in,opacity .6s;opacity:0}.zv-k.run .as{transform:scaleX(-1)}
+  .zv-life{letter-spacing:2px}
+  .tr-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:14px;background:linear-gradient(rgba(58,36,16,.82),rgba(58,36,16,.92)),url(img/e05_kiralytalalkozo.jpg${V}) center/cover;color:#FFF1D8}
+  .tr-ord{display:flex;gap:8px;min-height:84px;align-items:center;flex-wrap:wrap;justify-content:center}
+  .tr-ord .slot{width:72px;height:72px;border-radius:50%;background:rgba(255,244,223,.12);box-shadow:inset 0 0 0 2px rgba(255,244,223,.3);display:flex;align-items:center;justify-content:center}
+  .tr-pl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:min(560px,100%)}
+  .tr-pl button{border:0;border-radius:18px;padding:8px 4px;background:rgba(255,244,223,.9);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font:800 13px Nunito,sans-serif;color:#3A2410;box-shadow:0 4px 0 rgba(0,0,0,.35);transition:transform .1s}
+  .tr-pl button.lit{transform:translateY(-6px) scale(1.06);box-shadow:0 0 0 4px #E2B33C,0 10px 0 rgba(0,0,0,.35)}.tr-pl button:disabled{cursor:default;opacity:.9}
+  @media (max-width:520px){.tr-pl{grid-template-columns:repeat(2,1fr)}}`;
+  document.head.appendChild(st);
+
+  // ---------- 1. Aranymosás ----------
+  function playMosas() {
+    if (!miniStart('aranymosas')) return;
+    const TIME = 30; let left = TIME, score = 0, gold = 0, fool = 0, over = false;
+    const tw = Math.min(400, Math.round(window.innerWidth * 0.78));
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('AZ ARANYOS PATAK PARTJÁN')}</span><h2>${tr('Aranymosás')}</h2>
+      <p>${tr('Rázod a tálat, a homok kifolyik, és néha megcsillan valami. Koppints az aranyra, mielőtt visszamossa a víz! A bolondarany is csillog, azt hagyd ott, mert a kincstárnok kinevet.')}</p>
+      <div class="ag-hud"><span id="amT"></span><span id="amS"></span><span>${spr('rog0', 22)} 1 · ${spr('rog1', 22)} 3 · ${spr('rog2', 24)} 6 · ${spr('pirit', 24)} ${tr('mínusz 4')}</span></div>
+      <div class="ag-stage am-stage" id="amSt">${spr('tal', tw, 'am-tal')}</div></div>`, '', 'minimodal');
+    const host = $('amSt'), hud = () => { $('amT').textContent = trf('Még {0} mp', left); $('amS').textContent = trf('{0} pont', score); }; hud();
+    const KIND = [['rog0', 1, 46, 44], ['rog1', 3, 20, 52], ['rog2', 6, 7, 60], ['pirit', -4, 17, 56], ['sand', 0, 10, 26]];
+    const pick = () => { let r = Math.random() * 100; for (const k of KIND) { if ((r -= k[2]) < 0) return k; } return KIND[0]; };
+    function spawn() {
+      if (over || !alive('amSt')) return;
+      const k = pick(), b = document.createElement('button'); b.type = 'button'; b.className = 'am-it';
+      b.innerHTML = k[0] === 'sand' ? '<span class="am-sand"></span>' : spr(k[0], k[3]);
+      const W = host.clientWidth, H = host.clientHeight, a = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * tw * 0.3;
+      b.style.left = (W / 2 + Math.cos(a) * rr) + 'px'; b.style.top = (H / 2 + Math.sin(a) * rr * 0.9) + 'px';
+      host.appendChild(b); requestAnimationFrame(() => b.classList.add('on'));
+      const life = 1500 - Math.min(500, (TIME - left) * 14);
+      const t = setTimeout(() => { b.classList.add('off'); setTimeout(() => b.remove(), 300); }, life);
+      b.onpointerdown = e => { e.preventDefault(); if (over || b.dataset.x) return; b.dataset.x = 1; clearTimeout(t);
+        const x = parseFloat(b.style.left), y = parseFloat(b.style.top);
+        if (k[1] > 0) { score += k[1]; gold++; pop(host, x, y, '+' + k[1]); try { sfxCollect(); } catch (er) {} }
+        else if (k[1] < 0) { score = Math.max(0, score + k[1]); fool++; pop(host, x, y, String(k[1]), 'bad'); host.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'none' }], 220); }
+        else pop(host, x, y, tr('homok'), 'bad');
+        hud(); b.classList.add('off'); setTimeout(() => b.remove(), 250); };
+    }
+    const sp = setInterval(() => { if (!alive('amSt')) return clearInterval(sp); spawn(); if (left < 20) setTimeout(spawn, 260); }, 620);
+    const tk = setInterval(() => { if (!alive('amSt')) { clearInterval(tk); return; } left--; hud(); if (left <= 0) { clearInterval(tk); clearInterval(sp); over = true; finish(); } }, 1000);
+    function finish() {
+      const rew = { arany: clamp(Math.round(score / 4), 2, 22), penz: 150 + score * 10, tudas: score >= 30 ? 2 : 1 };
+      done(score >= 30 ? 'GAZDAG FOGÁS' : 'MEGVAN A NAPI ADAG', score >= 30 ? tr('Csillog a tál!') : tr('Szép kis zsákmány'),
+        [trf('{0} szem aranyat mostál ki, és {1} pontot gyűjtöttél.', gold, score), fool ? trf('{0}-szor nyúltál a bolondaranyhoz. A kincstárnok még most is nevet.', fool) : tr('Egyszer sem dőltél be a bolondaranynak. A kincstárnok elismerően bólint.')],
+        'aranymosas', rew, 'A 14. században Magyarország volt Európa legnagyobb aranytermelője. A nagy részét Körmöcbánya és a többi felvidéki bányaváros adta, de az erdélyi és felvidéki patakokban is mostak aranyat, például az Aranyos folyóban. A bolondarany a pirit, egy vasásvány, amely aranyszínű, de semmit sem ér.');
+    }
+  }
+
+  // ---------- 2. Pénzverés ----------
+  function playVeres() {
+    if (!miniStart('penzveres')) return;
+    const N = 8; let n = 0, good = 0, perfect = 0, pos = 0, dir = 1, busy = false, raf = 0, zone = { a: 0, w: 0 };
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KÖRMÖCBÁNYAI PÉNZVERŐ KAMRA')}</span><h2>${tr('Pénzverés')}</h2>
+      <p>${trf('A király új aranyforintot akar, szépet és kereket. A jel ide-oda szalad, és akkor üss, amikor a zöld mezőben van. Ha mellé ütsz, ferde lesz a pénz. {0} érmét versz.', N)}</p>
+      <div class="ag-stage pv-wrap" id="pvSt"><div class="ag-hud" style="width:100%;color:#FFF1D8"><span id="pvN"></span><span id="pvG"></span></div>
+        <div class="pv-anv">${spr('ullo', 220, 'ullo')}<span class="kal" id="pvK">${spr('kalapacs', 130)}</span></div>
+        <div class="pv-bar" id="pvBar"><div class="pv-zone" id="pvZ"><i></i></div><div class="pv-mark" id="pvM"></div></div>
+        <button class="btn coral" type="button" id="pvHit" style="min-width:180px">${tr('Üss!')}</button><div class="pv-tray" id="pvTr"></div></div></div>`, '', 'minimodal');
+    const setZone = () => { const w = 26 - n * 1.8; zone = { a: 8 + Math.random() * (84 - w), w }; $('pvZ').style.left = zone.a + '%'; $('pvZ').style.width = zone.w + '%'; };
+    const hud = () => { $('pvN').textContent = trf('{0}. érme / {1}', Math.min(n + 1, N), N); $('pvG').textContent = trf('{0} szép forint', good); };
+    setZone(); hud();
+    let last = performance.now();
+    const loop = t => { if (!alive('pvSt')) return; const dt = (t - last) / 1000; last = t; if (!busy) { const sp = 55 + n * 9; pos += dir * sp * dt; if (pos > 100) { pos = 100; dir = -1; } if (pos < 0) { pos = 0; dir = 1; } $('pvM').style.left = pos + '%'; } raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    const hit = async () => {
+      if (busy || n >= N) return; busy = true; const k = $('pvK'); k.classList.add('hit'); try { sfxCollect(); } catch (e) {}
+      const inZ = pos >= zone.a && pos <= zone.a + zone.w, mid = Math.abs(pos - (zone.a + zone.w / 2)) <= zone.w / 6;
+      if (inZ) good++; if (inZ && mid) perfect++;
+      const c = document.createElement('span'); c.innerHTML = spr(inZ ? 'forint_szep' : 'forint_ferde', 46); if (!inZ) c.className = 'bent'; c.title = inZ ? (mid ? tr('Tökéletes') : tr('Szép')) : tr('Ferde'); $('pvTr').appendChild(c);
+      pop($('pvSt'), $('pvSt').clientWidth / 2, 120, inZ ? (mid ? tr('Tökéletes!') : tr('Szép!')) : tr('Ferde!'), inZ ? '' : 'bad');
+      await sleep(160); if (!alive('pvSt')) return; k.classList.remove('hit'); n++; hud();
+      if (n >= N) { cancelAnimationFrame(raf); await sleep(500); return finish(); }
+      setZone(); await sleep(250); busy = false;
+    };
+    $('pvHit').onclick = hit;
+    const key = e => { if (!alive('pvSt')) { removeEventListener('keydown', key); return; } if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); hit(); } }; addEventListener('keydown', key);
+    function finish() {
+      const rew = { forint: Math.max(1, Math.ceil(good / 2) + (perfect >= 3 ? 1 : 0)), penz: 120 + good * 45 + perfect * 20 };
+      done(good >= 6 ? 'A KIRÁLY ELÉGEDETT' : 'KICSIT GÖRBÉRE SIKERÜLT', good >= 6 ? tr('Fényes, kerek forintok') : tr('Lesz még ebből szép pénz'),
+        [trf('{0} érméből {1} lett szép és kerek, ebből {2} tökéletes.', N, good, perfect), good < N ? tr('A ferde forintokat a kamaraispán beolvasztja. Semmi sem vész el, csak kicsit szégyelljük magunkat.') : tr('Egyetlen ferde érme sem akadt. A kamaraispán a falra akarja kitenni a kalapácsodat.')],
+        'penzveres', rew, 'Károly Róbert 1325-ben kezdte veretni a magyar aranyforintot a firenzei pénz mintájára, az egyik oldalán liliommal, a másikon Keresztelő Szent Jánossal. Az aranyforint évszázadokig megőrizte az értékét, és egész Európában szívesen elfogadták. Ma is a forint a pénzünk neve.');
+    }
+  }
+
+  // ---------- 3. Lovagi torna ----------
+  function playTorna() {
+    if (!miniStart('torna')) return;
+    const RUNS = 3; let run = 0, me = 0, foe = 0, busy = true, raf = 0, t0 = 0, tip = { x: 0, y: 0 };
+    const kw = Math.min(260, Math.round(window.innerWidth * 0.32));
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('TORNA A VISEGRÁDI VÁR ALATT')}</span><h2>${tr('Lovagi torna')}</h2>
+      <p>${trf('Te vagy a kék lovag. Amikor összeértek, a lándzsád hegye táncol a pajzson. Döfj, amikor a közepéhez közel jár! {0} menet van, a több pont nyer.', RUNS)}</p>
+      <div class="ag-hud"><span id="tnR"></span><span id="tnS"></span></div>
+      <div class="ag-stage tn-stage" id="tnSt"><span class="tn-k" id="tnA" style="left:-4%">${spr('lovag_kek', kw)}</span><span class="tn-k" id="tnB" style="right:-4%">${spr('lovag_piros', kw)}</span><div class="tn-shield" id="tnSh" hidden></div><span class="tn-tip" id="tnT" hidden></span></div>
+      <div class="row" style="justify-content:center;margin-top:10px"><button class="btn coral" type="button" id="tnGo" style="min-width:180px">${tr('Vágta!')}</button></div></div>`, '', 'minimodal');
+    const hud = () => { $('tnR').textContent = trf('{0}. menet / {1}', Math.min(run + 1, RUNS), RUNS); $('tnS').textContent = trf('Te {0} · Piros lovag {1}', me, foe); }; hud();
+    const btn = $('tnGo');
+    const aim = t => { if (!alive('tnSt')) return; const sh = $('tnSh').getBoundingClientRect(), stg = $('tnSt').getBoundingClientRect(), s = (t - t0) / 1000 * (1.5 + run * 0.55), r = sh.width * 0.42;
+      tip = { x: sh.left - stg.left + sh.width / 2 + Math.sin(s * 1.7) * r * Math.cos(s * 0.43), y: sh.top - stg.top + sh.height / 2 + Math.sin(s * 2.3 + 1) * r * 0.9 };
+      $('tnT').style.left = tip.x + 'px'; $('tnT').style.top = tip.y + 'px'; raf = requestAnimationFrame(aim); };
+    btn.onclick = async () => {
+      if (!busy) return strike();
+      busy = false; btn.disabled = true; const A = $('tnA'), B = $('tnB'), W = $('tnSt').clientWidth;
+      A.style.transform = `translateX(${W * 0.28}px)`; B.style.transform = `translateX(${-W * 0.28}px)`;
+      await sleep(1150); if (!alive('tnSt')) return;
+      $('tnSh').hidden = false; $('tnT').hidden = false; t0 = performance.now(); raf = requestAnimationFrame(aim); btn.textContent = tr('Döfés!'); btn.disabled = false;
+    };
+    async function strike() {
+      busy = true; btn.disabled = true; cancelAnimationFrame(raf);
+      const sh = $('tnSh').getBoundingClientRect(), stg = $('tnSt').getBoundingClientRect(), cx = sh.left - stg.left + sh.width / 2, cy = sh.top - stg.top + sh.height / 2, d = Math.hypot(tip.x - cx, tip.y - cy) / (sh.width / 2);
+      const p = d < 0.12 ? 10 : d < 0.32 ? 7 : d < 0.55 ? 4 : d < 0.8 ? 1 : 0, f = [3, 4, 4, 7, 7, 7, 10, 4, 1][Math.floor(Math.random() * 9)];
+      me += p; foe += f; pop($('tnSt'), tip.x, tip.y - 10, p ? '+' + p : tr('mellé'), p ? '' : 'bad'); try { sfxCollect(); } catch (e) {}
+      $('tnSt').animate([{ transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'none' }], 200);
+      await sleep(900); if (!alive('tnSt')) return;
+      run++; hud(); $('tnSh').hidden = true; $('tnT').hidden = true; $('tnA').style.transform = ''; $('tnB').style.transform = '';
+      if (run >= RUNS) { await sleep(600); return finish(); }
+      await sleep(700); btn.textContent = tr('Vágta!'); btn.disabled = false;
+    }
+    function finish() {
+      const win = me > foe, tie = me === foe;
+      const rew = { hirnev: win ? 5 : 2, vas: 6 + Math.round(me / 2), penz: 150 + me * 15 };
+      done(win ? 'GYŐZTÉL A TORNÁN' : tie ? 'DÖNTETLEN' : 'A PIROS LOVAG NYERT', win ? tr('A közönség éljenez!') : tie ? tr('Egyik sem esett le a lóról') : tr('Majd legközelebb'),
+        [trf('Te {0} pontot szereztél, a piros lovag {1} pontot.', me, foe), win ? tr('A király megtapsolt, a hölgyek virágot dobtak. A lovad szerint az ő érdeme volt.') : tr('A lovad szégyenkezve rágja a zabot. Holnap visszavágsz.')],
+        'torna', rew, 'Károly Róbert 1326 körül megalapította a Szent György Lovagrendet, Európa egyik első világi lovagrendjét. Az Anjou udvar szerette a lovagi tornákat, Visegrádon és Budán is rendeztek ilyet. A lovagok nem megölni akarták egymást, hanem tompa lándzsával kiütni a másikat a nyeregből.');
+    }
+  }
+
+  // ---------- 4. Zászlóvédés ----------
+  function playZaszlo() {
+    if (!miniStart('zaszlo')) return;
+    const TIME = 35; let left = TIME, chased = 0, lives = 3, over = false;
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('ROZGONYI CSATAMEZŐ, 1312')}</span><h2>${tr('Zászlóvédés')}</h2>
+      <p>${tr('Az Aba-fiak katonái a királyi zászlót akarják elvinni. Koppints rájuk, és ijedten elszaladnak. Ha háromnál többen elérik a zászlót, vége a csatának.')}</p>
+      <div class="ag-hud"><span id="zvT"></span><span id="zvC"></span><span class="zv-life" id="zvL"></span></div>
+      <div class="ag-stage zv-stage" id="zvSt">${spr('zaszlo', 96, 'zv-flag')}</div></div>`, '', 'minimodal');
+    const host = $('zvSt'), hud = () => { $('zvT').textContent = trf('Még {0} mp', left); $('zvC').textContent = trf('{0} katona elzavarva', chased); $('zvL').textContent = '🛡️'.repeat(lives) + '▫️'.repeat(3 - lives); }; hud();
+    function spawn() {
+      if (over || !alive('zvSt')) return;
+      const W = host.clientWidth, H = host.clientHeight, b = document.createElement('button'); b.type = 'button'; b.className = 'zv-k';
+      const y = H * (0.42 + Math.random() * 0.52), sz = 56 + (y / H) * 40; b.innerHTML = spr('katona', Math.round(sz)); b.style.top = y + 'px'; b.style.zIndex = Math.round(y);
+      host.appendChild(b); const dur = Math.max(2600, 6200 - (TIME - left) * 110), start = performance.now(), x0 = -40, x1 = W * 0.9;
+      const step = t => { if (over || !b.isConnected || b.dataset.x) return; const k = (t - start) / dur; b.style.left = (x0 + (x1 - x0) * k) + 'px';
+        if (k >= 1) { b.remove(); lives--; hud(); host.animate([{ boxShadow: 'inset 0 0 0 40px rgba(184,64,44,.45)' }, { boxShadow: 'inset 0 0 0 3px rgba(74,42,16,.6)' }], 400); if (lives <= 0) end(); return; }
+        requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+      b.onpointerdown = e => { e.preventDefault(); if (over || b.dataset.x) return; b.dataset.x = 1; chased++; hud(); pop(host, parseFloat(b.style.left), y - sz, tr('Fuss!'));
+        b.classList.add('run'); b.style.left = '-120px'; setTimeout(() => b.remove(), 650); };
+    }
+    let sp = 0; const sched = () => { if (over || !alive('zvSt')) return; spawn(); sp = setTimeout(sched, Math.max(420, 1150 - (TIME - left) * 22)); }; sched();
+    const tk = setInterval(() => { if (!alive('zvSt')) { clearInterval(tk); return; } left--; hud(); if (left <= 0) end(); }, 1000);
+    function end() {
+      if (over) return; over = true; clearInterval(tk); clearTimeout(sp); const held = lives > 0;
+      const rew = { penz: 120 + chased * 12, hirnev: held ? (chased >= 25 ? 4 : 2) : 1, vas: Math.max(2, Math.round(chased / 3)) };
+      setTimeout(() => done(held ? 'A ZÁSZLÓ ÁLL' : 'ELVITTÉK A ZÁSZLÓT', held ? tr('Megvédted a királyi zászlót') : tr('Elfogyott a pajzs'),
+        [trf('{0} katonát zavartál el.', chased), held ? tr('Az Aba-fiak hazakullogtak, a király pedig elégedetten simogatja a bajuszát.') : tr('A zászlót ugyan elvitték, de a király szerint a bátorság a fontos. Meg az, hogy holnap újra próbálod.')],
+        'zaszlo', rew, 'A rozgonyi csatában, 1312-ben Károly Róbert legyőzte az Aba-fiakat és Csák Máté csapatait. A krónika szerint a csata hevében elesett a király zászlótartója, és Károly a Szent György-zászló alatt harcolt tovább. A győzelemhez a szepesi szászok segítsége is kellett.'), 500);
+    }
+  }
+
+  // ---------- 5. Terítés ----------
+  function playTerites() {
+    if (!miniStart('terites')) return;
+    const P = [['tal_kenyer', 'Kenyér'], ['tal_bor', 'Bor'], ['tal_hus', 'Hús'], ['tal_gyumolcs', 'Gyümölcs']];
+    let lvl = 3, seq = [], at = 0, rounds = 0, busy = true;
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KIRÁLYTALÁLKOZÓ VISEGRÁDON, 1335')}</span><h2>${tr('Terítés')}</h2>
+      <p>${tr('Három király ül az asztalnál, és mind éhes. A főasztalnok egymás után felvillantja, mit kérnek. Jegyezd meg a sorrendet, aztán hozd a tálakat pontosan így. Minden körben eggyel több fogás jön.')}</p>
+      <div class="ag-stage tr-wrap" id="trSt"><div class="ag-hud" style="width:100%;color:#FFF1D8"><span id="trR"></span><span id="trM"></span></div>
+        <div class="tr-ord" id="trO"></div>
+        <div class="tr-pl">${P.map((p, i) => `<button type="button" data-p="${i}" disabled>${spr(p[0], 96)}<span>${tr(p[1])}</span></button>`).join('')}</div>
+        <button class="btn coral" type="button" id="trGo">${tr('Kezdődjön a lakoma!')}</button></div></div>`, '', 'minimodal');
+    const btns = [...$('modalRoot').querySelectorAll('[data-p]')];
+    const hud = (m) => { $('trR').textContent = trf('{0} fogásos kör', lvl); $('trM').textContent = m || ''; };
+    const slots = (fill) => { $('trO').innerHTML = Array.from({ length: lvl }, (_, i) => `<span class="slot">${fill && fill[i] != null ? spr(P[fill[i]][0], 60) : ''}</span>`).join(''); };
+    hud(tr('Figyelj jól!')); slots();
+    async function show() {
+      busy = true; btns.forEach(b => b.disabled = true); seq = Array.from({ length: lvl }, () => Math.floor(Math.random() * 4)); at = 0; slots(); hud(tr('A király ezt kéri...'));
+      await sleep(500);
+      for (const i of seq) { if (!alive('trSt')) return; btns[i].classList.add('lit'); await sleep(Math.max(380, 700 - lvl * 40)); btns[i].classList.remove('lit'); await sleep(180); }
+      if (!alive('trSt')) return; hud(tr('Most te jössz!')); busy = false; btns.forEach(b => b.disabled = false);
+    }
+    $('trGo').onclick = () => { $('trGo').hidden = true; show(); };
+    btns.forEach(b => b.onclick = async () => {
+      if (busy) return; const i = +b.dataset.p; b.classList.add('lit'); setTimeout(() => b.classList.remove('lit'), 160);
+      if (i !== seq[at]) { busy = true; btns.forEach(x => x.disabled = true); slots(seq); hud(tr('Hoppá, nem ezt kérték!')); await sleep(1400); if (alive('trSt')) finish(); return; }
+      at++; slots(seq.slice(0, at)); try { sfxCollect(); } catch (e) {}
+      if (at >= seq.length) { rounds++; busy = true; hud(tr('Pontosan így!')); await sleep(900); if (!alive('trSt')) return; if (lvl >= 8) return finish(); lvl++; show(); }
+    });
+    function finish() {
+      const rew = { bor: 4 + rounds * 3, termeny: 80 + rounds * 40, penz: 100 + rounds * 50 };
+      done(rounds >= 4 ? 'JÓLLAKOTT A HÁROM KIRÁLY' : 'KICSIT ÖSSZEKEVEREDTEK A TÁLAK', rounds >= 4 ? tr('Ilyen lakomát még nem láttak') : tr('Azért senki sem maradt éhes'),
+        [trf('{0} kört hibátlanul végigszolgáltál.', rounds), rounds >= 4 ? tr('A cseh király kétszer is repetát kért, a lengyel király pedig elkérte a receptet.') : tr('A lengyel király gyümölcsöt kért, kenyeret kapott. Udvariasan megette.')],
+        'terites', rew, 'Visegrádon 1335-ben találkozott Károly Róbert, János cseh király és Kázmér lengyel király. Megegyeztek, hogy a kereskedők elkerülhetik a bécsi vámot. A krónika szerint a magyar király a vendégek kíséretének naponta sok ezer kenyeret és rengeteg bort adott. A három ország ma is visegrádi együttműködésnek hívja a szövetségét.');
+    }
+  }
 })();
 
 // ---------- Kun telep: külön térkép a kunoknak, Kun Erzsébet kérései, a végén Kunszállás a fővárosba ----------
