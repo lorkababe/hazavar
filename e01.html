@@ -3074,7 +3074,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611197'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611095'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
@@ -3897,6 +3897,27 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
     const r = _m.apply(this, arguments);
     try { if (GAME.has(id)) { const s = document.querySelector('#modalRoot .scrim'); if (s) s.onpointerdown = null; } } catch (e) {}
     return r;
+  };
+})();
+
+// ---------- ösvény rajzolásakor visszafelé húzva az utolsó darab törlődik, mintha visszavonnád ----------
+(function roadUndo() {
+  if (typeof roadPaintAt !== 'function') return;
+  const _rp = roadPaintAt;
+  roadPaintAt = function (sx, sy) {
+    try {
+      if (roadPaint && roadPaint.mode === 'add') {
+        const [bx, by] = toBg(sx, sy), [i, j] = tileAt(bx, by), k = key(i, j), st = roadPaint.stk = roadPaint.stk || [];
+        if (k !== roadPaint.last && st.length >= 2 && st[st.length - 2] === k) {
+          const last = st.pop(); if (S.roads[last]) { delete S.roads[last]; try { give(DEF.ut.cost); } catch (e) {} connCache = null; try { roadCache = null; } catch (e) {} save(); try { sfxClick(); } catch (e) {} }
+          roadPaint.last = k; return;
+        }
+        const had = !!S.roads[k]; const r = _rp.apply(this, arguments);
+        if (!had && S.roads[k] && st[st.length - 1] !== k) st.push(k);
+        return r;
+      }
+    } catch (e) {}
+    return _rp.apply(this, arguments);
   };
 })();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
