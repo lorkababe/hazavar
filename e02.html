@@ -3987,6 +3987,9 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
     try { return _dr.apply(this, arguments); } finally { ctx.clearRect = cr; }
   };
 })();
+
+// a törzsfők képén a fej mindig teljesen látszódjon: magasabb keret, a kép teteje igazodik a kerethez
+(function () { const st = document.createElement('style'); st.textContent = '.chief .pt{height:clamp(190px,24vw,240px)!important}.chief .pt img{object-fit:cover!important;object-position:50% 0!important}'; document.head.appendChild(st); })();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
