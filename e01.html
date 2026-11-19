@@ -1737,7 +1737,7 @@ function showStore() {
   $('modalRoot').querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const n = +b.dataset.sell; if (S.res.termeny < n) return; S.res.termeny -= n; give({ penz: n / 100 * rate }); dailyHit('vasar'); save(); toast(trf('Eladtál {0} Terményt {1} Pénzért.', n, n / 100 * rate)); showStore(); });
 }
 // ---------- extra telkek ----------
-const LOTS = [{ id: 'l1', i: -3, j: 0 }, { id: 'l2', i: -3, j: 3 }, { id: 'l3', i: -3, j: 6 }, { id: 't1', i: 0, j: -3 }, { id: 't2', i: 3, j: -3 }, { id: 't3', i: 6, j: -3 }, { id: 'r1', i: 9, j: 0 }, { id: 'r2', i: 9, j: 3 }];
+const LOTS = [{ id: 'l1', i: -3, j: 0 }, { id: 'l2', i: -3, j: 3 }, { id: 'l3', i: -3, j: 6 }, { id: 't1', i: 0, j: -3 }, { id: 't2', i: 3, j: -3 }, { id: 't3', i: 6, j: -3 }, { id: 'r1', i: 9, j: 0 }, { id: 'r2', i: 9, j: 3 }, { id: 'p1', i: 0, j: 9 }, { id: 'p2', i: 3, j: 9 }, { id: 'p3', i: 6, j: 9 }];
 const LOT_MONEY = [250, 500, 900], LOT_KORONA = 40;
 const lotOwned = id => (S.lots || []).includes(id);
 const lotAt = (i, j) => LOTS.find(l => i >= l.i && i < l.i + 3 && j >= l.j && j < l.j + 3);
