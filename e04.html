@@ -6093,6 +6093,43 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
   const go = () => { const r = document.getElementById('modalRoot'); if (!r) return setTimeout(go, 300); new MutationObserver(wrap).observe(r, { childList: true, subtree: true }); wrap(); };
   go();
 })();
+
+// ---------- jobban ki lehet nagyítani: a térkép tükrözve folytatódik a széleken túl, halványuló peremmel ----------
+(function zoomOut() {
+  if (typeof resize !== 'function' || typeof draw !== 'function' || typeof BGW === 'undefined') return;
+  const ZO = 0.7;
+  const _rs = resize; resize = function () { const r = _rs.apply(this, arguments); minS = minS * ZO; try { clampCam(); } catch (e) {} return r; };
+  const _cc = clampCam; clampCam = function () {
+    const vw = W / scale, vh = H / scale; _cc.apply(this, arguments);
+    if (vw >= BGW) camX = (BGW - vw) / 2;
+    if (vh >= BGH) camY = (BGH - vh) / 2;
+  };
+  const bgImg = () => { const k = Object.keys(IMG).find(x => /alapterkep(_ures)?$/.test(x) && !/_ures$/.test(x)) || Object.keys(IMG).find(x => /alapterkep/.test(x)); const im = k && IMG[k]; return im && im.naturalWidth ? im : null; };
+  let SUR = null;
+  function buildSur(M) {
+    const F = Math.round(Math.max(BGW, BGH) * 0.45), R = 0.35, c = document.createElement('canvas'); c.width = Math.round((BGW + 2 * F) * R); c.height = Math.round((BGH + 2 * F) * R);
+    const g = c.getContext('2d'); g.scale(R, R); g.translate(F, F); g.filter = 'blur(5px) saturate(0.75) brightness(0.92)';
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { g.save(); g.translate(dx > 0 ? 2 * BGW : 0, dy > 0 ? 2 * BGH : 0); g.scale(dx ? -1 : 1, dy ? -1 : 1); g.drawImage(M, 0, 0, BGW, BGH); g.restore(); }
+    g.filter = 'none'; const col = a => `rgba(58,42,20,${a})`;
+    const lin = (x0, y0, x1, y1, rx, ry, rw, rh) => { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, col(0.1)); gr.addColorStop(0.5, col(0.55)); gr.addColorStop(1, col(0.95)); g.fillStyle = gr; g.fillRect(rx, ry, rw, rh); };
+    g.save(); g.beginPath(); g.rect(-F, -F, BGW + 2 * F, BGH + 2 * F); g.rect(0, 0, BGW, BGH); g.clip('evenodd');
+    lin(0, 0, 0, -F, -F, -F, BGW + 2 * F, F); lin(0, BGH, 0, BGH + F, -F, BGH, BGW + 2 * F, F); lin(0, 0, -F, 0, -F, 0, F, BGH); lin(BGW, 0, BGW + F, 0, BGW, 0, F, BGH);
+    g.restore(); SUR = { c, F };
+  }
+  function surround() {
+    const vw = W / scale, vh = H / scale; if (camX >= 0 && camY >= -260 && camX + vw <= BGW && camY + vh <= BGH + 260) return;
+    const M = bgImg(); if (!M) return; if (!SUR) buildSur(M);
+    ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR);
+    ctx.fillStyle = 'rgb(58,42,20)'; ctx.fillRect(camX - 10, camY - 10, vw + 20, vh + 20);
+    ctx.drawImage(SUR.c, -SUR.F, -SUR.F, BGW + 2 * SUR.F, BGH + 2 * SUR.F);
+    ctx.restore();
+  }
+  const _dr = draw; draw = function () {
+    const cr = ctx.clearRect; ctx.clearRect = function () { cr.apply(ctx, arguments); try { surround(); } catch (e) {} };
+    try { return _dr.apply(this, arguments); } finally { ctx.clearRect = cr; }
+  };
+  try { resize(); } catch (e) {}
+})();
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {

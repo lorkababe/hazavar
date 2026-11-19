@@ -463,7 +463,7 @@ const DEF = {
   nagyjurta:{ name: 'Nagy jurta', size: 2, img: 'e01_nagy_jurta', cat: 'lak', cost: { penz: 130, termeny: 60 }, pop: 10, prod: { penz: 30 }, time: 45, road: true, tech: 'nemez', desc: 'Tíz ember fér el benne, és több Pénzt hoz.' },
   legelo:   { name: 'Legelő', size: 2, img: 'e01_legelo', cat: 'term', cost: { penz: 30 }, workers: 2, prod: { termeny: 19 }, time: 20, road: true, grass: true, desc: 'Gyorsan hozza a Terményt, de a nyáj lerágja a füvet. Ha kimerül, tovább kell vonulni.' },
   karam:    { name: 'Karám', size: 2, img: 'e01_karam', cat: 'term', cost: { penz: 100, termeny: 30 }, workers: 3, prod: { termeny: 20, penz: 15 }, time: 45, modes: true, road: true, tech: 'allat', desc: 'Szürke marha és racka. Tejet, húst, gyapjút ad, és sosem merül ki.' },
-  halasz:   { name: 'Halászhely', size: 2, img: 'e01_halaszhely', cat: 'term', cost: { penz: 60, termeny: 10 }, workers: 2, prod: { termeny: 26 }, time: 40, road: true, river: true, tech: 'halasz', desc: 'Csak a folyópartra építhető. Lassú, de biztos élelem.' },
+  halasz:   { name: 'Halászhely', size: 2, img: 'e01_halaszhely', cat: 'term', cost: { penz: 60, termeny: 10 }, workers: 2, prod: { termeny: 26 }, time: 40, road: false, river: true, tech: 'halasz', desc: 'A folyó partjára épül, a város alatt, és nem kell hozzá ösvény, mert a halászok a vízen járnak. Lassú, de biztos élelem.' },
   nyerges:  { name: 'Nyergesműhely', size: 2, img: 'e01_nyergesmuhely', cat: 'term', cost: { penz: 120, termeny: 40 }, workers: 3, prod: { penz: 45 }, time: 60, road: true, tech: 'nyereg', modes: true, desc: 'Nyerget és bőrárut készít, amiből jó sok Pénz lesz.' },
   menes:    { name: 'Ménes', size: 1, img: 'e01_menes', cat: 'term', cost: { penz: 90, termeny: 50 }, workers: 2, prod: { kovako: 1 }, time: 50, road: true, tech: 'lo', modes: true, desc: 'Itt nevelik a lovakat, a korszak kincsét.' },
   taltos:   { name: 'Táltos sátra', size: 1, img: 'e01_taltos_satra', cat: 'hang', cost: { penz: 60, termeny: 40 }, hang: 5, prod: { tudas: 1 }, time: 60, tech: 'taltos', desc: 'A táltos dobol, jósol és gyógyít. Javít a hangulaton, és lassan Tudást ad.' },
@@ -643,7 +643,7 @@ function occ() {
 function free(type, i, j, ignore) {
   const k = DEF[type].size, m = occ();
   for (let a = 0; a < k; a++) for (let c = 0; c < k; c++) {
-    if (!inArea(i + a, j + c)) return false;
+    if (!inArea(i + a, j + c) && !(DEF[type].river && inBank(i + a, j + c))) return false;
     const o = m[key(i + a, j + c)]; if (o && o !== ignore) return false;
   }
   return true;
@@ -793,10 +793,15 @@ function startBuild(type) { lastHint = null;
 function startMove(b) { lastHint = null; tool = { mode: 'move', type: b.type, id: b.id }; hideInfo(); $('placebar').hidden = false; $('nav').hidden = true; $('placeText').textContent = trf('Hová tegyük át {0}? Koppints az új helyére.', withArt(DEF[b.type].name)); }
 function endTool() { hover = null; tool = null; $('placebar').hidden = true; $('nav').hidden = false; }
 
-function riverOk(type, i, j) { const d = DEF[type]; return !d.river || j + d.size === N; }
+// a Halászhely a nagy folyó partjára kerül, a város alatti parti sávba, és pont a víz mellé
+const inBank = (i, j) => j >= N && j <= N + 6 && i >= -5 && i <= N && !wetTile(i, j);
+function riverOk(type, i, j) { const d = DEF[type]; if (!d.river) return true; const k = d.size;
+  for (let a = 0; a < k; a++) for (let c = 0; c < k; c++) if (wetTile(i + a, j + c)) return false;
+  for (let a = -1; a <= k; a++) for (let c = -1; c <= k; c++) { const edge = a === -1 || a === k || c === -1 || c === k; if (edge && wetTile(i + a, j + c)) return true; }
+  return false; }
 function place(i, j) {
   const d = DEF[tool.type];
-  if (!riverOk(tool.type, i, j)) { toast('A Halászhely csak a patak partjára, a térkép bal alsó szélére építhető.'); return; }
+  if (!riverOk(tool.type, i, j)) { toast('A Halászhely csak közvetlenül a folyó partjára építhető, a város bal alsó széle alatt.'); return; }
   if (tool.mode === 'move') {
     const b = S.buildings.find(x => x.id === tool.id);
     if (!free(tool.type, i, j, b)) { toast('Ide nem fér el, keress neki másik helyet.'); return; }
@@ -977,7 +982,8 @@ function migrate() {
 function randOf(a) { return a[Math.floor(Math.random() * a.length)]; }
 function freeSpot(type) {
   const fo = S.buildings.find(b => b.type === 'fo'); const spots = [];
-  areaTiles().forEach(([i, j]) => { if (free(type, i, j) && riverOk(type, i, j)) spots.push([i, j, Math.hypot(i - fo.i - 1, j - fo.j - 1)]); });
+  const tl = areaTiles(); if (DEF[type].river) for (let i = -5; i <= N; i++) for (let j = N; j <= N + 6; j++) tl.push([i, j]);
+  tl.forEach(([i, j]) => { if (free(type, i, j) && riverOk(type, i, j)) spots.push([i, j, Math.hypot(i - fo.i - 1, j - fo.j - 1)]); });
   spots.sort((a, b) => a[2] - b[2]); return spots[0];
 }
 const TRIP = [
@@ -1231,7 +1237,6 @@ function draw(now) {
     ctx.drawImage(M, 0, M.naturalHeight - E * sy, M.naturalWidth, E * sy, 0, -BGH - E, BGW, E);
     ctx.restore(); ctx.drawImage(M, 0, 0, BGW, BGH);
   }
-  drawCreek(now);
   if (S.snow) { ctx.fillStyle = 'rgba(210,230,255,0.18)'; ctx.fillRect(0, 0, BGW, BGH); }
 
   const m = occ();
@@ -3821,6 +3826,43 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
   });
   const go = () => { const r = document.getElementById('modalRoot'); if (!r) return setTimeout(go, 300); new MutationObserver(wrap).observe(r, { childList: true, subtree: true }); wrap(); };
   go();
+})();
+
+// ---------- jobban ki lehet nagyítani: a térkép tükrözve folytatódik a széleken túl, halványuló peremmel ----------
+(function zoomOut() {
+  if (typeof resize !== 'function' || typeof draw !== 'function' || typeof BGW === 'undefined') return;
+  const ZO = 0.7;
+  const _rs = resize; resize = function () { const r = _rs.apply(this, arguments); minS = minS * ZO; try { clampCam(); } catch (e) {} return r; };
+  const _cc = clampCam; clampCam = function () {
+    const vw = W / scale, vh = H / scale; _cc.apply(this, arguments);
+    if (vw >= BGW) camX = (BGW - vw) / 2;
+    if (vh >= BGH) camY = (BGH - vh) / 2;
+  };
+  const bgImg = () => { const k = Object.keys(IMG).find(x => /alapterkep(_ures)?$/.test(x) && !/_ures$/.test(x)) || Object.keys(IMG).find(x => /alapterkep/.test(x)); const im = k && IMG[k]; return im && im.naturalWidth ? im : null; };
+  let SUR = null;
+  function buildSur(M) {
+    const F = Math.round(Math.max(BGW, BGH) * 0.45), R = 0.35, c = document.createElement('canvas'); c.width = Math.round((BGW + 2 * F) * R); c.height = Math.round((BGH + 2 * F) * R);
+    const g = c.getContext('2d'); g.scale(R, R); g.translate(F, F); g.filter = 'blur(5px) saturate(0.75) brightness(0.92)';
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { g.save(); g.translate(dx > 0 ? 2 * BGW : 0, dy > 0 ? 2 * BGH : 0); g.scale(dx ? -1 : 1, dy ? -1 : 1); g.drawImage(M, 0, 0, BGW, BGH); g.restore(); }
+    g.filter = 'none'; const col = a => `rgba(58,42,20,${a})`;
+    const lin = (x0, y0, x1, y1, rx, ry, rw, rh) => { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, col(0.1)); gr.addColorStop(0.5, col(0.55)); gr.addColorStop(1, col(0.95)); g.fillStyle = gr; g.fillRect(rx, ry, rw, rh); };
+    g.save(); g.beginPath(); g.rect(-F, -F, BGW + 2 * F, BGH + 2 * F); g.rect(0, 0, BGW, BGH); g.clip('evenodd');
+    lin(0, 0, 0, -F, -F, -F, BGW + 2 * F, F); lin(0, BGH, 0, BGH + F, -F, BGH, BGW + 2 * F, F); lin(0, 0, -F, 0, -F, 0, F, BGH); lin(BGW, 0, BGW + F, 0, BGW, 0, F, BGH);
+    g.restore(); SUR = { c, F };
+  }
+  function surround() {
+    const vw = W / scale, vh = H / scale; if (camX >= 0 && camY >= -260 && camX + vw <= BGW && camY + vh <= BGH + 260) return;
+    const M = bgImg(); if (!M) return; if (!SUR) buildSur(M);
+    ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR);
+    ctx.fillStyle = 'rgb(58,42,20)'; ctx.fillRect(camX - 10, camY - 10, vw + 20, vh + 20);
+    ctx.drawImage(SUR.c, -SUR.F, -SUR.F, BGW + 2 * SUR.F, BGH + 2 * SUR.F);
+    ctx.restore();
+  }
+  const _dr = draw; draw = function () {
+    const cr = ctx.clearRect; ctx.clearRect = function () { cr.apply(ctx, arguments); try { surround(); } catch (e) {} };
+    try { return _dr.apply(this, arguments); } finally { ctx.clearRect = cr; }
+  };
+  try { resize(); } catch (e) {}
 })();
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
