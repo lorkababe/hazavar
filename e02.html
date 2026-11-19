@@ -694,7 +694,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611196' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611197' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -1539,9 +1539,9 @@ function drawShadows(items) {
   const sig = list.map(b => b.type + b.i + ',' + b.j + (b.rot ? 'r' : '')).join('|');
   if (!shadowCache || sig !== shadowSig) {
     shadowSig = sig; const c = shadowCache || document.createElement('canvas'); c.width = BGW; c.height = BGH; const g = c.getContext('2d');
-    g.clearRect(0, 0, BGW, BGH); g.filter = 'blur(6px)'; g.fillStyle = 'rgba(40,30,10,0.28)';
+    g.clearRect(0, 0, BGW, BGH); g.filter = 'blur(9px)'; g.fillStyle = 'rgba(40,30,10,0.18)';
     list.forEach(b => { const d = DEF[b.type]; if (!d) return; let w = d.w || d.size || 1, h = d.h || d.size || 1; if (b.rot) [w, h] = [h, w];
-      const i0 = b.i - 0.06, j0 = b.j - 0.06, P = [tileTop(i0, j0), tileTop(i0 + w + 0.16, j0), tileTop(i0 + w + 0.16, j0 + h + 0.16), tileTop(i0, j0 + h + 0.16)];
+      const i0 = b.i - 0.06, j0 = b.j - 0.06, P = [tileTop(i0 + 0.08, j0 + 0.08), tileTop(i0 + w + 0.06, j0 + 0.08), tileTop(i0 + w + 0.06, j0 + h + 0.06), tileTop(i0 + 0.08, j0 + h + 0.06)];
       g.beginPath(); g.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(p => g.lineTo(p[0], p[1])); g.closePath(); g.fill(); });
     g.filter = 'none'; shadowCache = c;
   }
@@ -3206,7 +3206,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611196'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611197'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
