@@ -3695,7 +3695,8 @@ function showRuin(b) {
     const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 60, tr('A rom eltűnt, a hely a tiéd!'), '#FFE9B8'); } catch (e) {} toast(trf('{0} romjait elhordták. Az 5×5 mező most a tiéd, és 25 Vas is előkerült a kövek közül.', BAR_WHO[b.id])); };
 }
 { const _tp = tap; tap = function (sx, sy) {
-  try { if (S.rozgony && !tool) { const [bx, by] = toBg(sx, sy), [i, j] = tileAt(bx, by); const b = BARONS.find(r => !(S.ruinGone || {})[r.id] && i >= r.i && i < r.i + 5 && j >= r.j && j < r.j + 5); if (b && !pick(bx, by)) { if (kingOf(b.id)) showKing(b); else showRuin(b); return; } } } catch (e) {}
+  try { if (S.rozgony && !tool) { const [bx, by] = toBg(sx, sy), [i, j] = tileAt(bx, by); const b = BARONS.find(r => !(S.ruinGone || {})[r.id] && i >= r.i && i < r.i + 5 && j >= r.j && j < r.j + 5); const nearB = () => S.buildings.some(o => { if (BARONS.some(r => o.baroTile)) return false; const rr = spriteRect(o); return rr && bx >= rr.x - 10 && bx <= rr.x + rr.w + 10 && by >= rr.y - 90 && by <= rr.y + rr.h; });
+    if (b && !pick(bx, by) && !nearB()) { if (kingOf(b.id)) showKing(b); else showRuin(b); return; } } } catch (e) {}
   return _tp.apply(this, arguments); }; }
 
 // ---------- Anjou-kor: környék-hatás aranyra, bányareform ----------
