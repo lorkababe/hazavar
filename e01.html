@@ -4759,6 +4759,7 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
     { id: 'kaland', ic: '🗺️', name: 'Kalandor', desc: 'végigjátszott kaland', at: [5, 25, 80] },
     { id: 'kincs', ic: '💎', name: 'Kincsvadász', desc: 'megtalált meglepetés', at: [5, 30, 100] },
     { id: 'szerencse', ic: '🍀', name: 'Szerencsés flótás', desc: 'ajándék a szerencse-épülettől', at: [5, 30, 100] },
+    { id: 'kronika', ic: '📜', name: 'Krónikás', desc: 'lap a Krónikában', at: [8, 25, 48] },
     { id: 'szomszed', ic: '🤝', name: 'Jó szomszéd', desc: 'kaláka a szomszédoknak', at: [5, 20, 60] }
   ];
   let E; try { E = JSON.parse(localStorage.getItem(EK) || '{}') || {}; } catch (e) { E = {}; }
@@ -4914,6 +4915,156 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
       return out;
     };
   } catch (e) {}
+})();
+
+// ---------- Krónika: igaz történelmi tények gyűjtése, és a napi „Igaz vagy legenda?” kérdés ----------
+(function kronika() {
+  if (typeof S === 'undefined' || typeof modal !== 'function') return;
+  const ERAN = +((location.pathname.match(/e0(\d)\.html/) || [0, 0])[1]);
+  const KK = 'hazavar-kronika-v1';
+  let K; try { K = JSON.parse(localStorage.getItem(KK) || '{}') || {}; } catch (e) { K = {}; }
+  K.got = K.got || {}; K.quiz = K.quiz || {};
+  const keep = () => { try { localStorage.setItem(KK, JSON.stringify(K)); } catch (e) {} };
+  const T = s => { try { return tr(s); } catch (e) { return s; } };
+  const KIND = { t: ['Tény', '#2F7A3A'], l: ['Legenda', '#8A4AB0'], v: ['Vitatott', '#B8860B'] };
+  // [azonosító, mikor nyílik meg, évszám, cím, szöveg, fajta]
+  const F = {
+    0: [
+      ['e0_hely', 'start', 'kb. 400-350 ezer éve', 'Vértesszőlős', 'A Tata melletti Vértesszőlős Magyarország egyik legrégebbi ismert emberi lelőhelye. Meleg vizű források mellett éltek itt előembercsoportok.', 't'],
+      ['e0_samu', 'start', '1965', 'Samu megtalálása', 'Vértes László régészcsapata 1965-ben egy emberi tarkócsontot talált itt. A lelet a Samu becenevet kapta, és ma a Magyar Nemzeti Múzeumban őrzik.', 't'],
+      ['e0_tufa', 'fo', 'kb. 400 ezer éve', 'A kőbe zárt tábor', 'A források vize mésztufát rakott le, ez a kemény kőréteg őrizte meg a csontokat és az eszközöket százezer éveken át.', 't'],
+      ['e0_tuz', 'tuzrako', 'kb. 400 ezer éve', 'Az egyik legkorábbi tűzhely', 'Vértesszőlősön égett csontokat is találtak. Ez a tűzhasználat egyik korai európai nyoma, bár a régészek ma is vitatják, mennyire tudták a tüzet maguk gyújtani.', 'v'],
+      ['e0_kovako', 'kovako', 'kb. 400 ezer éve', 'Apró kavicseszközök', 'Az itteni kőeszközök meglepően kicsik, sokszor csak pár centisek. Kvarcit- és kovakavicsokból pattintották őket.', 't'],
+      ['e0_vadasz', 'vadasz', 'kb. 400 ezer éve', 'Mit ettek?', 'A lelőhelyen nagyvadak csontjait is megtalálták, ló, szarvas és medve maradványait. A csontokat feltörték, hogy a velőhöz hozzáférjenek.', 't'],
+      ['e0_erectus', 'kunyho', 'kb. 400 ezer éve', 'Ki volt Samu?', 'Samut sokáig a Homo erectus egyik késői képviselőjének tartották, mások inkább a Homo heidelbergensis rokonának látják. A pontos besorolás ma is vita tárgya.', 'v'],
+      ['e0_festes', 'szikla', 'sokkal később', 'Festett sziklafal', 'Vértesszőlősről nem ismerünk sziklafestményt. A híres barlangfestmények jóval későbbiek, csak néhány tízezer évesek. A játékban ez egy kis szabadság.', 'l']
+    ],
+    1: [
+      ['e1_etelkoz', 'start', '9. század', 'Etelköz', 'Etelköz a magyarok szállásterülete volt a Kárpátoktól keletre, valahol a Dnyeper és az Al-Duna között. A pontos helyét a történészek ma is vitatják.', 'v'],
+      ['e1_het', 'fo', '10. század', 'A hét magyar törzs', 'Bíborbanszületett Konstantin bizánci császár feljegyezte a törzsek nevét. Nyék, Megyer, Kürtgyarmat, Tarján, Jenő, Kér és Keszi.', 't'],
+      ['e1_kabar', 'kabar', '9. század', 'A kabarok', 'A Kazár Birodalomból kiváló három kabar törzs csatlakozott a magyarokhoz. Bíborbanszületett Konstantin szerint ők tanították meg a magyarokat a kazár nyelvre.', 't'],
+      ['e1_kende', 'vezeri', '9. század', 'Kettős fejedelemség', 'Arab források szerint a magyaroknak két vezetője volt. A kende szent, inkább jelképes uralkodó volt, a gyula vezette a hadat.', 't'],
+      ['e1_emese', 'taltos', 'Anonymus, kb. 1200', 'Emese álma', 'Anonymus krónikája szerint Álmos anyjának, Emesének álmában egy turul jelent meg, és megjövendölte, hogy fiából nagy királyok születnek. Ez monda, nem történeti esemény.', 'l'],
+      ['e1_eletfa', 'eletfa', '10. század', 'Életfa a tarsolyon', 'Honfoglalás kori tarsolylemezeken, például a galgóci leleten, életfa-motívum látható. A fa a világot összekötő rendet jelképezte.', 't'],
+      ['e1_ij', 'ijasz', '9-10. század', 'A visszacsapó íj', 'A magyar íj csontlemezekkel erősített, visszacsapó íj volt. Rövid, de erős, lóhátról is jól lehetett vele lőni.', 't'],
+      ['e1_895', 'verecke', 'kb. 895', 'Indulás nyugatra', 'A besenyők támadása is siettette, hogy a magyarok elhagyják Etelközt. Anonymus a Vereckei-hágót nevezi meg, de valószínűleg több hágón is átkeltek.', 'v']
+    ],
+    2: [
+      ['e2_895', 'start', 'kb. 895', 'A honfoglalás', 'A magyarság 895 körül kelt át a Kárpátokon, és néhány év alatt az egész medencét birtokba vette.', 't'],
+      ['e2_feherlo', 'vezeri', 'Képes Krónika, 14. század', 'A fehér ló mondája', 'A monda szerint Árpád egy fehér lóért, nyeregért és zabláért vette meg Szvatopluk földjét. Ez krónikás monda, nem így történt.', 'l'],
+      ['e2_kalandozas', 'zsakmany', '899-970', 'Kalandozások', 'A magyar seregek Itáliától Hispániáig jutottak el. 942-ben egy csapat egészen a mai Spanyolországig lovagolt.', 't'],
+      ['e2_nyilak', 'ijasz', 'legenda', 'A magyarok nyilaitól', 'Sokan idézik az imát, hogy „a magyarok nyilaitól ments meg, Uram”. Ebben a formában korabeli forrásból nem ismerjük, valószínűleg későbbi kitaláció.', 'l'],
+      ['e2_955', 'lehel', '955', 'Augsburg', 'A Lech-mezei csatában I. Ottó legyőzte a magyar sereget. Ezután értek véget a nyugati kalandozások.', 't'],
+      ['e2_kurt', 'lehel', 'legenda', 'Lehel kürtje', 'A monda szerint Lehel a kürtjével ütötte agyon a császárt. A Jászberényben őrzött elefántcsont kürt valójában későbbi, valószínűleg 11. századi bizánci munka.', 'l'],
+      ['e2_roves', 'rovasko', '10. század után', 'Rovásírás', 'A rovásírás jobbról balra halad, és fára vagy botra rótták. A legkorábbi biztos magyar rovásemlékek a honfoglalás utáni időkből valók.', 't'],
+      ['e2_foldvar', 'foldvar', '10. század', 'Földvárak', 'A magyar szálláshelyek körül földből és fából emelt sáncok védték a népet és a jószágot.', 't']
+    ],
+    3: [
+      ['e3_koronazas', 'start', '1000 vagy 1001', 'István koronázása', 'Istvánt 1000 karácsonyán vagy 1001 első napján koronázták királlyá, valószínűleg Esztergomban.', 't'],
+      ['e3_pannonhalma', 'vezeri', '996', 'Pannonhalma', 'A pannonhalmi bencés apátságot Géza fejedelem alapította 996-ban. Ma is működik, és a világörökség része.', 't'],
+      ['e3_palast', 'lehel', '1031', 'A koronázási palást', 'István és Gizella királyné 1031-ben miseruhának készíttette a székesfehérvári templom számára. Később lett belőle koronázási palást.', 't'],
+      ['e3_denar', 'penzverde', 'kb. 1000', 'István dénárja', 'István ezüstdénárján a LANCEA REGIS, vagyis a király lándzsája felirat olvasható. Ez volt az első magyar pénz.', 't'],
+      ['e3_templom', 'templom', 'kb. 1000', 'Tíz falu, egy templom', 'István törvénye előírta, hogy minden tíz falu építsen templomot. A plébánia rendszere így kezdett kiépülni.', 't'],
+      ['e3_ispan', 'ispan', '11. század', 'Vármegyék', 'István vármegyéket szervezett, élükön a király által kinevezett ispánnal.', 't'],
+      ['e3_koppany', 'liget', '997', 'Koppány lázadása', 'Koppány az ősi szokás szerint igényt tartott a fejedelemségre és Géza özvegyére. István legyőzte őt Veszprém mellett.', 't'],
+      ['e3_korona', 'kolostor', 'vitatott', 'A Szent Korona', 'A hagyomány szerint István a pápától kapott koronát. A ma látható Szent Korona részei azonban későbbiek, legalábbis az alsó része bizonyosan.', 'v']
+    ],
+    4: [
+      ['e4_arpad', 'start', '11-13. század', 'Az Árpád-ház', 'Az Árpád-házi királyok 1301-ig uralkodtak, amikor III. Andrással kihalt a család férfiága.', 't'],
+      ['e4_aranybulla', 'polgarhaz', '1222', 'Az Aranybulla', 'II. András 1222-ben adta ki az Aranybullát, amely a nemesek jogait rögzítette. Gyakran Magyarország első alkotmányos jellegű iratának nevezik.', 't'],
+      ['e4_andreanum', 'vendegtelep', '1224', 'Andreanum', 'II. András kiváltságlevele az erdélyi szászoknak. A betelepülő vendégnépek, a hospesek, különleges jogokat kaptak.', 't'],
+      ['e4_cikador', 'ciszterci_apatsag', '1142', 'Az első ciszterciek', 'Az első magyarországi ciszterci apátságot 1142-ben alapították Cikádoron, Bátaszék mellett.', 't'],
+      ['e4_tatar', 'kovar', '1241', 'Tatárjárás', 'A muhi csatában a mongol sereg legyőzte IV. Béla seregét. Az országot nagy pusztítás érte.', 't'],
+      ['e4_kovarak', 'visegrad', '1240-es évektől', 'Kővárak', 'A tatárjárás után IV. Béla kővárak építésére biztatta a nemeseket. Ekkor épült Visegrád fellegvára is.', 't'],
+      ['e4_kunok', 'jobbagytelek', '1239', 'A kunok befogadása', 'IV. Béla Kötöny kun fejedelem népét fogadta be az országba. A kunok a Duna-Tisza közén telepedtek le.', 't'],
+      ['e4_jak', 'jak', 'kb. 1256', 'A jáki templom', 'A jáki apátsági templom a magyar román kori építészet egyik legszebb emléke. Kapuja gazdag faragásairól híres.', 't']
+    ],
+    5: [
+      ['e5_karoly', 'start', '1308', 'Károly Róbert', 'Az Anjou-házból való Károly Róbert hosszú harc után 1308-ban lett elismert király.', 't'],
+      ['e5_rozgony', 'lovagitorna', '1312', 'Rozgony', 'A rozgonyi csatában Károly Róbert legyőzte az Aba-fiakat. A kiskirályok hatalma ezután fokozatosan megtört.', 't'],
+      ['e5_forint', 'penzverde1', '1325', 'Az aranyforint', 'Károly Róbert a firenzei arany mintájára veretett aranyforintot, liliommal és Keresztelő Szent Jánossal.', 't'],
+      ['e5_arany', 'banyavaros1', '14. század', 'Európa aranya', 'Ebben a korban Magyarország adta Európa aranytermelésének jelentős részét, főleg a felvidéki bányavárosokból, mint Körmöcbánya.', 't'],
+      ['e5_visegrad', 'palota1', '1335', 'A visegrádi királytalálkozó', 'A magyar, a cseh és a lengyel király Visegrádon tárgyalt, többek közt arról, hogyan kerüljék el a kereskedők a bécsi árumegállító jogot.', 't'],
+      ['e5_lovagrend', 'kuria', 'kb. 1326', 'Szent György Lovagrend', 'Károly Róbert alapította, Európa egyik legkorábbi világi lovagrendje.', 't'],
+      ['e5_laszlo', 'szent_laszlo_szobor', '1390', 'Szent László szobra', 'Nagyváradon a Kolozsvári testvérek, Márton és György öntötték bronzba Szent László lovasszobrát. Később elpusztult.', 't'],
+      ['e5_harom', 'vamhaz', 'túlzás', 'Három tenger mossa', 'A mondás szerint Nagy Lajos országát három tenger mosta. Valójában csak rövid ideig és lazán kapcsolódtak hozzá ilyen tájak, ez inkább dicsérő túlzás.', 'l']
+    ]
+  };
+  // napi kérdések: [állítás, igaz-e, magyarázat]
+  const Q = {
+    0: [['Samu koponyacsontját egy kisfiú találta meg játék közben.', false, 'Vértes László régészcsapata találta meg 1965-ben, rendes ásatáson.'], ['Vértesszőlősön a tűzhasználat nyomait is megtalálták.', true, 'Égett csontok kerültek elő, ez a tűzhasználat egyik korai jele.'], ['A vértesszőlősi előemberek barlangfestményeket készítettek.', false, 'Ilyet innen nem ismerünk, a barlangfestészet sokkal későbbi.']],
+    1: [['A magyaroknak Etelközben két vezetője volt, a kende és a gyula.', true, 'Arab források írják le ezt a kettős fejedelemséget.'], ['Emese álmát egy korabeli bizánci krónikás jegyezte fel.', false, 'Anonymus írta le kb. 1200 körül, és mondának tekintjük.'], ['A kabarok a Kazár Birodalomból csatlakoztak a magyarokhoz.', true, 'Bíborbanszületett Konstantin is erről ír.']],
+    2: [['Árpád valóban egy fehér lóért vette meg a Kárpát-medencét.', false, 'Ez a krónikák mondája, a valóságban hosszabb harc volt.'], ['A „magyarok nyilaitól ments meg, Uram” ima korabeli forrásból ismert.', false, 'Ebben a formában valószínűleg későbbi kitaláció.'], ['955-ben az augsburgi csata után véget értek a nyugati kalandozások.', true, 'A Lech-mezei vereség után a magyarok felhagytak a nyugati hadjáratokkal.']],
+    3: [['A koronázási palást eredetileg miseruhának készült.', true, '1031-ben a székesfehérvári templom számára készült.'], ['A ma látható Szent Korona teljes egészében István korából való.', false, 'Részei későbbiek, a kutatók ma is vitatják az összeállítását.'], ['István első pénzén a LANCEA REGIS felirat áll.', true, 'Jelentése a király lándzsája.']],
+    4: [['Az Aranybullát II. András adta ki 1222-ben.', true, 'A nemesek jogait rögzítette.'], ['A tatárjárás után IV. Béla megtiltotta a kővárak építését.', false, 'Épp ellenkezőleg, biztatta az építésüket.'], ['IV. Béla befogadta Kötöny kunjait.', true, '1239-ben, nem sokkal a tatárjárás előtt.']],
+    5: [['Az aranyforint a firenzei arany mintájára készült.', true, 'Károly Róbert 1325-ben kezdte veretni.'], ['Nagy Lajos országát valóban hosszú ideig három tenger mosta.', false, 'Ez dicsérő túlzás, nem pontos földrajzi tény.'], ['A visegrádi királytalálkozón három király tárgyalt.', true, 'A magyar, a cseh és a lengyel király, 1335-ben.']]
+  };
+  const L = F[ERAN] || [], QQ = Q[ERAN] || [];
+  const nameOf = id => { try { return DEF[id] ? DEF[id].name : id; } catch (e) { return id; } };
+  const has = trg => trg === 'start' || (S.buildings || []).some(b => b.type === trg);
+  function party(f) {
+    const old = document.getElementById('krPop'); if (old) old.remove();
+    const el = document.createElement('div'); el.id = 'krPop'; el.setAttribute('role', 'status');
+    el.innerHTML = `<span class="krbook">📜</span><div><small>${T('ÚJ LAP A KRÓNIKÁBAN')}</small><b>${T(f[3])}</b><span>${T(f[2])}</span></div>`;
+    el.onclick = () => { el.remove(); open(); };
+    document.body.appendChild(el); setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, 4200);
+  }
+  function check() {
+    try {
+      L.forEach(f => { if (!K.got[f[0]] && has(f[1])) { K.got[f[0]] = Date.now(); keep(); try { window.erdemInc && window.erdemInc('kronika'); } catch (e) {} if (f[1] !== 'start') party(f); } });
+      const b = document.getElementById('btnKron'); if (b) b.querySelector('.newdot').hidden = !!K.quiz[today()];
+    } catch (e) {}
+  }
+  const today = () => ERAN + '|' + new Date().toDateString();
+  function qOfDay() { if (!QQ.length) return null; const d = Math.floor(Date.now() / 864e5); return QQ[d % QQ.length]; }
+  function open(tab) {
+    const n = L.filter(f => K.got[f[0]]).length, q = qOfDay(), qa = K.quiz[today()];
+    const pages = L.map(f => { const on = K.got[f[0]], k = KIND[f[5]];
+      return on ? `<article class="krp"><header><span class="kryr">${T(f[2])}</span><span class="krk" style="--k:${k[1]}">${T(k[0])}</span></header><b>${T(f[3])}</b><p>${T(f[4])}</p></article>`
+        : `<article class="krp off"><header><span class="kryr">? ? ?</span></header><b>${T('Még üres lap')}</b><p>${trf('{0} felépítésével nyílik meg.', nameOf(f[1]))}</p></article>`; }).join('');
+    const quiz = !q ? '' : `<div class="krq" id="krQ"><span class="eyebrow">${T('IGAZ VAGY LEGENDA?')}</span><p class="krst">„${T(q[0])}”</p>
+      ${qa ? `<p class="krans ${qa.ok ? 'ok' : 'no'}"><b>${qa.ok ? T('Eltaláltad!') : T('Most nem talált.')}</b> ${q[1] ? T('Ez igaz.') : T('Ez legenda vagy tévhit.')} ${T(q[2])}</p><small>${T('Holnap új kérdés jön.')}</small>`
+        : `<div class="row"><button class="btn teal" type="button" data-a="1">${T('Igaz')}</button><button class="btn coral" type="button" data-a="0">${T('Legenda')}</button></div>`}</div>`;
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('KRÓNIKA')}</span><h2>${trf('{0} / {1} lap', n, L.length)}</h2>
+      <p>${T('Minden épülettel és eseménnyel egy igaz történet kerül a Krónikába. Ahol csak monda vagy legenda szól valamiről, azt jelezzük.')}</p>${quiz}<div class="krgrid">${pages}</div></div>`, 'krmodal', 'kronika');
+    document.querySelectorAll('#krQ [data-a]').forEach(btn => btn.onclick = () => {
+      const ok = (btn.dataset.a === '1') === q[1]; K.quiz[today()] = { ok }; keep();
+      try { give({ tudas: ok ? 2 : 1, penz: (ok ? 60 : 25) * (ERAN + 1) }); save(); hud(); } catch (e) {}
+      try { sfxCollect(); } catch (e) {}
+      open(); check();
+    });
+  }
+  window.kronikaOpen = open;
+  const st = document.createElement('style');
+  st.textContent = `.krmodal{width:min(980px,calc(100vw - 24px))!important;max-width:none!important}
+  .krgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+  .krp{background:rgba(255,248,232,.85);border-radius:14px;padding:12px 14px;box-shadow:inset 0 0 0 2px rgba(138,90,43,.25);display:flex;flex-direction:column;gap:4px;min-width:0}
+  .krp header{display:flex;justify-content:space-between;gap:8px;align-items:center}.kryr{font-weight:900;color:#8A5A2B;font-size:13px}
+  .krk{font-weight:900;font-size:11px;letter-spacing:.06em;color:#fff;background:var(--k);border-radius:999px;padding:2px 8px}
+  .krp b{font-size:16px}.krp p{margin:0;font-size:14px;line-height:1.45}.krp.off{opacity:.55;filter:grayscale(.6)}
+  .krq{margin:10px 0 4px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#FFF4DF,#F3DDB0);box-shadow:inset 0 0 0 2px #E2B33C}
+  .krst{font-size:18px;font-weight:800;margin:4px 0 10px}.krq .row{display:flex;gap:10px;flex-wrap:wrap}.krans{margin:0 0 4px}.krans.ok b{color:#2F7A3A}.krans.no b{color:#B8402C}
+  #btnKron{position:absolute!important;z-index:7;width:auto;height:44px;padding:0 14px 0 10px;display:flex;align-items:center;gap:6px;border:0;border-radius:14px 18px 14px 16px;font:inherit;font-weight:800;font-size:14px;color:#FFF1D8;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3)}#btnKron:not(.wood){background:rgba(58,36,16,.88)}#btnKron .newdot{position:absolute;top:-9px;right:-12px}
+  #krPop{position:fixed;left:50%;top:calc(var(--toph,72px) + 40px);transform:translateX(-50%);z-index:72;display:flex;align-items:center;gap:14px;max-width:92vw;padding:12px 20px 12px 14px;border-radius:20px;background:linear-gradient(135deg,#FFF4DF,#F3DDB0);color:#3A2410;box-shadow:0 0 0 3px #FFF4DF,0 0 0 6px #8A5A2B,0 14px 30px rgba(40,20,0,.4);cursor:pointer;animation:krIn .5s cubic-bezier(.2,1.4,.4,1) both}
+  #krPop.out{animation:krOut .4s ease-in forwards}#krPop .krbook{font-size:40px}#krPop small{display:block;font-weight:900;letter-spacing:.1em;font-size:11px;opacity:.8}#krPop b{display:block;font-size:19px}#krPop span{font-weight:700;font-size:13px}
+  @keyframes krIn{from{transform:translate(-50%,-30px) scale(.6);opacity:0}}@keyframes krOut{to{transform:translate(-50%,-20px);opacity:0}}`;
+  document.head.appendChild(st);
+  // gomb a bal oldali sávban, a többi alatt
+  const kb = document.createElement('button'); kb.id = 'btnKron'; kb.type = 'button';
+  kb.innerHTML = `<span class="newdot">!</span><span style="font-size:20px;line-height:1">📜</span><span>${T('Krónika')}</span>`;
+  kb.onclick = () => { try { hideInfo(); } catch (e) {} open(); };
+  ((document.getElementById('btnDaily') || {}).parentNode || document.getElementById('app') || document.body).appendChild(kb);
+  setInterval(() => {
+    try {
+      const refs = ['btnGb', 'btnMini', 'btnMiniE', 'btnDaily', 'btnTabla', 'btnKun'].map(id => document.getElementById(id)).filter(x => x && !x.hidden && x.offsetParent);
+      const ref = refs.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom)[0];
+      kb.hidden = !ref || !L.length; if (kb.hidden) return;
+      const r = ref.getBoundingClientRect(), pr = kb.offsetParent ? kb.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
+      kb.style.top = (r.bottom + 10 - pr.top) + 'px'; kb.style.left = (r.left - pr.left) + 'px';
+      if (!kb.dataset.cls) { const k = document.getElementById('btnMini') || document.getElementById('btnMiniE'); if (k) { kb.className = k.className; kb.dataset.cls = 1; } }
+    } catch (e) {}
+  }, 700);
+  setTimeout(check, 1800); setInterval(check, 4000);
 })();
 
 // HazaVár · tesztpult, csak a Claude teszt szerveren (a github.io-n nem jelenik meg)
