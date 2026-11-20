@@ -3661,6 +3661,13 @@ function showKing(b) {
   if ($('kgGet')) $('kgGet').onclick = () => { if (!kingReady(b.id)) return; S.kingAt = S.kingAt || {}; S.kingAt[b.id] = S.gt; give(KING_PROD); try { sfxCollect(); } catch (e) {} save(); hud(); closeModal();
     const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 80, '+' + KING_PROD.hirnev + ' ' + RES.hirnev.name + ' · +' + fmt(KING_PROD.penz) + ' ' + RES.penz.name, '#FFE9B8'); } catch (e) {} };
 }
+// a gomb alatt mindig látszik, mi hiányzik még, és ha összegyűlt, a gomb magától bekapcsol
+function costHint(cost, id) {
+  const btn = $(id); if (!btn) return; const h = document.createElement('small'); h.className = 'costhint'; h.style.cssText = 'display:block;margin-top:6px;font-weight:800;color:#B8402C'; btn.parentNode.appendChild(h);
+  const upd = () => { if (!document.body.contains(btn)) return clearInterval(t); const miss = Object.entries(cost).filter(([k, v]) => (S.res[k] || 0) < v).map(([k, v]) => `${fmt(v - Math.floor(S.res[k] || 0))} ${RES[k] ? RES[k].name : k}`);
+    btn.disabled = miss.length > 0; h.textContent = miss.length ? trf('Még hiányzik {0}.', miss.join(', ')) : ''; };
+  const t = setInterval(upd, 800); upd();
+}
 const fmtT = s => { s = Math.ceil(s); const h = Math.floor(s / 3600), m = Math.ceil((s % 3600) / 60); return h ? trf('{0} óra {1} perc', h, m) : trf('{0} perc', m); };
 function ruinTiles(b) { const t = []; for (let a = 0; a < 5; a++) for (let c = 0; c < 5; c++) t.push((b.i + a) + ',' + (b.j + c)); return t; }
 function ruinFree(b) {
@@ -3681,6 +3688,7 @@ function showRuin(b) {
       <div><button class="btn coral" type="button" id="ruGo" ${can ? '' : 'disabled'}>${tr('Eltakarítom')}</button></div></div>
     <div class="store-row" style="flex-direction:column;align-items:stretch;gap:8px"><b>${tr('Újjáépítés királyi várrá')}</b><span>${tr('A király hű várnagya újra felhúzza a falakat, és a tornyon ezután a piros-fehér királyi zászló leng. A királyi vár nyolc óránként Hírnevet, Pénzt és Vasat ad, és a nép is büszkébb lesz.')}</span><span style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-weight:900">${Object.entries(KING_COST).map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:4px"><img src="img/${RES[k].icon}.png" alt="" style="width:26px;height:26px" onerror="this.remove()">${fmt(v)} ${RES[k].name}</span>`).join('')}</span>
       <div><button class="btn teal" type="button" id="ruKing" ${canPay(KING_COST) ? '' : 'disabled'}>${tr('Újjáépítem')}</button></div></div></div></div>`, '', 'ruin');
+  costHint(RUIN_COST, 'ruGo'); costHint(KING_COST, 'ruKing');
   if ($('ruKing')) $('ruKing').onclick = () => { if (!canPay(KING_COST)) return; pay(KING_COST); S.ruinKing = S.ruinKing || {}; S.ruinKing[b.id] = 1; S.kingAt = S.kingAt || {}; S.kingAt[b.id] = S.gt - KING_T; give({ hirnev: 10 }); connCache = null; save(); hud(); closeModal();
     const [x, y] = tileTop(b.i + 2.5, b.j + 2.5); try { floatText(x, y - 90, tr('Újra áll a vár, most már a királyé!'), '#FFE9B8'); } catch (e) {} toast(trf('{0} egykori várán már a királyi zászló leng. 10 Hírnevet kaptál, és a vár nyolc óránként hoz még.', BAR_WHO[b.id])); };
   if ($('ruGo')) $('ruGo').onclick = () => { if (!canPay(RUIN_COST)) return; pay(RUIN_COST); S.ruinGone = S.ruinGone || {}; S.ruinGone[b.id] = 1; ruinFree(b); give({ vas: 25 }); connCache = null; save(); hud(); closeModal();
