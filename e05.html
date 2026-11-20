@@ -4737,7 +4737,7 @@ function showEraEnd() {
   const mins = Math.round(S.gt / 60);
   modal(`<img class="hero" src="img/e05_korszakzaro.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('AZ 5. KORSZAK VÉGE')}</span>
     <h2>${tr('A lovagkirály országa')}</h2><p>${tr('Áll a visegrádi palota, a bányákból arany folyik, az aranyforintot egész Európa elfogadja. Nagy Lajos országát a legenda szerint három tenger mossa. A 6. korszak, a Hunyadiak kora a prototípusban még nem játszható. A városod itt marad, építkezhetsz tovább.')}</p>
-    <div class="stats"><div><b>${trf('{0} perc', mins)}</b><small>${tr('játékidő')}</small></div><div><b>${S.stats.built}</b><small>${tr('épület felhúzva')}</small></div><div><b>${pop()}</b><small>${tr('lakos')}</small></div><div><b>${S.rozgony ? S.rozgony.pct + '%' : '–'}</b><small>${tr('felkészültség Rozgonynál')}</small></div></div>
+    <div class="stats"><div><b>${(window.playDur ? playDur(mins) : trf('{0} perc', mins))}</b><small>${tr('játékidő')}</small></div><div><b>${S.stats.built}</b><small>${tr('épület felhúzva')}</small></div><div><b>${pop()}</b><small>${tr('lakos')}</small></div><div><b>${S.rozgony ? S.rozgony.pct + '%' : '–'}</b><small>${tr('felkészültség Rozgonynál')}</small></div></div>
     <div class="row"><button class="btn teal" type="button" id="eStay">${tr('Maradok a városban')}</button></div></div>`, '', 'outcome');
   $('eStay').onclick = () => { save(); closeModal(); renderGuide(); };
 }
@@ -6691,6 +6691,14 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
     return _rp.apply(this, arguments);
   };
 })();
+
+// a korszak végén a játékidő percek helyett napban, órában és percben
+window.playDur = function (m) {
+  m = Math.max(0, Math.round(m || 0)); const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60, T = (s, ...a) => { try { return trf(s, ...a); } catch (e) { return s.replace('{0}', a[0]).replace('{1}', a[1]); } };
+  if (d) return h ? T('{0} nap {1} óra', d, h) : T('{0} nap', d);
+  if (h) return mm ? T('{0} óra {1} perc', h, mm) : T('{0} óra', h);
+  return T('{0} perc', mm);
+};
 // HazaVár · Nevezetes épületek (István korától)
 // tervrajzból épülnek, Hírnévvel szintezhetők, a szomszédok is beszállhatnak, és veled jönnek a következő korba
 (function () {

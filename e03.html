@@ -2352,7 +2352,7 @@ function showEraEnd() {
   const mins = Math.round(S.gt / 60);
   modal(`<img class="hero" src="img/e03_ill_atvezeto.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('A 3. KORSZAK VÉGE')}</span>
     <h2>${tr('Megszületett a királyság')}</h2><p>${tr('István 1038-ban meghalt, de a királyság megmaradt. Jön a 4. korszak, az Árpád-házi királyok kora. A városod veled költözik, és sokkal nagyobb térképre.')}</p>
-    <div class="stats"><div><b>${trf('{0} perc', mins)}</b><small>${tr('játékidő')}</small></div><div><b>${S.stats.built}</b><small>${tr('épület felhúzva')}</small></div><div><b>${pop()}</b><small>${tr('lakos')}</small></div><div><b>${S.winter ? S.winter.score + '%' : '–'}</b><small>${tr('felkészültség a támadáskor')}</small></div></div>
+    <div class="stats"><div><b>${(window.playDur ? playDur(mins) : trf('{0} perc', mins))}</b><small>${tr('játékidő')}</small></div><div><b>${S.stats.built}</b><small>${tr('épület felhúzva')}</small></div><div><b>${pop()}</b><small>${tr('lakos')}</small></div><div><b>${S.winter ? S.winter.score + '%' : '–'}</b><small>${tr('felkészültség a támadáskor')}</small></div></div>
     <div class="row"><button class="btn coral" type="button" id="eNext">${tr('Tovább a 4. korszakba')}</button><button class="btn teal" type="button" id="eStay">${tr('Még maradok')}</button><button class="btn ghost" type="button" id="eNew">${tr('Új játék')}</button></div></div>`, '', 'outcome');
   $('eNext').onclick = goEra4;
   $('eStay').onclick = () => { save(); closeModal(); renderGuide(); };
@@ -4308,6 +4308,14 @@ try { if (typeof SURPRISES !== 'undefined' && typeof IMG !== 'undefined') {
     return _rp.apply(this, arguments);
   };
 })();
+
+// a korszak végén a játékidő percek helyett napban, órában és percben
+window.playDur = function (m) {
+  m = Math.max(0, Math.round(m || 0)); const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60, T = (s, ...a) => { try { return trf(s, ...a); } catch (e) { return s.replace('{0}', a[0]).replace('{1}', a[1]); } };
+  if (d) return h ? T('{0} nap {1} óra', d, h) : T('{0} nap', d);
+  if (h) return mm ? T('{0} óra {1} perc', h, mm) : T('{0} óra', h);
+  return T('{0} perc', mm);
+};
 // HazaVár · kalandok a korai korszakokban: Mamutvadászat (kőkor) és A turul álma (Álmos kora)
 (function () {
   const ERA = (SAVE_KEY.match(/e0\d/) || ['e00'])[0];
