@@ -872,7 +872,7 @@ function loadOne(n, tries = 0) {
     const im = new Image();
     im.onload = () => { if (im.naturalWidth) { IMG[n.replace(/\.(png|jpg|svg)$/, '')] = im; delete MASK[n.replace(/\.(png|jpg|svg)$/, '')]; roadCache = null; dirtPat = null; } res(); };
     im.onerror = () => { if (tries < 3) setTimeout(() => loadOne(n, tries + 1).then(res), 500 * (tries + 1)); else res(); };
-    im.src = 'img/' + n + '?v=2611112' + (tries ? '&r=' + tries + '-' + Date.now() : '');
+    im.src = 'img/' + n + '?v=2611201' + (tries ? '&r=' + tries + '-' + Date.now() : '');
   });
 }
 function loadImgs() { return Promise.all(imgNames.map(n => loadOne(n))); }
@@ -1884,7 +1884,7 @@ function buildClearLayer() {
   try { pat.setTransform(new DOMMatrix().scale(0.6)); } catch (e) {}
   if (emptyOk) { tg.drawImage(EMPTY, 0, 0, BGW, BGH); }
   else keys.forEach(k => { const o = OBST[k], p = OBST_P[k].pp; tg.fillStyle = pat; tg.fill(p); tg.save(); tg.clip(p); tg.globalAlpha = 0.38; tg.fillStyle = `rgb(${o.c[0]},${o.c[1]},${o.c[2]})`; tg.fill(p); tg.restore(); });
-  const msk = mk(), mg = msk.getContext('2d'); mg.filter = emptyOk ? 'blur(9px)' : 'blur(8px)'; mg.fillStyle = '#000'; keys.forEach(k => mg.fill(OBST_P[k].pp));
+  const msk = mk(), mg = msk.getContext('2d'); mg.filter = emptyOk ? 'blur(22px)' : 'blur(16px)'; mg.fillStyle = '#000'; keys.forEach(k => mg.fill(OBST_P[k].pp)); keys.forEach(k => mg.fill(OBST_P[k].pp));
   clearMask = msk; tg.globalCompositeOperation = 'destination-in'; tg.drawImage(msk, 0, 0);
   clearLayer = t; return t;
 }
@@ -3622,7 +3622,7 @@ const MINERS = { aranymoso: 10, vashamor1: 15, vashamor2: 20, vashamor3: 25, ara
     if (!keys.length) { clearLayer = null; return null; }
     const mk = () => { const c = document.createElement('canvas'); c.width = BGW; c.height = BGH; return c; };
     const t = mk(), tg = t.getContext('2d'); tg.drawImage(EMPTY, 0, 0, BGW, BGH);
-    const msk = mk(), mg = msk.getContext('2d'); mg.filter = 'blur(9px)'; mg.fillStyle = '#000'; keys.forEach(k => mg.fill(OBST_P[k].pp)); mg.filter = 'none';
+    const msk = mk(), mg = msk.getContext('2d'); mg.filter = 'blur(22px)'; mg.fillStyle = '#000'; keys.forEach(k => mg.fill(OBST_P[k].pp)); keys.forEach(k => mg.fill(OBST_P[k].pp)); mg.filter = 'none';
     mg.globalCompositeOperation = 'destination-in'; mg.filter = 'blur(6px)'; mg.drawImage(mi, 0, 0, BGW, BGH); mg.filter = 'none';
     clearMask = msk; tg.globalCompositeOperation = 'destination-in'; tg.drawImage(msk, 0, 0); clearLayer = t; return t;
   };
@@ -5840,7 +5840,7 @@ async function netLoadWall(id) {
 }
 // egy másik játékos városának rajza, a saját korszakának térképén
 const RIMG = {};
-function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611095'; RIMG[name] = im; }
+function rimg(name, cb) { if (RIMG[name]) { if (RIMG[name].complete) cb(RIMG[name]); else RIMG[name].addEventListener('load', () => cb(RIMG[name])); return; } const im = new Image(); im.onload = () => cb(im); im.src = 'img/' + name + '?v=2611201'; RIMG[name] = im; }
 function rmask(im) {
   if (im._m) return im._m; const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
   let d = null; try { d = g.getImageData(0, 0, c.width, c.height).data; } catch (e) {}
