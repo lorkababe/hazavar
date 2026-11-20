@@ -3802,6 +3802,11 @@ draw = function (now) {
       if (col[3]) { ctx.fillStyle = col[1]; for (let k = 0; k < 3; k++) ctx.fillRect(x + 4, py + 6 + k * 12 + wv / 2, 34, 5); }
       else { ctx.fillStyle = col[1]; ctx.font = '700 22px serif'; ctx.textAlign = 'center'; ctx.fillText(col[2], x + 21, py + 27 + wv / 2); } });
     ctx.restore();
+    // a vár vagy rom előtt álló épületeket újra rárajzoljuk, hogy ne takarja el őket
+    const front = S.buildings.filter(bb => { if (bb.type === 'fo' && false) return false; let w = 1, h = 1; try { [w, h] = dimsB(bb); } catch (e) {}
+      return BARONS.some(r => !(S.ruinGone && S.ruinGone[r.id]) && bb.i + bb.j + w + h > r.i + r.j + 10 && Math.abs((bb.i + w / 2 - bb.j - h / 2) - (r.i - r.j)) < 7 && bb.i + bb.j < r.i + r.j + 22); })
+      .sort((a, b) => (a.i + a.j) - (b.i + b.j));
+    if (front.length) { ctx.save(); ctx.setTransform(DPR * scale, 0, 0, DPR * scale, -camX * scale * DPR, -camY * scale * DPR); front.forEach(bb => { try { drawBuilding(bb, now, 0); } catch (e) {} }); front.forEach(bb => { try { drawBuilding(bb, now, 1); } catch (e) {} }); ctx.restore(); }
   } catch (e) {}
 };
 const BAR_COL = { csak: ['#3E7D3A', '#F4EBD0', '✦'], aba: ['#C9372C', '#FFF4E0', '', 1], koszegi: ['#2F5FA8', '#F4EBD0', '⚜'] };
