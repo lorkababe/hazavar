@@ -7778,7 +7778,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   MINI.forEach(g => { if (['aranymosas', 'penzveres', 'torna'].includes(g.id)) g.soon = false; });
   MINI.push(
     { id: 'zaszlo', name: 'Zászlóvédés', img: 'e05_mg_zaszlo', sub: 'Ne hagyd, hogy az Aba-fiak katonái elérjék a királyi zászlót', rew: 'Pénz, Hírnév, Vas' },
-    { id: 'terites', name: 'Terítés a királytalálkozón', img: 'e05_kiralytalalkozo.jpg', sub: 'Jegyezd meg, mit kér a király, és hozd a tálakat sorban', rew: 'Bor, Termény, Pénz' }
+    { id: 'terites', name: 'Terítés a királytalálkozón', img: 'e05_mg_tal_bor', sub: 'Jegyezd meg, mit kér a király, és hozd a tálakat sorban', rew: 'Bor, Termény, Pénz' }
   );
   const PLAY = { aranymosas: playMosas, penzveres: playVeres, torna: playTorna, zaszlo: playZaszlo, terites: playTerites };
   const _sm = showMini;
@@ -7890,7 +7890,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       if (n >= N) { cancelAnimationFrame(raf); await sleep(500); return finish(); }
       setZone(); await sleep(250); busy = false;
     };
-    $('pvHit').onclick = hit;
+    $('pvHit').onpointerdown = e => { e.preventDefault(); hit(); };
     const key = e => { if (!alive('pvSt')) { removeEventListener('keydown', key); return; } if (e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); hit(); } }; addEventListener('keydown', key);
     function finish() {
       const rew = { forint: Math.max(1, Math.ceil(good / 2) + (perfect >= 3 ? 1 : 0)), penz: 120 + good * 45 + perfect * 20 };
@@ -7915,7 +7915,8 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     const aim = t => { if (!alive('tnSt')) return; const sh = $('tnSh').getBoundingClientRect(), stg = $('tnSt').getBoundingClientRect(), s = (t - t0) / 1000 * (1.5 + run * 0.55), r = sh.width * 0.42;
       tip = { x: sh.left - stg.left + sh.width / 2 + Math.sin(s * 1.7) * r * Math.cos(s * 0.43), y: sh.top - stg.top + sh.height / 2 + Math.sin(s * 2.3 + 1) * r * 0.9 };
       $('tnT').style.left = tip.x + 'px'; $('tnT').style.top = tip.y + 'px'; raf = requestAnimationFrame(aim); };
-    btn.onclick = async () => {
+    btn.onpointerdown = async (ev) => {
+      if (ev) ev.preventDefault(); if (btn.disabled) return;
       if (!busy) return strike();
       busy = false; btn.disabled = true; const A = $('tnA'), B = $('tnB'), W = $('tnSt').clientWidth;
       A.style.transform = `translateX(${W * 0.28}px)`; B.style.transform = `translateX(${-W * 0.28}px)`;
