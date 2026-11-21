@@ -5440,6 +5440,67 @@ window.playDur = function (m) {
   if (realSite && !standalone && (ios || /Android/.test(navigator.userAgent))) setTimeout(showBtn, 1500);
 })();
 
+// ---------- átlátás: ahol egy elöl álló épület eltakar egy mögötte lévőt, ott az egér alatt (telefonon az ujj nyomva tartásakor)
+// az első elhalványul, a hátsó látszik, és rá lehet kattintani vagy be lehet gyűjteni ----------
+(function xray() {
+  if (typeof drawBuilding !== 'function' || typeof spriteRect !== 'function' || typeof maskFor !== 'function' || typeof cv === 'undefined') return;
+  if (window.__xray) return; window.__xray = 1;
+  const alphaAt = (r, bx, by) => {
+    if (!r || bx < r.x || bx >= r.x + r.w || by < r.y || by >= r.y + r.h) return 0;
+    const mk = maskFor(r.name); if (!mk || !mk.d) return 255;
+    let px = Math.floor((bx - r.x) / r.w * mk.w); const py = Math.floor((by - r.y) / r.h * mk.h); if (r.flip) px = mk.w - 1 - px;
+    return mk.d[(py * mk.w + px) * 4 + 3];
+  };
+  const depth = b => { let w = 1, h = 1; try { [w, h] = dimsB(b); } catch (e) { const s = (DEF[b.type] || {}).size || 1; w = h = s; } return b.i + b.j + w + h; };
+  // a pont alatt látszó épületek, hátulról előre
+  function hitsAt(bx, by) {
+    const out = [];
+    S.buildings.forEach(b => { let r = null; try { r = spriteRect(b); } catch (e) {} if (r && !r.gbB && alphaAt(r, bx, by) > 110) out.push(b); });
+    if (out.length < 2) return out;
+    try { return depthOrder(out.slice()); } catch (e) { return out.sort((a, b) => depth(a) - depth(b)); }
+  }
+  let xr = null; const AL = new Map();
+  function setAt(bx, by, hold) {
+    const h = hitsAt(bx, by);
+    if (h.length < 2) { if (xr && !xr.hold) xr = null; return; }
+    const back = h[h.length - 2], front = h[h.length - 1];
+    xr = { back: back.id, front: front.id, bx, by, hold: !!hold };
+  }
+  const active = () => xr && S.buildings.some(b => b.id === xr.back);
+  // rajzolás: az első épület finoman elhalványul, majd visszajön
+  const _db = drawBuilding;
+  drawBuilding = function (b, now, pass = 0) {
+    if (pass !== 0 || !b || b.obst || b.ghost) return _db.apply(this, arguments);
+    const t = xr && xr.front === b.id && !(typeof tool !== 'undefined' && tool) ? 0.22 : 1;
+    let a = AL.has(b.id) ? AL.get(b.id) : 1; a += (t - a) * 0.22; if (Math.abs(t - a) < 0.01) a = t; if (a === 1) AL.delete(b.id); else AL.set(b.id, a);
+    if (a >= 0.999) return _db.apply(this, arguments);
+    ctx.save(); ctx.globalAlpha *= a; try { return _db.apply(this, arguments); } finally { ctx.restore(); }
+  };
+  // kattintás és begyűjtés: átlátáskor a hátsó épület az elsődleges
+  const onBack = (bx, by) => { if (!active()) return null; const b = S.buildings.find(x => x.id === xr.back); let r = null; try { r = spriteRect(b); } catch (e) {} return b && alphaAt(r, bx, by) > 60 ? b : null; };
+  if (typeof pick === 'function') { const _pk = pick; pick = function (bx, by) { return onBack(bx, by) || _pk.apply(this, arguments); }; }
+  if (typeof readyAt === 'function') { const _ra = readyAt; readyAt = function (bx, by) { const b = onBack(bx, by); if (b && ready(b)) return b; return _ra.apply(this, arguments); }; }
+  // egér: rövid megállás után átlát
+  let hoverT = 0;
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || e.buttons) return; clearTimeout(hoverT);
+    let bx, by; try { [bx, by] = toBg(e.offsetX, e.offsetY); } catch (er) { return; }
+    if (xr && !xr.hold) { const h = hitsAt(bx, by); if (!h.some(b => b.id === xr.front) || !h.some(b => b.id === xr.back)) xr = null; }
+    hoverT = setTimeout(() => setAt(bx, by, false), 260);
+  });
+  cv.addEventListener('pointerleave', () => { clearTimeout(hoverT); if (xr && !xr.hold) xr = null; });
+  // érintés: nyomva tartva átlát, elengedés után még két másodpercig így marad, hogy rá lehessen koppintani
+  let pressT = 0, p0 = null, relT = 0;
+  cv.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return; clearTimeout(pressT); p0 = [e.offsetX, e.offsetY];
+    pressT = setTimeout(() => { if (!p0) return; let bx, by; try { [bx, by] = toBg(p0[0], p0[1]); } catch (er) { return; } setAt(bx, by, true); if (xr) { clearTimeout(relT); try { navigator.vibrate && navigator.vibrate(12); } catch (er) {} } }, 380);
+  });
+  cv.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || !p0) return; if (Math.hypot(e.offsetX - p0[0], e.offsetY - p0[1]) > 10) { p0 = null; clearTimeout(pressT); } });
+  const up = e => { if (e.pointerType === 'mouse') return; p0 = null; clearTimeout(pressT); if (xr && xr.hold) { clearTimeout(relT); relT = setTimeout(() => { xr = null; }, 2200); } };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  window.__xrayAt = (bx, by) => setAt(bx, by, true); window.__xrayOff = () => { xr = null; }; window.__xrayState = () => xr;
+})();
+
 /*SOCIAL-END*/
 })();
 </script>
