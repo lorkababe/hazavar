@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png"><link rel="icon" type="image/png" sizes="96x96" href="favicon-96.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#5A3A1E"><link rel="apple-touch-icon" href="icon-192.png">
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png"><link rel="icon" type="image/png" sizes="96x96" href="favicon-96.png"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#5A3A1E"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="HazaVár">
 <script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
 </head><body>
 <title>HazaVár</title>
@@ -5708,6 +5708,19 @@ function showLogin() {
     const base = location.origin + location.pathname.replace(/[^/]*$/, '');
     const { error } = await NET.sb.auth.signInWithOtp({ email, options: { emailRedirectTo: base + 'index.html' } });
     msg(error ? T('Hiba: ') + error.message : T('Elküldtük! Nyisd meg a levelet, és kattints a linkre. Ezt az ablakot bezárhatod.'));
+    // telepített appban a link a böngészőben nyílna meg, ezért a levélben lévő kóddal is be lehet lépni
+    if (!error && !document.getElementById('nlCode')) {
+      const box = document.createElement('div'); box.style.cssText = 'margin-top:12px;padding-top:12px;border-top:2px dashed #C9A46A';
+      box.innerHTML = `<p style="margin:0 0 8px;font-size:14px">${T('Appból játszol? Ha a levélben van egy számkód is, írd be ide, és itt helyben belépsz.')}</p>
+        <div style="display:flex;gap:8px"><input id="nlCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="${T('kód')}" style="flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:2px solid #C9A46A;font:inherit;font-size:18px;letter-spacing:.2em;background:#FFF8EA"><button class="btn teal" type="button" id="nlVerify">${T('Belépek')}</button></div>`;
+      document.getElementById('nlMsg').after(box);
+      document.getElementById('nlVerify').onclick = async () => {
+        const token = (document.getElementById('nlCode').value || '').replace(/\s/g, ''); if (token.length < 6) { msg(T('A kód legalább 6 számjegy.')); return; }
+        msg(T('Ellenőrzöm…'));
+        const r = await NET.sb.auth.verifyOtp({ email, token, type: 'email' });
+        if (r.error) msg(T('Ez a kód nem jó, vagy lejárt. Kérj újat.'));
+      };
+    }
   };
 }
 async function netStart(user) {
@@ -8262,6 +8275,125 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       try { A[a](v); } catch (e) { say('Ez itt most nem működik: ' + e.message); } if (['tatar', 'tatarWin', 'night', 'ask', 'intro', 'eraEnd'].includes(a)) p.hidden = true; else setTimeout(render, 300); });
   }
   setInterval(() => { if (!p.hidden && !p.matches(':hover')) render(); }, 5000);
+})();
+
+// ---------- telefonos nézet: tömör fejléc, ikongombok, kisebb menü, telepíthető app ----------
+(function mobileMode() {
+  if (window.__mobInit) return; window.__mobInit = 1;
+  const root = document.documentElement;
+  const mqMob = matchMedia('(max-width: 760px), (max-height: 520px)');
+  const LEFT = ['btnDaily', 'btnSide', 'btnMini', 'btnMiniE', 'btnGb', 'btnKun', 'btnKron', 'btnTabla'];
+  const st = document.createElement('style');
+  st.textContent = `
+  #top{padding-top:max(8px,env(safe-area-inset-top,0px))!important}
+  html.mob #top{padding-top:max(5px,env(safe-area-inset-top,0px))!important}
+  html.mob #top{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:5px;padding:5px max(8px,env(safe-area-inset-right,0px)) 6px max(8px,env(safe-area-inset-left,0px));scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  html.mob #top::-webkit-scrollbar{display:none}
+  html.mob #top>*{flex:none}
+  html.mob.mobP #top{flex-wrap:wrap;overflow:visible;row-gap:5px}
+  html.mob #nav .newdot{top:-8px;right:2px;left:auto;min-width:20px;height:20px;font-size:12px;padding:0 5px}
+  html.mob #top .res,html.mob #top .korona{height:34px;padding:0 8px 0 2px;gap:3px}
+  html.mob #top .res img,html.mob #top .res>svg{width:24px!important;height:24px!important}
+  html.mob #top .num{font-size:15px!important}
+  html.mob #top .cap,html.mob #top .lbl,html.mob #rLend,html.mob .who div,html.mob #top .spacer{display:none!important}
+  html.mob #top .avatar{width:34px!important;height:34px!important}
+  html.mob #top .ibtn{width:34px;height:34px}
+  html.mob #top .korona .plus{width:26px;height:26px}
+  html.mob #era{transform:translateX(-50%) scale(.78);transform-origin:50% 0;top:calc(var(--toph,46px) + 6px)}
+  html.mob.mobP #era{display:none}
+  html.mob .lbtn{width:42px!important;min-width:0!important;height:42px!important;padding:0!important;justify-content:center!important;gap:0!important;left:calc(8px + env(safe-area-inset-left,0px))!important}
+  html.mob .lbtn img{width:30px!important;height:30px!important;object-fit:contain}
+  html.mob .lbtn .mlbl{display:none!important}
+  html.mob .lbtn .newdot{top:-6px;right:-6px;min-width:20px;height:20px;font-size:12px;padding:0 4px}
+  html.mob #btnSoc{width:42px!important;height:42px!important;padding:0!important;justify-content:center!important;right:calc(8px + env(safe-area-inset-right,0px))!important;top:calc(var(--toph,46px) + 8px)!important}
+  html.mob #btnSoc .mlbl{display:none!important}
+  html.mob #nav{width:calc(100% - 16px);bottom:calc(6px + env(safe-area-inset-bottom,0px));padding:5px 6px;gap:6px;border-radius:16px 20px 14px 18px}
+  html.mob #nav button{min-height:46px;font-size:11px;gap:1px}
+  html.mob #nav svg{width:20px;height:20px}
+  html.mob #nav button small,html.mob #nav button .sub{display:none}
+  html.mob.mobL #nav{width:min(560px,calc(100% - 140px))}
+  html.mob.mobL #nav button{min-height:40px;flex-direction:row;gap:6px;font-size:12px}
+  html.mob .zoom{display:none!important}
+  html.mob #guide{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+  html.mob #samuBtn{width:62px!important;height:78px!important}
+  html.mob #samuBtn img{width:62px!important}
+  html.mob .bubble-wrap{width:min(250px,calc(100vw - 96px))!important}
+  html.mob .bubble{font-size:12px!important;padding:8px 10px!important;max-height:30vh;overflow:auto}
+  html.mob.mobL .bubble{max-height:34vh}
+  html.mob.tooling #guide,html.mob.tooling .lbtn,html.mob.tooling #btnSoc,html.mob.tooling #era{display:none!important}
+  html.mob #placebar{left:8px;right:8px;transform:none;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom,0px));padding:8px 8px 8px 14px;gap:8px}
+  html.mob #placeText{font-size:13px;line-height:1.3;margin:0}
+  html.mob.mobL #drawer{max-height:72vh}
+  html.mob .modal{max-height:calc(100dvh - 16px)}
+  html.mob #dvBtn{transform:scale(.8);transform-origin:100% 100%;left:auto!important;right:8px!important;bottom:calc(150px + env(safe-area-inset-bottom,0px))!important}
+  #appBtn{display:none}
+  html.mob #appBtn.on,#appBtn.on{display:flex}
+  .appsteps{display:grid;gap:10px;margin:10px 0}.appsteps div{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.6)}.appsteps b{font-family:var(--display);font-size:20px;line-height:1;color:var(--ochre-dark,#8A4A20);min-width:20px}`;
+  document.head.appendChild(st);
+
+  // feliratok becsomagolása, hogy telefonon csak az ikon látsszon
+  function iconize(b) {
+    if (!b) return; b.classList.add('lbtn'); b.dataset.mz = 1;
+    [...b.childNodes].forEach(n => {
+      if (n.nodeType === 3 && n.textContent.trim()) { const s = document.createElement('span'); s.className = 'mlbl'; s.textContent = n.textContent; n.replaceWith(s); }
+      else if (n.nodeType === 1 && n.tagName === 'SPAN' && !n.classList.contains('newdot') && !n.classList.contains('gbd') && /[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű]/.test(n.textContent)) n.classList.add('mlbl');
+    });
+  }
+  function restack() {
+    if (!root.classList.contains('mob')) return;
+    const top = (document.getElementById('top') || {}).offsetHeight || 46;
+    let k = 0;
+    LEFT.forEach(id => { const b = document.getElementById(id); if (!b) return; iconize(b); if (b.hidden || getComputedStyle(b).display === 'none') return; b.style.setProperty('top', (top + 8 + k * 50) + 'px', 'important'); b.style.setProperty('bottom', 'auto', 'important'); k++; });
+    const s = document.getElementById('btnSoc'); if (s) { s.dataset.mz || (s.dataset.mz = 1, [...s.childNodes].forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) { const x = document.createElement('span'); x.className = 'mlbl'; x.textContent = n.textContent; n.replaceWith(x); } else if (n.nodeType === 1 && n.tagName === 'SPAN' && !n.classList.contains('newdot') && /[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű]/.test(n.textContent)) n.classList.add('mlbl'); })); }
+  }
+  function tooling() {
+    const pb = document.getElementById('placebar'), dr = document.getElementById('drawer'), rb = document.getElementById('rearBar');
+    const on = (pb && !pb.hidden) || (dr && !dr.hidden) || (rb && !rb.hidden && rb.offsetParent !== null);
+    root.classList.toggle('tooling', !!on);
+  }
+  function apply() {
+    const m = mqMob.matches, land = innerWidth > innerHeight;
+    const was = root.classList.contains('mob') + '' + root.classList.contains('mobL');
+    root.classList.toggle('mob', m); root.classList.toggle('mobL', m && land); root.classList.toggle('mobP', m && !land);
+    if (!m) LEFT.forEach(id => { const b = document.getElementById(id); if (b && b.dataset.mz) { b.style.removeProperty('top'); b.style.removeProperty('bottom'); } });
+    if (was !== root.classList.contains('mob') + '' + root.classList.contains('mobL')) setTimeout(() => dispatchEvent(new Event('resize')), 30);
+    restack(); tooling();
+  }
+  mqMob.addEventListener ? mqMob.addEventListener('change', apply) : mqMob.addListener(apply);
+  addEventListener('resize', () => setTimeout(restack, 60));
+  addEventListener('orientationchange', () => setTimeout(apply, 250));
+  apply(); setTimeout(apply, 600); setTimeout(apply, 2000);
+  setInterval(() => { if (root.classList.contains('mob')) { restack(); tooling(); } }, 700);
+
+  // ---------- telepíthető app ----------
+  const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  const realSite = /github\.io$/.test(location.hostname);
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let deferred = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; showBtn(); });
+  addEventListener('appinstalled', () => { deferred = null; const b = document.getElementById('appBtn'); if (b) b.classList.remove('on'); try { toast(tr('Kész! A HazaVár ott van a kezdőképernyődön.')); } catch (e) {} });
+  function showBtn() {
+    if (standalone || !realSite) return;
+    let b = document.getElementById('appBtn');
+    if (!b) {
+      const set = document.getElementById('btnSettings'); if (!set) return;
+      b = document.createElement('button'); b.id = 'appBtn'; b.type = 'button'; b.className = 'ibtn stone'; b.setAttribute('aria-label', tr('Telepítés appként'));
+      b.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#33200F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10 18h4"/></svg>';
+      set.parentNode.insertBefore(b, set); b.onclick = openInstall;
+    }
+    b.classList.add('on');
+  }
+  function openInstall() {
+    if (deferred) { deferred.prompt(); deferred.userChoice.finally(() => { deferred = null; }); return; }
+    const steps = ios
+      ? [tr('Nyisd meg a játékot a Safariban.'), tr('Koppints alul a Megosztás gombra, a négyzetre a felfelé mutató nyíllal.'), tr('Görgess le, és válaszd a Főképernyőhöz adás lehetőséget.'), tr('Koppints a Hozzáadás gombra. Kész, a HazaVár ott van az appjaid között.')]
+      : [tr('Nyisd meg a játékot Chrome-ban.'), tr('Koppints jobb fent a három pöttyre.'), tr('Válaszd az Alkalmazás telepítése vagy a Hozzáadás a kezdőképernyőhöz lehetőséget.'), tr('Kész, a HazaVár ott van az appjaid között.')];
+    modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('HAZAVÁR A TELEFONODON')}</span><h2>${tr('Tedd ki appként!')}</h2>
+      <p>${tr('Így a HazaVár saját ikont kap, teljes képernyőn fut, és gyorsabban indul.')}</p>
+      <div class="appsteps">${steps.map((s, k) => `<div><b>${k + 1}</b><span>${s}</span></div>`).join('')}</div>
+      <p style="font-size:13px">${ios ? tr('Fontos, hogy iPhone-on az app külön tárhelyet kap. Ha a böngészőben már haladtál, előbb lépj be a fiókodba a Beállításokban, így a városod átjön.') : tr('Ha a böngészőben már haladtál, a városod megmarad, ugyanaz a mentés.')}</p></div>`, '', 'appmodal');
+  }
+  if (realSite && !standalone && (ios || /Android/.test(navigator.userAgent))) setTimeout(showBtn, 1500);
 })();
 
 /*SOCIAL-END*/
