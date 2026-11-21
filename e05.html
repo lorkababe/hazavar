@@ -3964,7 +3964,7 @@ function draw(now) {
     ctx.save(); ctx.scale(1, -1);
     ctx.drawImage(M, 0, 0, M.naturalWidth, E * sy, 0, 0, BGW, E);
     ctx.drawImage(M, 0, M.naturalHeight - E * sy, M.naturalWidth, E * sy, 0, -BGH - E, BGW, E);
-    ctx.restore(); ctx.drawImage(M, 0, 0, BGW, BGH);
+    ctx.restore(); { const sx = M.naturalWidth / BGW, E2 = 700; ctx.save(); ctx.scale(-1, 1); ctx.drawImage(M, 0, 0, E2 * sx, M.naturalHeight, 0, 0, E2, BGH); ctx.drawImage(M, M.naturalWidth - E2 * sx, 0, E2 * sx, M.naturalHeight, -BGW - E2, 0, E2, BGH); ctx.restore(); const gl = ctx.createLinearGradient(-E2, 0, 0, 0); gl.addColorStop(0, 'rgba(28,18,8,0.55)'); gl.addColorStop(1, 'rgba(28,18,8,0.12)'); ctx.fillStyle = gl; ctx.fillRect(-E2, -400, E2, BGH + 800); const gr = ctx.createLinearGradient(BGW, 0, BGW + E2, 0); gr.addColorStop(0, 'rgba(28,18,8,0.12)'); gr.addColorStop(1, 'rgba(28,18,8,0.55)'); ctx.fillStyle = gr; ctx.fillRect(BGW, -400, E2, BGH + 800); } ctx.drawImage(M, 0, 0, BGW, BGH);
   }
   try { drawClearLayer(); } catch (e) { noteErr(e); }
   if (S.snow) { ctx.fillStyle = 'rgba(210,230,255,0.18)'; ctx.fillRect(0, 0, BGW, BGH); }
@@ -8330,6 +8330,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   html.mob.mobL #drawer{max-height:72vh}
   html.mob .modal{max-height:calc(100dvh - 16px)}
   html.mob #dvBtn{transform:scale(.8);transform-origin:100% 100%;left:auto!important;right:8px!important;bottom:calc(150px + env(safe-area-inset-bottom,0px))!important}
+  #app{background:#2A1C0E!important}
   #appBtn{display:none}
   html.mob #appBtn.on,#appBtn.on{display:flex}
   .appsteps{display:grid;gap:10px;margin:10px 0}.appsteps div{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.6)}.appsteps b{font-family:var(--display);font-size:20px;line-height:1;color:var(--ochre-dark,#8A4A20);min-width:20px}`;
