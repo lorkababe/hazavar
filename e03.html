@@ -5955,6 +5955,30 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   if (realSite && !standalone && (ios || /Android/.test(navigator.userAgent))) setTimeout(showBtn, 1500);
 })();
 
+// ---------- a térképet oldalra is ki lehet húzni annyira, hogy a bal oldali gombok és a jobb oldali panelek alól is minden elérhető legyen ----------
+(function sideRoom() {
+  if (typeof clampCam !== 'function' || window.__sideRoom) return; window.__sideRoom = 1;
+  const IDS = ['btnDaily', 'btnSide', 'btnMini', 'btnMiniE', 'btnGb', 'btnKun', 'btnKron', 'btnTabla', 'chiefPops'];
+  let padL = 0, padR = 0, t = 0;
+  function measure() {
+    const app = document.getElementById('app') || document.body, ar = app.getBoundingClientRect(); let l = 0, r = 0;
+    IDS.forEach(id => { const e = document.getElementById(id); if (!e || e.hidden || !e.offsetParent) return; const b = e.getBoundingClientRect(); if (b.width) l = Math.max(l, b.right - ar.left); });
+    ['btnSoc', 'event'].forEach(id => { const e = document.getElementById(id); if (!e || e.hidden || !e.offsetParent) return; const b = e.getBoundingClientRect(); if (b.width && b.width < ar.width / 2) r = Math.max(r, ar.right - b.left); });
+    padL = l ? l + 16 : 0; padR = r ? r + 16 : 0;
+  }
+  measure(); setInterval(measure, 1500); addEventListener('resize', () => setTimeout(measure, 100));
+  const _cc = clampCam;
+  clampCam = function () {
+    let x0 = 0; try { x0 = camX; } catch (e) {}
+    _cc.apply(this, arguments);
+    try {
+      const vw = W / scale; const pl = padL / scale, pr = padR / scale;
+      if (vw >= BGW + pl + pr || !(pl || pr)) return;
+      camX = Math.min(Math.max(-pl, x0), BGW - vw + pr);
+    } catch (e) {}
+  };
+})();
+
 // ---------- átlátás: ahol egy elöl álló épület eltakar egy mögötte lévőt, ott az egér alatt (telefonon az ujj nyomva tartásakor)
 // az első elhalványul, a hátsó látszik, és rá lehet kattintani vagy be lehet gyűjteni ----------
 (function xray() {
