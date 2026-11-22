@@ -3965,7 +3965,7 @@ setInterval(() => { try { if (!isMatyas()) return; document.querySelectorAll('im
   );
   // a korszak céltáblája: ezek nélkül nem zárul le a Hunyadiak kora
   const GOALS = [['malom', /^malom/, 'Vízimalom'], ['agyu', /^agyuonto/, 'Ágyúöntő'], ['vegvar', /^vegvar$/, 'Végvár'], ['majolika', /^majolika$/, 'Majolikaműhely'], ['konyvtar', /^konyvtar/, 'Könyvtár'], ['sereg', /^fekete_sereg/, 'Fekete sereg'], ['vasar', /^vasar$/, 'Vásártér'], ['nyomda', /^nyomda$/, 'Budai nyomda'], ['herkules', /^herkules_kut$/, 'Herkules-kút'], ['banya', /^aranybanya/, 'Aranybánya'], ['penzverde', /^penzverde\d/, 'Pénzverde'], ['szolo', /^(szolohegy\d|szoloskert)$/, 'Szőlő a budai hegyen']];
-  window.ERA_GOALS = GOALS.map(([id, re, name]) => ({ id, name, ok: () => any(re) }));
+  window.ERA_GOALS = GOALS.map(([id, re, name]) => ({ id, name, re, ok: () => any(re) }));
   QUESTS.push({ face: 'magyaraz', goals: true, get text() { const g = ERA_GOALS, miss = g.filter(x => !x.ok()); return 'Még egy dolog, mielőtt a krónikás lezárja a fejezetet. Egy igazi reneszánsz királyságban minden mesterség otthon van. ' + (miss.length ? 'Ezek hiányoznak még a városból: ' + miss.map(x => x.name).join(', ') + '.' : 'Minden megvan, kész vagyunk!'); }, check: () => ERA_GOALS.every(x => x.ok()), rew: { hirnev: 15, penz: 3000 } });
 }
 // bármelyik mellékküldetés jöhet, amelyikhez már megvan az épület, nem kell sorban várni
@@ -4755,7 +4755,7 @@ function showResearch() {
   hideInfo(); closeDrawer();
   const card = t => {
     const done = !!S.techs[t.id]; const techOk = t.req.every(r => S.techs[r]); const chiefOk = !t.after || !!(S.winter && S.winter.done); const reqOk = techOk && chiefOk; const can = !done && reqOk && canPay(t.cost);
-    const unl = t.key ? tr('Ez a kulcskutatás. Utána jön a nagy próba!') : t.unl ? tr('Új épület · ') + DEF[t.unl].name : tr(t.bonus);
+    const unl = t.key ? tr('Ez a kulcskutatás. Utána jön a nagy próba!') : t.unl ? tr('Új épület · ') + DEF[t.unl].name + (window.ERA_GOALS && ERA_GOALS.some(g => g.re && g.re.test(t.unl)) ? ' · ' + tr('kell a korszak lezárásához') : '') : tr(t.bonus);
     const state = done ? `<span class="state" style="color:var(--good)">${tr('Kikutatva')}</span>` : techOk && !chiefOk ? `<span class="state" style="color:var(--ink-soft)">${tr('A tatárjárás után nyílik meg.')}</span>` : !reqOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb kell hozzá {0}', t.req.filter(r => !S.techs[r]).map(r => TECH.find(x => x.id === r).name).join(', '))}</span>` : `<span class="cost">${costHTML(t.cost)}</span>`;
     const isNew = !done && !!S.newTechs[t.id];
     return `<div class="tech${done ? ' done' : ''}${t.key ? ' key' : ''}${isNew ? ' isnew' : ''}">${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}<b>${t.name}</b><span class="unl">${unl}</span>${state}
