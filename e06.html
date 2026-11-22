@@ -8070,8 +8070,13 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       else if (n.nodeType === 1 && n.tagName === 'SPAN' && !n.classList.contains('newdot') && !n.classList.contains('gbd') && /[A-Za-zÁÉÍÓÖŐÚÜŰáéíóöőúüű]/.test(n.textContent)) n.classList.add('mlbl');
     });
   }
+  // gépen is egymás alá kerülnek a bal oldali gombok, hogy kettő soha ne csússzon egymásra
+  function deskStack() {
+    const top = (document.getElementById('top') || {}).offsetHeight || 46; let y = top + 14;
+    LEFT.forEach(id => { const b = document.getElementById(id); if (!b || b.hidden || getComputedStyle(b).display === 'none') return; b.style.setProperty('top', y + 'px', 'important'); b.style.setProperty('bottom', 'auto', 'important'); y += (b.offsetHeight || 44) + 10; });
+  }
   function restack() {
-    if (!root.classList.contains('mob')) return;
+    if (!root.classList.contains('mob')) return deskStack();
     const top = (document.getElementById('top') || {}).offsetHeight || 46;
     let k = 0;
     LEFT.forEach(id => { const b = document.getElementById(id); if (!b) return; iconize(b); if (b.hidden || getComputedStyle(b).display === 'none') return; b.style.setProperty('top', (top + 8 + k * 50) + 'px', 'important'); b.style.setProperty('bottom', 'auto', 'important'); k++; });
@@ -8086,7 +8091,6 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     const m = mqMob.matches, land = innerWidth > innerHeight;
     const was = root.classList.contains('mob') + '' + root.classList.contains('mobL');
     root.classList.toggle('mob', m); root.classList.toggle('mobL', m && land); root.classList.toggle('mobP', m && !land);
-    if (!m) LEFT.forEach(id => { const b = document.getElementById(id); if (b && b.dataset.mz) { b.style.removeProperty('top'); b.style.removeProperty('bottom'); } });
     if (was !== root.classList.contains('mob') + '' + root.classList.contains('mobL')) setTimeout(() => dispatchEvent(new Event('resize')), 30);
     restack(); tooling();
   }
@@ -8094,7 +8098,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   addEventListener('resize', () => setTimeout(restack, 60));
   addEventListener('orientationchange', () => setTimeout(apply, 250));
   apply(); setTimeout(apply, 600); setTimeout(apply, 2000);
-  setInterval(() => { if (root.classList.contains('mob')) { restack(); tooling(); } }, 700);
+  setInterval(() => { restack(); if (root.classList.contains('mob')) tooling(); }, 700);
 
   // ---------- telepíthető app ----------
   const standalone = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
