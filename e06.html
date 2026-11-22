@@ -8057,6 +8057,11 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   html.mob .modal{max-height:calc(100dvh - 16px)}
   html.mob #dvBtn{transform:scale(.8);transform-origin:100% 100%;left:auto!important;right:8px!important;bottom:calc(150px + env(safe-area-inset-bottom,0px))!important}
   #app{background:#2A1C0E!important}
+  html:not(.mob) .lcol{height:44px!important;min-height:44px!important;padding:0 14px 0 10px!important;justify-content:flex-start!important;gap:8px!important;left:16px!important;box-sizing:border-box}
+  html:not(.mob) .lcol img,html:not(.mob) .lcol>svg{width:26px!important;height:26px!important;flex:none;object-fit:contain}
+  .lcol .newdot{top:-8px!important;right:-8px!important;left:auto!important;bottom:auto!important;margin:0!important;min-width:24px!important;width:auto!important;height:24px!important;padding:0 6px!important;font-size:13px!important;line-height:24px!important;box-sizing:border-box!important;display:flex;align-items:center;justify-content:center}
+  .lcol .newdot[hidden]{display:none!important}
+  #btnSide.lcol .newdot,#btnMini.lcol .newdot,#btnMiniE.lcol .newdot,#btnDaily.lcol .newdot,#btnGb.lcol .newdot,#btnKron.lcol .newdot,#btnTabla.lcol .newdot,#btnKun.lcol .newdot{top:-8px!important;right:-8px!important;left:auto!important;margin:0!important}
   #appBtn{display:none}
   html.mob #appBtn.on,#appBtn.on{display:flex}
   .appsteps{display:grid;gap:10px;margin:10px 0}.appsteps div{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(255,248,232,.6)}.appsteps b{font-family:var(--display);font-size:20px;line-height:1;color:var(--ochre-dark,#8A4A20);min-width:20px}`;
@@ -8073,7 +8078,10 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   // gépen is egymás alá kerülnek a bal oldali gombok, hogy kettő soha ne csússzon egymásra
   function deskStack() {
     const top = (document.getElementById('top') || {}).offsetHeight || 46; let y = top + 14;
-    LEFT.forEach(id => { const b = document.getElementById(id); if (!b || b.hidden || getComputedStyle(b).display === 'none') return; b.style.setProperty('top', y + 'px', 'important'); b.style.setProperty('bottom', 'auto', 'important'); y += (b.offsetHeight || 44) + 10; });
+    const vis = LEFT.map(id => document.getElementById(id)).filter(b => b && !b.hidden && getComputedStyle(b).display !== 'none');
+    vis.forEach(b => { b.classList.add('lcol'); b.style.removeProperty('width'); });
+    const w = Math.max(0, ...vis.map(b => b.offsetWidth));
+    vis.forEach(b => { b.style.setProperty('width', w + 'px', 'important'); b.style.setProperty('top', y + 'px', 'important'); b.style.setProperty('bottom', 'auto', 'important'); y += 44 + 8; });
   }
   function restack() {
     if (!root.classList.contains('mob')) return deskStack();
