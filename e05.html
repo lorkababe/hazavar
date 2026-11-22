@@ -6870,10 +6870,51 @@ function miniHTML(id) {
     ${max ? '' : `<div class="hvgbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div>`}
     <button class="btn coral" type="button" data-gbopen="${id}" style="width:100%">${max ? tr('Részletek') : tr('Szintezés és beszállók')}</button></div>`;
 }
+// Forge-stílusú ablak: balra a nagy épület a szintjével, jobbra fülek (Beszállás, Termelés, Beszállók, Történet)
+let gfTab = 'be', gfAmt = 10;
+const PL = [1.6, 1.35, 1.15];
+function gfProdTable(id) {
+  const l = lvl(id), a = fx(id, l), b = l < GB_TOP ? fx(id, l + 1) : null, rows = [];
+  const keys = [...new Set(Object.keys(a.prod).concat(b ? Object.keys(b.prod) : []))];
+  keys.forEach(k => rows.push([`<img src="img/${(RES[k] || {}).icon || 'ikon_hirnev'}.${(RES[k] || {}).file ? 'svg' : 'png'}" alt="">${RN(k)}`, a.prod[k] || 0, b ? b.prod[k] || 0 : null]));
+  [['hang', '😊', 'Hangulat'], ['def', '🛡', 'Védelem'], ['pop', '👥', 'Lakos']].forEach(([k, ic, nm]) => { if (a[k] || (b && b[k])) rows.push([`<span class="gfic">${ic}</span>${tr(nm)}`, a[k] || 0, b ? b[k] || 0 : null]); });
+  return `<table class="gftab"><tr><th></th><th>${trf('{0}. szint', l)}</th>${b ? `<th>${trf('{0}. szint', l + 1)}</th>` : ''}</tr>${rows.map(r => `<tr><td>${r[0]}</td><td>${fmt(r[1])}</td>${b ? `<td class="up">${fmt(r[2])}${r[2] > r[1] ? ` <small>+${fmt(r[2] - r[1])}</small>` : ''}</td>` : ''}</tr>`).join('')}</table>
+    <small class="gfnote">${tr('A Termény, a Pénz és a többi termék minden begyűjtéskor ennyi, a Hangulat, a Védelem és a Lakos folyamatosan hat.')}</small>${worth(id)}`;
+}
+function gfPlaces(id) {
+  const n = need(lvl(id)), top = topList(id).filter(([k]) => k !== 'me');
+  return PL.map((m, i) => { const t = top[i]; const rew = Math.round(n * 0.12 * m);
+    return `<div class="gfpl${t ? ' taken' : ''}"><b class="gfno">${i + 1}</b><div class="gfpw"><small>${t ? esc(t[1].name || '?') + ' · ' + t[1].n + ' ' + tr('Hírnév') : tr('Szabad hely')}</small><span>${trf('×{0} Hírnév vissza', String(m).replace('.', ','))}${i === 0 ? ' · ' + tr('+1 tervrajz') : ''}</span></div></div>`; }).join('');
+}
 function showCard(id) {
-  const g = GBC[id];
-  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('NEVEZETES ÉPÜLET')}</span><div class="gbbig"><img src="img/${imgOf(id)}.png" alt=""><div><h2>${g.name}</h2><p>${tr(g.desc)}</p></div></div>${cardHTML(id)}</div>`, '', 'gbmodal');
-  const root = $('modalRoot'); root.querySelectorAll('[data-gbi]').forEach(x => x.onclick = () => { invest(id, +x.dataset.gbi); showCard(id); });
+  const g = GBC[id], l = lvl(id), lv = L(id), n = need(l), max = l >= GB_TOP, me = S.res.hirnev || 0, left = Math.max(0, n - lv.pts);
+  gfAmt = Math.max(1, Math.min(gfAmt, me || 1, left || 1));
+  const pips = Array.from({ length: GB_TOP }, (_, k) => `<i class="${k < l ? 'on' : ''}"></i>`).join('');
+  const tabs = [['be', tr('Beszállás')], ['prod', tr('Termelés')], ['top', tr('Beszállók')], ['info', tr('Történet')]];
+  let body = '';
+  if (gfTab === 'be') body = max ? `<p class="gbmax">${tr('Elérte a legmagasabb szintet!')}</p>` : `
+    <div class="gfbar"><div class="gflv"><b>${l}</b><span>→</span><b>${l + 1}</b></div><div class="hvgbar"><i style="width:${Math.min(100, lv.pts / n * 100)}%"></i><span>${lv.pts} / ${n} ${tr('Hírnév')}</span></div></div>
+    <div class="gfinv"><button class="gfst" type="button" data-gfs="-10">−10</button><button class="gfst" type="button" data-gfs="-1">−</button><input id="gfAmt" type="number" min="1" value="${gfAmt}" inputmode="numeric"><button class="gfst" type="button" data-gfs="1">+</button><button class="gfst" type="button" data-gfs="10">+10</button>
+      <button class="btn coral" type="button" id="gfGo" ${me ? '' : 'disabled'}>${tr('Beszállok')}</button></div>
+    <div class="gfrow2"><button class="btn teal" type="button" id="gfAll" ${me ? '' : 'disabled'}>${trf('Befejezem a szintet ({0})', left)}</button><small>${trf('Neked {0} Hírneved van.', fmt(me))}</small></div>
+    <div class="gfnext"><small>${tr('A következő szint ezt adja hozzá')}</small><div>${fxChips(fx(id, l + 1), fx(id, l))}</div></div>
+    <div class="gfpls"><small>${tr('Jutalomhelyek a szomszédoknak')}</small>${gfPlaces(id)}</div>`;
+  else if (gfTab === 'prod') body = gfProdTable(id);
+  else if (gfTab === 'top') body = `<div class="gbtop">${topList(id).length ? `<table>${topList(id).map(([k, v], i) => `<tr${k === 'me' ? ' class="me"' : ''}><td>${i + 1}.</td><td>${k === 'me' ? tr('Te') : esc(v.name || '?')}</td><td>${v.n} ${tr('Hírnév')}</td><td>${Math.round(v.n / n * 100)}%</td><td>${i < 3 && k !== 'me' ? '×' + String(PL[i]).replace('.', ',') : ''}</td></tr>`).join('')}</table>` : `<p>${tr('Még senki nem szállt be ebbe a szintbe.')}</p>`}
+    <small class="gbnote">${tr('Amikor a szint megtelik, az első három szomszéd a beszállt Hírneve 1,6, 1,35 és 1,15-szörösét kapja vissza, az első még egy tervrajzot is.')}</small></div>`;
+  else body = `<p class="gfdesc">${tr(g.desc)}</p>`;
+  modal(`${X_BTN}<div class="inner gfwrap">
+    <div class="gfleft"><span class="eyebrow">${tr('NEVEZETES ÉPÜLET')}</span><h2>${g.name}</h2>
+      <div class="gfpic"><img src="img/${imgOf(id)}.png" alt=""><span class="gfbadge">${trf('{0}. szint', l)}</span></div>
+      <div class="gfpips" title="${trf('{0} / {1}', l, GB_TOP)}">${pips}</div>
+      <div class="gfnow">${fxChips(fx(id, l))}</div></div>
+    <div class="gfright"><div class="gftabs">${tabs.map(([k, t]) => `<button type="button" class="${k === gfTab ? 'on' : ''}" data-gft="${k}">${t}</button>`).join('')}</div><div class="gfbody">${body}</div></div></div>`, 'gfmodal', 'gbmodal');
+  const root = $('modalRoot');
+  root.querySelectorAll('[data-gft]').forEach(x => x.onclick = () => { gfTab = x.dataset.gft; showCard(id); });
+  const inp = $('gfAmt'); if (inp) inp.oninput = () => { gfAmt = Math.max(1, Math.floor(+inp.value || 1)); };
+  root.querySelectorAll('[data-gfs]').forEach(x => x.onclick = () => { gfAmt = Math.max(1, Math.min(Math.max(1, me), left, gfAmt + +x.dataset.gfs)); showCard(id); });
+  const go = $('gfGo'); if (go) go.onclick = () => { invest(id, gfAmt); showCard(id); };
+  const all = $('gfAll'); if (all) all.onclick = () => { invest(id, 9999); showCard(id); };
 }
 window.gbShowCard = showCard;
 // egy tervrajz a kor egyik még meg nem épített nevezetes épületéhez (kaláka jutalma)
@@ -6979,7 +7020,28 @@ window.showGb = showGb;
 const st = document.createElement('style');
 st.textContent = `#btnGb{position:absolute!important;left:calc(16px + env(safe-area-inset-left,0px));z-index:7;width:auto;height:44px;padding:0 14px 0 8px;display:flex;align-items:center;gap:6px;border-radius:14px 18px 14px 16px;border:0;color:#FFF1D8;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3)}#btnGb:not(.wood){background:rgba(58,36,16,.88)}
   #btnGb img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}#btnGb .gbd{background:#C9472F;border-radius:999px;padding:0 7px;font-size:12px}
-  #info>*{flex-shrink:0}.gbmodal{max-width:min(860px,calc(100vw - 24px))}.gbmodal .inner{min-width:0}.gbbig{display:flex;gap:14px;align-items:center;min-width:0}.gbbig>div{min-width:0;flex:1}.gbtop table{table-layout:fixed}.gbtop td{overflow:hidden;text-overflow:ellipsis}.gbtop td:first-child{width:2.5em}.gbtop td:nth-child(3){width:7em}.gbtop td:nth-child(4){width:3.5em}.gbtop td:nth-child(5){width:4.5em}.gbbig img{width:150px;height:150px;object-fit:contain;flex:none}.gbbig h2{margin:0 0 4px}
+  #info>*{flex-shrink:0}.gfmodal{max-width:min(920px,calc(100vw - 24px))!important}.gfmodal .inner.gfwrap{display:grid!important;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:20px;align-items:start}
+  .gfleft{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}.gfleft h2{margin:2px 0 6px;text-wrap:balance}
+  .gfpic{position:relative;width:100%;aspect-ratio:1;border-radius:20px;background:radial-gradient(circle at 50% 60%,rgba(255,236,190,.9),rgba(210,170,100,.55) 70%);box-shadow:inset 0 0 0 3px #C9A46A,inset 0 -12px 24px rgba(90,58,30,.18);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .gfpic img{width:92%;height:92%;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(60,30,10,.35))}
+  .gfbadge{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:linear-gradient(#7A2A1E,#5A1E14);color:#FFE58A;font-weight:900;padding:5px 16px;border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.3),inset 0 0 0 2px #E2B33C;white-space:nowrap}
+  .gfpips{display:flex;gap:4px;margin:10px 0 8px}.gfpips i{width:16px;height:8px;border-radius:4px;background:rgba(90,58,30,.2)}.gfpips i.on{background:linear-gradient(#F2C14E,#D08A2A);box-shadow:0 0 0 1px #9A6420}
+  .gfnow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .gfright{min-width:0;background:rgba(255,248,232,.8);border-radius:18px;box-shadow:inset 0 0 0 2px #E2C68A;overflow:hidden}
+  .gftabs{display:flex;background:rgba(201,164,106,.35);padding-right:52px}.gftabs button{flex:1;border:0;background:none;padding:11px 6px;font:800 14px Nunito,sans-serif;color:#6A4520;cursor:pointer;border-bottom:3px solid transparent}.gftabs button.on{background:rgba(255,248,232,.9);color:#33200F;border-bottom-color:#C8553D}
+  .gfbody{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+  .gfbar{display:flex;align-items:center;gap:10px}.gfbar .hvgbar{flex:1;margin:0;height:26px}.gflv{display:flex;align-items:center;gap:4px;font-weight:900}.gflv b{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#7A2A1E;color:#FFE58A;box-shadow:inset 0 0 0 2px #E2B33C}.gflv b+span+b{background:#2F6B3A}
+  .gfinv{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.gfst{border:0;border-radius:12px;min-width:42px;height:42px;font:900 16px Nunito,sans-serif;background:#E8D6B0;color:#4A2E14;cursor:pointer;box-shadow:0 3px 0 rgba(90,58,30,.35)}
+  .gfinv input{width:80px;height:42px;border-radius:12px;border:2px solid #C9A46A;text-align:center;font:900 18px Nunito,sans-serif;background:#FFF8EA;color:#33200F}.gfinv .btn{margin-left:auto}
+  .gfrow2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.gfrow2 small{color:#6A4520;font-weight:700}
+  .gfnext small,.gfpls>small{display:block;font-weight:800;color:#6A4520;margin-bottom:6px}.gfnext>div{display:flex;flex-wrap:wrap;gap:6px}
+  .gfpls{display:grid;gap:6px}.gfpl{display:flex;gap:10px;align-items:center;padding:7px 10px;border-radius:12px;background:rgba(201,164,106,.18);border:2px dashed rgba(154,100,32,.35)}.gfpl.taken{border-style:solid;background:rgba(242,193,78,.25)}
+  .gfno{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#9A6420;color:#fff;flex:none}.gfpl:nth-child(2) .gfno{background:#D4A017}.gfpl:nth-child(3) .gfno{background:#9AA3AD}.gfpl:nth-child(4) .gfno{background:#B06A3A}
+  .gfpw{display:flex;flex-direction:column;min-width:0}.gfpw small{color:#6A4520;font-weight:700}.gfpw span{font-weight:800}
+  .gftab{width:100%;border-collapse:collapse}.gftab th{text-align:right;font-size:13px;color:#6A4520;padding:4px 8px}.gftab th,.gftab td{color:#33200F!important;background:none!important}.gftab td{padding:8px;border-top:1px solid rgba(154,100,32,.2);text-align:right;font-weight:800}.gftab td:first-child{text-align:left;display:flex;align-items:center;gap:6px}.gftab td img{width:22px;height:22px}.gftab td.up{color:#2F6B3A!important}.gftab td small{color:#2F6B3A}.gfic{width:22px;text-align:center}
+  .gfnote{color:#6A4520}.gfdesc{font-size:16px;line-height:1.55;margin:0}
+  @media (max-width:680px){.gfmodal .inner.gfwrap{grid-template-columns:1fr}.gfpic{max-width:220px}.gftabs button{font-size:12px;padding:10px 2px}}
+  .gbmodal{max-width:min(860px,calc(100vw - 24px))}.gbmodal .inner{min-width:0}.gbbig{display:flex;gap:14px;align-items:center;min-width:0}.gbbig>div{min-width:0;flex:1}.gbtop table{table-layout:fixed}.gbtop td{overflow:hidden;text-overflow:ellipsis}.gbtop td:first-child{width:2.5em}.gbtop td:nth-child(3){width:7em}.gbtop td:nth-child(4){width:3.5em}.gbtop td:nth-child(5){width:4.5em}.gbbig img{width:150px;height:150px;object-fit:contain;flex:none}.gbbig h2{margin:0 0 4px}
   .gbtop{display:block!important;margin-top:10px}.gbtop table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.gbtop td{padding:4px 6px;border-bottom:1px dashed rgba(90,55,25,.25);color:#3A2410!important;background:none}.gbtop tr.me{font-weight:900;background:rgba(226,179,60,.25)}.gbtop td:nth-child(3),.gbtop td:nth-child(4){text-align:right;white-space:nowrap}.gbtop td:last-child{color:#2F7A3A!important;font-weight:800;font-size:12px}.gbtop p{margin:4px 0;font-size:13px}
   @media (max-width:560px){.gbbig img{width:90px;height:90px}}
   #info{max-height:calc(100vh - var(--toph,72px) - 140px - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain}

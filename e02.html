@@ -2029,7 +2029,7 @@ function showResearch() {
   hideInfo(); closeDrawer();
   const card = t => {
     const done = !!S.techs[t.id]; const techOk = t.req.every(r => S.techs[r]); const chiefOk = !t.key || (S.raidsDone || 0) >= 3; const reqOk = techOk && chiefOk; const can = !done && reqOk && canPay(t.cost);
-    const unl = t.key ? tr('Ez a kulcskutatás. Utána jön a nagy csata!') : t.unl ? tr('Új épület · ') + DEF[t.unl].name : tr(t.bonus);
+    const unl = t.key ? tr('Ez a kulcskutatás. Utána jön a nagy csata!') : t.unl ? tr('Új épület · ') + DEF[t.unl].name + (window.ERA_GOALS && ERA_GOALS.some(g => g.re && g.re.test(t.unl)) ? ' · ' + tr('kell a korszak lezárásához') : '') : tr(t.bonus);
     const state = done ? `<span class="state" style="color:var(--good)">${tr('Kikutatva')}</span>` : techOk && !chiefOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb tégy meg {0} portyát ({1} / {0}), a Kalandozás menüben', 3, S.raidsDone || 0)}</span>` : !reqOk ? `<span class="state" style="color:var(--ink-soft)">${trf('Előbb kell hozzá {0}', t.req.filter(r => !S.techs[r]).map(r => TECH.find(x => x.id === r).name).join(', '))}</span>` : `<span class="cost">${costHTML(t.cost)}</span>`;
     const isNew = !done && !!S.newTechs[t.id];
     return `<div class="tech${done ? ' done' : ''}${t.key ? ' key' : ''}${isNew ? ' isnew' : ''}">${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}<b>${t.name}</b><span class="unl">${unl}</span>${state}
