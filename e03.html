@@ -1302,7 +1302,7 @@ function giveAny(r) { Object.entries(r || {}).forEach(([k, v]) => { if (k === 't
 function showSide() {
   const q = sideCur(); if (!q) return;
   const ok = !q.choices && q.check(); const txt = typeof q.text === 'function' ? q.text() : tr(q.text);
-  modal(`${X_BTN}${q.img ? `<img class="hero" src="img/${q.img}.jpg" alt="${tr('Egy kövér vezér sótömbökön ülve megállít egy sószekeret a folyó gázlójánál')}">` : ''}<div class="inner"><span class="eyebrow">${tr('MONDA')} · ${(S.side && S.side.step || 0) + 1} / ${SIDE.length}</span><h2>${tr(q.title)}</h2>
+  modal(`${X_BTN}${q.img ? `<img class="hero" src="img/${q.img}.jpg" alt="${tr('Egy kövér vezér sótömbökön ülve megállít egy sószekeret a folyó gázlójánál')}">` : ''}<div class="inner"><span class="eyebrow">${tr(q.eyebrow || 'MONDA')} · ${(S.side && S.side.step || 0) + 1} / ${SIDE.length}</span><h2>${tr(q.title)}</h2>
     <div class="samu-say"><img src="img/e03_istvan_${q.face}.png" alt=""><div class="bubble"><b>István</b>${txt}</div></div>
     ${q.choices ? q.choices.map((c, k) => { const can = !c.cost || canPay(c.cost);
       return `<div class="store-row"><div class="grow"><b>${tr(c.label)}</b><br><span class="cost">${c.cost ? tr('Ára') + ': ' + costHTML(c.cost) : ''}${c.cost && Object.keys(c.rew).length ? ' · ' : ''}${Object.keys(c.rew).length ? tr('Jutalom') + ': ' + costHTML(c.rew) : ''}</span></div><button class="btn coral" type="button" data-sc="${k}" ${can ? '' : 'disabled'}>${tr('Ezt választom')}</button></div>`; }).join('')

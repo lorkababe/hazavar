@@ -1041,7 +1041,7 @@ function sideDone(say) { S.side = S.side || {}; S.side.step = (S.side.step || 0)
 function showSide() {
   const q = sideCur(); if (!q) return;
   const ok = !q.choices && q.check();
-  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('MONDA')} · ${(S.side && S.side.step || 0) + 1} / ${SIDE.length}</span><h2>${tr(q.title)}</h2>
+  modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr(q.eyebrow || 'MONDA')} · ${(S.side && S.side.step || 0) + 1} / ${SIDE.length}</span><h2>${tr(q.title)}</h2>
     <div class="samu-say"><img src="img/${q.who === 'botond' ? 'botond' : 'arpad_' + q.face}.png" alt=""><div class="bubble"><b>${q.who === 'botond' ? 'Botond' : 'Árpád'}</b>${tr(q.text)}</div></div>
     ${q.choices ? q.choices.map((c, k) => { const can = (!c.need || c.need()) && (!c.cost || canPay(c.cost));
       return `<div class="store-row"><div class="grow"><b>${tr(c.label)}</b><br><span class="cost">${c.cost ? tr('Ára') + ': ' + costHTML(c.cost) + ' · ' : ''}${tr('Jutalom')}: ${costHTML(c.rew)}</span>${c.need && !c.need() ? `<br><span style="color:var(--ink-soft)">${tr(c.needTxt)}</span>` : ''}</div><button class="btn coral" type="button" data-sc="${k}" ${can ? '' : 'disabled'}>${tr('Ezt választom')}</button></div>`; }).join('')
