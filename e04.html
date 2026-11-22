@@ -7404,7 +7404,8 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   html.mob .modal{max-height:calc(100dvh - 16px)}
   html.mob #dvBtn{transform:scale(.8);transform-origin:100% 100%;left:auto!important;right:8px!important;bottom:calc(150px + env(safe-area-inset-bottom,0px))!important}
   #app{background:#2A1C0E!important}
-  html:not(.mob) .lcol{height:44px!important;min-height:44px!important;padding:0 14px 0 10px!important;justify-content:flex-start!important;gap:8px!important;left:16px!important;box-sizing:border-box}
+  html:not(.mob) .lcol{height:44px!important;min-height:44px!important;padding:0 14px 0 10px!important;justify-content:flex-start!important;gap:8px!important;box-sizing:border-box;white-space:nowrap!important;margin:0!important;transform:none!important}
+  html:not(.mob) .lcol *{white-space:nowrap!important}
   html:not(.mob) .lcol img,html:not(.mob) .lcol>svg{width:26px!important;height:26px!important;flex:none;object-fit:contain}
   .lcol .newdot{top:-8px!important;right:-8px!important;left:auto!important;bottom:auto!important;margin:0!important;min-width:24px!important;width:auto!important;height:24px!important;padding:0 6px!important;font-size:13px!important;line-height:24px!important;box-sizing:border-box!important;display:flex;align-items:center;justify-content:center}
   .lcol .newdot[hidden]{display:none!important}
@@ -7424,10 +7425,22 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   }
   // gépen is egymás alá kerülnek a bal oldali gombok, hogy kettő soha ne csússzon egymásra
   function deskStack() {
-    const top = (document.getElementById('top') || {}).offsetHeight || 46; let y = top + 14;
     const vis = LEFT.map(id => document.getElementById(id)).filter(b => b && !b.hidden && getComputedStyle(b).display !== 'none');
-    const w = Math.max(0, ...vis.map(b => { b.classList.add('lcol'); const old = b.style.getPropertyValue('width'); b.style.removeProperty('width'); const x = b.offsetWidth; if (old) b.style.setProperty('width', old, 'important'); return x; }));
-    vis.forEach(b => { b.style.setProperty('width', w + 'px', 'important'); b.style.setProperty('top', y + 'px', 'important'); b.style.setProperty('bottom', 'auto', 'important'); y += 44 + 8; });
+    if (!vis.length) return;
+    const topEl = document.getElementById('top'), tr = topEl ? topEl.getBoundingClientRect() : { bottom: 46 };
+    const app = document.getElementById('app'), ar = app ? app.getBoundingClientRect() : { left: 0 };
+    const x0 = ar.left + 16; let y = tr.bottom + 14;
+    const w = Math.max(0, ...vis.map(b => { b.classList.add('lcol'); const old = b.style.getPropertyValue('width'); b.style.removeProperty('width'); const x = Math.ceil(b.scrollWidth); if (old) b.style.setProperty('width', old, 'important'); return x; }));
+    vis.forEach(b => {
+      if (b.style.getPropertyValue('width') !== w + 'px') b.style.setProperty('width', w + 'px', 'important');
+      // a gombok különböző szülőkben ülnek, ezért a képernyőn mért helyzetükhöz igazítjuk őket
+      const r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+      const L = (parseFloat(cs.left) || 0) + (x0 - r.left), T = (parseFloat(cs.top) || 0) + (y - r.top);
+      if (Math.abs(x0 - r.left) > 0.5) b.style.setProperty('left', L + 'px', 'important');
+      if (Math.abs(y - r.top) > 0.5) b.style.setProperty('top', T + 'px', 'important');
+      b.style.setProperty('bottom', 'auto', 'important'); b.style.setProperty('right', 'auto', 'important');
+      y += 44 + 8;
+    });
   }
   function restack() {
     if (!root.classList.contains('mob')) return deskStack();
