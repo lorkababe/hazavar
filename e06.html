@@ -8307,6 +8307,9 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     if (!OBST_P[k]) return; const p = new Path2D();
     ps.forEach(a => { for (let n = 0; n < a.length; n += 2) n ? p.lineTo(a[n], a[n + 1]) : p.moveTo(a[n], a[n + 1]); p.closePath(); });
     FP[k] = p;
+    // a mező előtérbe rajzolt darabja is csak a saját tárgya legyen, egészben: így nem marad félig áttetsző szellemkép a szomszédban
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; ps.forEach(a => { for (let n = 0; n < a.length; n += 2) { x0 = Math.min(x0, a[n]); x1 = Math.max(x1, a[n]); y0 = Math.min(y0, a[n + 1]); y1 = Math.max(y1, a[n + 1]); } });
+    OBST_P[k].sp = p; OBST_P[k].bb = [x0 - 2, y0 - 2, x1 - x0 + 4, y1 - y0 + 4];
   });
   // ha egy mezőn álló tárgyat eltakarítunk, és egy szomszéd mezőt csak ennek a tárgynak a lombja takart, az is felszabadul;
   // ahol semmi nem látszik, az eleve szabad
