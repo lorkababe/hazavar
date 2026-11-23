@@ -1871,7 +1871,7 @@ Object.entries(OBST).forEach(([k, o]) => {
 });
 // ha van üres (tárgyak nélküli) változata a háttérnek, az eltakarított helyen azt mutatjuk
 const EMPTY = new Image(); let emptyOk = false;
-EMPTY.onload = () => { emptyOk = true; clearSig = ''; obstCache = {}; }; EMPTY.src = 'img/e05_alapterkep_ures.jpg?v=m3';
+EMPTY.onload = () => { emptyOk = true; clearSig = ''; obstCache = {}; }; EMPTY.src = 'img/e05_alapterkep_ures.jpg?v=m4';
 const isCleared = k => !!(S.cleared && S.cleared[k]);
 let clearLayer = null, clearSig = '', clearMask = null, obstCache = {};
 function buildClearLayer() {
