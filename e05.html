@@ -3745,7 +3745,7 @@ function klapka() {
 
 // ---------- a kiskirályok várai ----------
 const KING_FLAG = new Image(); KING_FLAG.src = 'img/e05_mg_zaszlo.png';
-const KING_SH = new Image(); KING_SH.src = 'img/e05_var_kiraly.png?v=2611231'; const KING_IX = { csak: 0, aba: 1, koszegi: 2 }, KING_CV = {};
+const KING_SH = new Image(); KING_SH.src = 'img/e05_var_kiraly.png?v=2611232'; const KING_IX = { csak: 0, aba: 1, koszegi: 2 }, KING_CV = {};
 function kingImg(id) { if (KING_CV[id]) return KING_CV[id]; if (!KING_SH.complete || !KING_SH.naturalWidth) return null; const w = KING_SH.naturalWidth / 3, h = KING_SH.naturalHeight, c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(KING_SH, KING_IX[id] * w, 0, w, h, 0, 0, w, h); return (KING_CV[id] = c); }
 const BAR_IMG = {}; ['csak', 'aba', 'koszegi', 'rom', 'rom_csak', 'rom_aba', 'rom_koszegi'].forEach(k => { const im = new Image(); im.src = 'img/e05_var_' + k + '.png'; BAR_IMG[k] = im; });
 // a várak leomlása Rozgony után: sorban, rázkódással, porfelhővel
