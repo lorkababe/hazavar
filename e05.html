@@ -3850,12 +3850,16 @@ function rozBattle(sum) {
 }
 // ---------- a visegrádi királytalálkozó, 1335 ----------
 function showKiraly() {
-  const pal = S.buildings.find(b => /^palota/.test(b.type)), lvl = pal ? ((S.gb && S.gb.palota1 && S.gb.palota1.lvl) || 0) : -1, ok = lvl >= 3;
+  const pal = S.buildings.find(b => /^palota/.test(b.type)), lvl = pal ? ((window.gbTown && (gbTown().palota1 || {}).lvl) || (S.gb && S.gb.palota1 && S.gb.palota1.lvl) || 1) : 0, ok = lvl >= 3;
   modal(`${X_BTN}<img class="hero" src="img/e05_kiralytalalkozo.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('VISEGRÁD, 1335')}</span><h2>${tr('Három király egy asztalnál')}</h2>
     <p>${tr('A cseh és a lengyel király jön vendégségbe. Új kereskedelmi utat akarunk, hogy az áru ne Bécsen át menjen, ahol mindenre vámot szednek. Ehhez jó lakoma és szép palota kell.')}</p>
-    <p style="font-weight:800">${ok ? tr('A palota készen áll a vendégekre.') : tr('A palotának legalább a 3. szinten kell lennie. Szintezd Hírnévvel, és utána jöhetnek a királyok.')}</p>
-    <div class="row">${ok ? `<button class="btn coral" type="button" id="kkGo">${tr('Kezdődjön a lakoma!')}</button>` : ''}<button class="btn ghost" type="button" id="kkNo">${tr(ok ? 'Még nem' : 'Rendben')}</button></div></div>`, '', 'kiraly');
+    ${ok ? `<p style="font-weight:800">${tr('A palota készen áll a vendégekre.')}</p>` : `<div class="kkneed"><b>${tr('Mit kell tenned?')}</b><ol>
+      <li${pal ? ' class="done"' : ''}>${pal ? tr('A Visegrádi királyi palota áll.') : tr('Építsd fel a Visegrádi királyi palotát. A bal oldali Nevezetes gomb alatt találod.')}</li>
+      <li>${trf('Szintezd fel a palotát a 3. szintre. Most {0}. szinten áll.', Math.max(0, lvl))} ${tr('Kattints a palotára, és a Beszállás fülön tegyél bele Hírnevet. Hírnevet a pénzverde, a kalandok és a mellékküldetések adnak.')}</li>
+      <li>${tr('Ha megvan, nyisd meg újra a kutatást, és jöhetnek a királyok.')}</li></ol></div>`}
+    <div class="row">${ok ? `<button class="btn coral" type="button" id="kkGo">${tr('Kezdődjön a lakoma!')}</button>` : `<button class="btn coral" type="button" id="kkPal">${tr(pal ? 'Megnyitom a palotát' : 'Nevezetes épületek')}</button>`}<button class="btn ghost" type="button" id="kkNo">${tr(ok ? 'Még nem' : 'Később')}</button></div></div>`, '', 'kiraly');
   $('kkNo').onclick = closeModal;
+  if ($('kkPal')) $('kkPal').onclick = () => { closeModal(); try { if (pal && window.gbShowCard) gbShowCard('palota1'); else document.getElementById('btnGb').click(); } catch (e) {} };
   if (ok) $('kkGo').onclick = () => {
     S.trade = { at: S.gt }; const rew = { hirnev: 25, penz: 3000, tudas: 6 }; Object.entries(rew).forEach(([k, v]) => S.res[k] = (S.res[k] || 0) + v); save(); hud();
     modal(`<img class="hero" src="img/e05_lakoma.jpg" alt=""><div class="inner"><span class="eyebrow">${tr('A LAKOMA')}</span><h2>${tr('Megállapodtunk!')}</h2>
@@ -3867,6 +3871,7 @@ function showKiraly() {
     $('kkOk').onclick = () => { closeModal(); checkQuest(); renderGuide(); };
   };
 }
+/*css*/document.head.insertAdjacentHTML('beforeend', `<style>.kkneed{background:rgba(255,248,232,.7);border-radius:14px;padding:10px 14px;margin:8px 0}.kkneed ol{margin:6px 0 0;padding-left:20px;display:grid;gap:6px}.kkneed li.done{color:#2F6B3A;text-decoration:line-through}</style>`);
 function keyEvent(id) { if (id === 'rozgony') { if (!S.rozgony) showRozgony(); } else if (id === 'kiraly') { if (!S.trade) showKiraly(); } }
 // ha a kulcskutatás megvan, de az esemény elmaradt, a kalauz újra felajánlja
 setInterval(() => { try { if (!S || openModal) return; const g = document.getElementById('guide'); if (!g) return; let b = document.getElementById('gKey'); const need = S.techs.rozgony && !S.rozgony ? 'rozgony' : S.techs.kiraly && !S.trade ? 'kiraly' : null; if (!need) { if (b) b.remove(); return; } if (!b) { b = document.createElement('button'); b.id = 'gKey'; b.className = 'btn coral'; b.type = 'button'; b.style.cssText = 'margin-top:8px;min-height:36px;font-size:15px'; const bub = g.querySelector('.bubble') || g; bub.appendChild(b); } b.textContent = need === 'rozgony' ? tr('Irány Rozgony!') : tr('Jöhetnek a királyok!'); b.onclick = () => keyEvent(need); } catch (e) {} }, 1000);
