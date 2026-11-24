@@ -5463,6 +5463,23 @@ window.playDur = function (m) {
   const _sl = showLot;
   showLot = function (l) { if (l && !lotOwned(l.id) && !lotNear(l)) { toast(tr('Ez a telek még messze van. Előbb a városod melletti telkeket vedd meg.')); return; } return _sl.apply(this, arguments); };
 })();
+// ---------- partra és hegyoldalra épült épületek: elég, ha az út legfeljebb három mezőre megközelíti őket, mert a víz- és sziklaszélre nem lehet utat rakni ----------
+(function terrainConn() {
+  if (typeof connected !== 'function' || typeof dimsB !== 'function' || window.__tConn) return; window.__tConn = 1;
+  const _c = connected;
+  connected = function (b) {
+    if (_c.apply(this, arguments)) return true;
+    try {
+      const d = DEF[b.type]; if (!d || !d.terrain) return false;
+      if (!connCache) computeConn(); const [w, h] = dimsB(b);
+      for (let a = -3; a <= w + 2; a++) for (let c = -3; c <= h + 2; c++) {
+        if (a >= -1 && a <= w && c >= -1 && c <= h) continue;
+        if (connCache.has(key(b.i + a, b.j + c))) return true;
+      }
+    } catch (e) {}
+    return false;
+  };
+})();
 
 /*SOCIAL-END*/
 })();
