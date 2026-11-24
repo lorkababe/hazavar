@@ -3911,7 +3911,7 @@ setInterval(() => { try { if (!isLajos()) return; document.querySelectorAll('img
     { id: 'szobor', face: 'orul', eyebrow: 'MELLÉKKÜLDETÉS', title: 'A kolozsvári testvérek', open: () => has('plebaniatemplom'), text: 'Két kolozsvári ötvös testvér, Márton és György, bronzból szobrokat önt. Ha adunk nekik fémet, Szent László lovas szobrát is elkészítik Váradra.', choices: [{ label: 'Megrendelem', cost: { vas: 8, penz: 700 }, rew: { hirnev: 4, tudas: 2 }, say: 'Kolozsvári Márton és György prágai Szent György-szobra ma is áll, ez a gótikus bronzszobrászat egyik csodája.' }] },
     { id: 'torna', face: 'nevet', eyebrow: 'MELLÉKKÜLDETÉS', title: 'Nagy torna Budán', open: () => has('lovagitorna'), text: 'Lovagi tornát rendezek, egész Európából jönnek a vendégek. A lovagok szomjasak, a nézők még inkább.', choices: [{ label: 'Bort hozatok', cost: { bor: 8 }, rew: { hirnev: 6 }, say: 'Nagy Lajos udvara a lovagi kultúra egyik európai központja volt, a tornák híresek voltak.' }] }
   );
-  const GOALS = [['moso', /^aranymoso$/, 'Aranymosó'], ['banya', /^aranybanya/, 'Aranybánya'], ['penzverde', /^penzverde\d/, 'Pénzverde'], ['hamor', /^vashamor/, 'Vashámor'], ['szolo', /^(szolohegy|szoloskert)/, 'Szőlőhegy'], ['vam', /^vamhaz$/, 'Vámház'], ['templom', /^plebaniatemplom$/, 'Plébániatemplom'], ['kovar', /^kovar$/, 'Kővár'], ['torna', /^lovagitorna$/, 'Lovagi tornapálya'], ['furdo', /^furdo$/, 'Városi fürdő']];
+  const GOALS = [['moso', /^aranymoso$/, 'Aranymosó'], ['banya', /^(aranybanya|kormoc)/, 'Aranybánya'], ['penzverde', /^penzverde\d/, 'Pénzverde'], ['hamor', /^vashamor/, 'Vashámor'], ['szolo', /^(szolohegy|szoloskert)/, 'Szőlőhegy'], ['vam', /^vamhaz$/, 'Vámház'], ['templom', /^plebaniatemplom$/, 'Plébániatemplom'], ['kovar', /^kovar$/, 'Kővár'], ['torna', /^lovagitorna$/, 'Lovagi tornapálya'], ['furdo', /^furdo$/, 'Városi fürdő']];
   window.ERA_GOALS = GOALS.map(([id, re, name]) => ({ id, name, re, ok: () => any(re) }));
   QUESTS.push({ face: 'magyaraz', goals: true, get text() { const miss = ERA_GOALS.filter(x => !x.ok()); return 'Mielőtt az ország továbblép, nézzük meg, megvan-e minden, ami egy erős királysághoz kell. ' + (miss.length ? 'Ezek hiányoznak még: ' + miss.map(x => x.name).join(', ') + '. Elég lerakni őket, út nem kell hozzájuk.' : 'Minden megvan, kész vagyunk!'); }, check: () => ERA_GOALS.every(x => x.ok()), rew: { hirnev: 12, penz: 2500 } });
 }
@@ -3927,6 +3927,8 @@ sideDone = function (say) { const q = sideCur(); S.side = S.side || {}; S.side.d
   setTimeout(() => { const k = document.getElementById('gKey'); if (k && k.parentElement) k.parentElement.remove(); }, 0);
   $('gNext6').onclick = () => { try { localStorage.setItem('panelvar-era', '6'); } catch (e) {} save(); location.href = 'e06.html'; };
 } catch (e) {} }; }
+// a céltábla azonnal frissül, amikor lerakod vagy lebontod az épületeket
+{ let sig = ''; setInterval(() => { try { const q = QUESTS[S.quest]; if (!q || !q.goals) return; const s = ERA_GOALS.map(g => g.ok() ? 1 : 0).join(''); if (s === sig) return; sig = s; renderGuide(); checkQuest(); } catch (e) {} }, 800); }
 
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;

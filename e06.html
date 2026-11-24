@@ -3964,13 +3964,15 @@ setInterval(() => { try { if (!isMatyas()) return; document.querySelectorAll('im
     { id: 'galeotto', face: 'orul', eyebrow: 'MELLÉKKÜLDETÉS', title: 'Galeotto, a krónikás', open: () => has('herkules_kut'), text: 'Galeotto Marzio, az itáliai tudós lejegyzi, amit mondok és teszek. Szeret enni és inni, és cserébe szépeket ír rólam.', choices: [{ label: 'Megvendégelem', cost: { bor: 8, termeny: 300 }, rew: { tudas: 3, hirnev: 4 }, say: 'Galeotto Marzio könyve Mátyás mondásairól és tetteiről ma is az egyik legfontosabb forrásunk róla.' }] }
   );
   // a korszak céltáblája: ezek nélkül nem zárul le a Hunyadiak kora
-  const GOALS = [['malom', /^(malom|vizimalom)/, 'Vízimalom'], ['agyu', /^agyuonto/, 'Ágyúöntő'], ['vegvar', /^vegvar$/, 'Végvár'], ['majolika', /^majolika$/, 'Majolikaműhely'], ['konyvtar', /^konyvtar/, 'Könyvtár'], ['sereg', /^fekete_sereg/, 'Fekete sereg'], ['vasar', /^vasar/, 'Vásártér'], ['nyomda', /^nyomda$/, 'Budai nyomda'], ['herkules', /^herkules_kut$/, 'Herkules-kút'], ['banya', /^aranybanya/, 'Aranybánya'], ['penzverde', /^penzverde\d/, 'Pénzverde'], ['szolo', /^(szolohegy|szoloskert)/, 'Szőlő a budai hegyen']];
+  const GOALS = [['malom', /^(malom|vizimalom)/, 'Vízimalom'], ['agyu', /^agyuonto/, 'Ágyúöntő'], ['vegvar', /^vegvar$/, 'Végvár'], ['majolika', /^majolika$/, 'Majolikaműhely'], ['konyvtar', /^konyvtar/, 'Könyvtár'], ['sereg', /^fekete_sereg/, 'Fekete sereg'], ['vasar', /^vasar/, 'Vásártér'], ['nyomda', /^nyomda$/, 'Budai nyomda'], ['herkules', /^herkules_kut$/, 'Herkules-kút'], ['banya', /^(aranybanya|kormoc)/, 'Aranybánya'], ['penzverde', /^penzverde\d/, 'Pénzverde'], ['szolo', /^(szolohegy|szoloskert)/, 'Szőlő a budai hegyen']];
   window.ERA_GOALS = GOALS.map(([id, re, name]) => ({ id, name, re, ok: () => any(re) }));
   QUESTS.push({ face: 'magyaraz', goals: true, get text() { const g = ERA_GOALS, miss = g.filter(x => !x.ok()); return 'Még egy dolog, mielőtt a krónikás lezárja a fejezetet. Egy igazi reneszánsz királyságban minden mesterség otthon van. ' + (miss.length ? 'Ezek hiányoznak még a városból: ' + miss.map(x => x.name).join(', ') + '. Elég lerakni őket, út nem kell hozzájuk.' : 'Minden megvan, kész vagyunk!'); }, check: () => ERA_GOALS.every(x => x.ok()), rew: { hirnev: 15, penz: 3000 } });
 }
 // bármelyik mellékküldetés jöhet, amelyikhez már megvan az épület, nem kell sorban várni
 sideCur = function () { const d = (S.side && S.side.doneIds) || []; return SIDE.find(q => !d.includes(q.id) && q.open()) || null; };
 sideDone = function (say) { const q = sideCur(); S.side = S.side || {}; S.side.doneIds = S.side.doneIds || []; if (q) S.side.doneIds.push(q.id); S.side.step = S.side.doneIds.length; save(); closeModal(); if (say) toast(say); hud(); };
+// a céltábla azonnal frissül, amikor lerakod vagy lebontod az épületeket
+{ let sig = ''; setInterval(() => { try { const q = QUESTS[S.quest]; if (!q || !q.goals) return; const s = ERA_GOALS.map(g => g.ok() ? 1 : 0).join(''); if (s === sig) return; sig = s; renderGuide(); checkQuest(); } catch (e) {} }, 800); }
 
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;
