@@ -3352,8 +3352,9 @@ function showLogin() {
 }
 async function netStart(user) {
   NET.on = true; NET.me = user.id;
-  try { await netPull(); } catch (e) { console.warn('pull', e); if (e && e.message === 'reload') return; }
+  // előbb bejelentjük, hogy most itt fut a város, csak utána töltünk le és fel, különben a saját előző megnyitásunk léptetne ki
   await claimSess();
+  try { await netPull(); } catch (e) { console.warn('pull', e); if (e && e.message === 'reload') return; }
   try { const r = await NET.sb.rpc('join_megye'); NET.megye = r.data; } catch (e) {}
   await netPushProfile(true); await netRefresh();
   toast(TF('Bejelentkezve. A mentésed a szerveren van, {0}. megye.', NET.megye || '?'));
@@ -3368,12 +3369,14 @@ NET.sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
 const ACT_KEY = 'pvsync-act'; NET.touched = 0; NET.lastPush = Date.now();
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { NET.touched = Date.now(); }, true));
 async function claimSess() {
-  try { await NET.sb.from('saves').upsert([{ user_id: NET.me, slot: 'pvsession', data: { sid: NET.sid, at: Date.now() }, updated_at: new Date().toISOString() }]); } catch (e) {}
+  const at = Date.now();
+  try { const { error } = await NET.sb.from('saves').upsert([{ user_id: NET.me, slot: 'pvsession', data: { sid: NET.sid, at }, updated_at: new Date().toISOString() }]); if (!error) NET.sidAt = at; else console.warn('session', error); } catch (e) {}
 }
 async function sessLost() {
   if (!NET.on || NET.kicked) return !!NET.kicked;
+  if (!NET.sidAt) return false; // ha nem sikerült bejelentkezni a munkamenetbe, inkább nem léptetünk ki senkit
   try { const { data } = await NET.sb.from('saves').select('data').eq('user_id', NET.me).eq('slot', 'pvsession').maybeSingle();
-    if (data && data.data && data.data.sid && data.data.sid !== NET.sid) { kickOut(); return true; } } catch (e) {}
+    const d = data && data.data; if (d && d.sid && d.sid !== NET.sid) { kickOut(); return true; } } catch (e) {}
   return false;
 }
 function kickOut() {
