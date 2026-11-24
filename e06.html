@@ -7915,6 +7915,8 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const alive = id => !!document.getElementById(id);
   const I = n => `img/${n}`;
+  const OPT = {}; ['e06_mg_letra2.png', 'e06_mg_letra3.png', 'e06_mg_hollo_egbolt.jpg', 'e06_mg_hollo_1.png', 'e06_mg_hollo_2.png', 'e06_mg_hollo_torony.png', 'e06_mg_hollo_felho.png'].forEach(n => { const im = new Image(); im.onload = () => { if (im.naturalWidth) OPT[n] = 1; }; im.src = I(n); });
+  const has = n => !!OPT[n];
   function done(eyebrow, title, lines, id, rew, fact) {
     const got = miniGive(id, rew);
     miniEnd(eyebrow, title, lines.concat([got ? `<b>${tr('A jutalmad')}</b>${miniRewText(rew)}` : tr('A mai jutalmat ezért a kalandért már megkaptad. Holnap újra jár.')]), fact);
@@ -7926,29 +7928,35 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .ag-pop{position:absolute;transform:translate(-50%,-50%);font:900 20px Nunito,sans-serif;color:#FFE58A;text-shadow:0 2px 0 #6A4520,0 0 6px #000;pointer-events:none;animation:agUp .9s ease-out forwards;z-index:9}.ag-pop.bad{color:#FF8A70}
   @keyframes agUp{to{transform:translate(-50%,-160%);opacity:0}}
   .nf-stage{height:min(440px,54vh);background:url(${I('e06_mg_falak.jpg')}) center/cover}
-  .nf-l{position:absolute;bottom:0;border:0;padding:0;background:none;cursor:pointer;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center}
-  .nf-l .lt{width:70px;height:auto;display:block}.nf-l .os{position:absolute;width:80px;left:50%;transform:translateX(-50%);transition:bottom .1s linear}
-  .nf-l.fall{transition:transform .6s ease-in,opacity .6s;transform:translateX(-50%) rotate(-50deg) translateY(60px);opacity:0}
+  .nf-l{position:absolute;bottom:0;border:0;padding:0;background:none;cursor:pointer;transform-origin:50% 100%;transform:translateX(-50%) scaleX(var(--s,1)) rotate(var(--r,0deg));display:flex;flex-direction:column;align-items:center}
+  .nf-l .lt{width:70px;height:auto;display:block}.nf-l .os{position:absolute;width:80px;left:40%;transform:translateX(-50%) rotate(calc(var(--r,0deg) * -1))}
+  .nf-l.fall{transition:transform .6s ease-in,opacity .6s;transform:translateX(-50%) scaleX(var(--s,1)) rotate(-55deg) translateY(60px);opacity:0}
   .nf-bell{position:absolute;right:10px;top:10px;border:0;background:rgba(255,248,232,.9);border-radius:16px;padding:6px 10px;display:flex;align-items:center;gap:6px;font:900 14px Nunito,sans-serif;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.3);z-index:5}
   .nf-bell img{width:44px}.nf-bell:disabled{opacity:.45;cursor:default}
   .kz-stage{height:min(440px,54vh);background:url(${I('e06_mg_kocsma.jpg')}) center/cover}
   .kz-k{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:92%;pointer-events:none}
   .kz-cup{position:absolute;width:90px;transform-origin:50% 100%;pointer-events:none}
   .kz-ctl{display:flex;gap:10px;justify-content:center;margin-top:10px}.kz-ctl .btn{min-width:120px}
-  .kz-meter{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:min(320px,70%);height:14px;border-radius:7px;background:rgba(40,20,0,.5)}.kz-meter i{position:absolute;top:-4px;width:6px;height:22px;margin-left:-3px;border-radius:3px;background:#FFE58A;box-shadow:0 0 0 2px #6A4520}.kz-meter b{position:absolute;inset:0 30%;background:rgba(123,212,123,.55);border-radius:7px}
+  .kz-meter{position:absolute;left:50%;top:10px;z-index:3;transform:translateX(-50%);width:min(320px,70%);height:14px;border-radius:7px;background:rgba(40,20,0,.5)}.kz-meter i{position:absolute;top:-4px;width:6px;height:22px;margin-left:-3px;border-radius:3px;background:#FFE58A;box-shadow:0 0 0 2px #6A4520}.kz-meter b{position:absolute;inset:0 30%;background:rgba(123,212,123,.55);border-radius:7px}
   .cv-wrap{padding:12px;background:linear-gradient(rgba(58,36,16,.55),rgba(58,36,16,.75)),url(${I('e06_mg_pergamen.jpg')}) center/cover}
-  .cv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:520px;margin:0 auto}
-  .cv-c{aspect-ratio:1;border:0;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,#7A2A1E,#B8402C);box-shadow:inset 0 0 0 3px #E2B33C,0 4px 0 rgba(0,0,0,.35);position:relative;overflow:hidden;padding:0}
-  .cv-c::after{content:'';position:absolute;inset:18%;background:url(${I('e06_ikon_corvina.png')}) center/contain no-repeat;opacity:.8}
-  .cv-c img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .2s}
-  .cv-c.up img,.cv-c.ok img{opacity:1}.cv-c.up::after,.cv-c.ok::after{display:none}.cv-c.ok{box-shadow:inset 0 0 0 3px #7BD47B,0 0 12px #7BD47B}
+  .cv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(100%,340px);margin:0 auto;perspective:700px}
+  .cv-c{aspect-ratio:3/4;border:0;padding:0;background:none;cursor:pointer;position:relative;transform-style:preserve-3d;transition:transform .35s ease}
+  .cv-c>i{position:absolute;inset:0;border-radius:6px 9px 9px 6px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .cv-c .bk{background:radial-gradient(circle at 50% 50%,rgba(255,220,140,.18),transparent 60%),linear-gradient(90deg,#4A140C 0 9%,#7A2418 9% 11%,#8E2C1E 11%);box-shadow:inset 0 0 0 2px #C99A3A,inset 0 0 0 5px #6A1E14,inset 0 0 0 6px #C99A3A,0 3px 0 rgba(0,0,0,.35)}
+  .cv-c .bk::after{content:'';position:absolute;inset:30% 26%;background:url(${I('e06_ikon_corvina.png')}) center/contain no-repeat;opacity:.55;filter:sepia(1) saturate(2) brightness(1.1)}
+  .cv-c .fr{transform:rotateY(180deg);background:linear-gradient(#F6EBCF,#E9D6A8);box-shadow:inset 0 0 0 1px #B8925A,0 3px 0 rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  .cv-c .fr img{width:62%;aspect-ratio:1;object-fit:contain;border-radius:3px;box-shadow:0 0 0 2px #C99A3A}
+  .cv-c .fr u{display:block;width:70%;height:2px;background:repeating-linear-gradient(90deg,#8A6A40 0 6px,transparent 6px 9px);opacity:.6;text-decoration:none}
+  .cv-c .fr u+u{width:52%}
+  .cv-c.up,.cv-c.ok{transform:rotateY(180deg)}.cv-c.ok .fr{box-shadow:inset 0 0 0 2px #5FA85F,0 0 10px rgba(123,212,123,.8)}
   .am-stage{height:min(460px,56vh);background:url(${I('e06_mg_piac.jpg')}) center/cover}
   .am-p{position:absolute;border:0;padding:0;background:none;cursor:pointer;transform:translate(-50%,-100%)}.am-p img{display:block;height:100%;width:auto;pointer-events:none}
   .ho-stage{height:min(440px,54vh);background:linear-gradient(#8CCBF0,#CFEAF7 60%,#9CC56A 60%,#7FA94E)}
   .ho-b{position:absolute;width:90px;pointer-events:none;transition:transform .1s}
   .ho-t{position:absolute;width:64px;background:linear-gradient(90deg,#B9A27A,#E8DCC0 40%,#B9A27A);border:3px solid #7A6240;border-radius:6px}
   .ho-t.top{border-top:0;border-radius:0 0 6px 6px}.ho-t.bot::before{content:'';position:absolute;left:-8px;right:-8px;top:-14px;height:14px;background:repeating-linear-gradient(90deg,#B9A27A 0 12px,transparent 12px 18px)}
-  .ho-r{position:absolute;width:38px;pointer-events:none}`;
+  .ho-r{position:absolute;width:38px;pointer-events:none}
+  .ho-t.img{background:none;border:0;border-radius:0;background-repeat:no-repeat;background-size:100% auto}.ho-t.img::before{display:none}.ho-t.top.img{background-position:50% 100%;width:84px;margin-left:-10px}.ho-t.bot.img{background-position:50% 0;width:84px;margin-left:-10px}`;
   document.head.appendChild(st);
 
   // ---------- 1. Nándorfehérvár védelme ----------
@@ -7965,10 +7973,11 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     function spawn() {
       if (over || !alive('nfSt')) return; const W = host.clientWidth, H = host.clientHeight;
       const l = document.createElement('button'); l.type = 'button'; l.className = 'nf-l';
-      const x = W * (0.12 + Math.random() * 0.7); l.style.left = x + 'px'; l.style.height = (H * 0.62) + 'px';
-      l.innerHTML = `<img class="lt" src="${I('e06_mg_letra.png')}" alt="" style="height:100%;width:auto"><img class="os" src="${I('e06_mg_ostromlo.png')}" alt="" style="bottom:0">`;
+      const x = W * (0.12 + Math.random() * 0.7), lh = H * (0.52 + Math.random() * 0.16); l.style.left = x + 'px'; l.style.height = lh + 'px';
+      l.style.setProperty('--s', Math.random() < 0.5 ? -1 : 1); l.style.setProperty('--r', (Math.random() * 16 - 8).toFixed(1) + 'deg');
+      const lv = ['e06_mg_letra.png'].concat(['e06_mg_letra2.png', 'e06_mg_letra3.png'].filter(has)); l.innerHTML = `<img class="lt" src="${I(lv[Math.floor(Math.random() * lv.length)])}" alt="" style="height:100%;width:auto"><img class="os" src="${I('e06_mg_ostromlo.png')}" alt="" style="bottom:0">`;
       host.appendChild(l); L.add(l); const os = l.querySelector('.os'), dur = Math.max(2600, 6000 - (TIME - left) * 90), t0 = performance.now();
-      const step = t => { if (over || !l.isConnected || l.dataset.x) return; const k = (t - t0) / dur; os.style.bottom = (k * (H * 0.62 - 60)) + 'px';
+      const step = t => { if (over || !l.isConnected || l.dataset.x) return; const k = (t - t0) / dur; os.style.bottom = (k * (lh - 60)) + 'px'; os.style.left = (36 + k * 50) + '%';
         if (k >= 1) { l.dataset.x = 1; L.delete(l); l.remove(); lives--; hud(); host.animate([{ boxShadow: 'inset 0 0 0 40px rgba(184,64,44,.45)' }, { boxShadow: 'inset 0 0 0 3px rgba(74,42,16,.6)' }], 400); if (lives <= 0) end(); return; }
         requestAnimationFrame(step); };
       requestAnimationFrame(step);
@@ -7991,19 +8000,23 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     if (!miniStart('kinizsi')) return;
     const TIME = 30; let tilt = 0, v = 0, t = 0, over = false, last = performance.now(), push = 0;
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A KOCSMÁBAN, VALAHOL A BAKONYBAN')}</span><h2>${tr('Kinizsi malomköve')}</h2>
-      <p>${tr('A legenda szerint Mátyás egy kocsmában figyelt fel a molnárlegényre, aki malomkövön kínálta neki a bort. Tartsd egyensúlyban a kupát a malomkövön! Nyomd a bal vagy a jobb gombot, vagy a nyilakat.')}</p>
+      <p>${tr('A legenda szerint Mátyás egy kocsmában figyelt fel a molnárlegényre, aki malomkövön kínálta neki a bort. A kupa csúszkál a kövön. Ha jobbra csúszik, told vissza balra, ha balra, told jobbra. Nyomhatod a gombokat, a nyilakat, vagy koppints a kép bal vagy jobb felére.')}</p>
       <div class="ag-hud"><span id="kzT"></span><span id="kzS"></span></div>
       <div class="ag-stage kz-stage" id="kzSt"><div class="kz-meter"><b></b><i id="kzM"></i></div><img class="kz-k" src="${I('e06_mg_kinizsi.png')}" alt=""><img class="kz-cup" id="kzC" src="${I('e06_mg_kupa.png')}" alt=""></div>
       <div class="kz-ctl"><button class="btn teal" type="button" id="kzL">◀ ${tr('Balra')}</button><button class="btn teal" type="button" id="kzR">${tr('Jobbra')} ▶</button></div></div>`, '', 'minimodal');
     const hold = (id, d) => { const b = $(id); b.onpointerdown = e => { e.preventDefault(); push = d; }; b.onpointerup = b.onpointerleave = () => { if (push === d) push = 0; }; };
     hold('kzL', -1); hold('kzR', 1);
-    const key = e => { if (!alive('kzSt')) { removeEventListener('keydown', key); removeEventListener('keyup', ku); return; } if (e.key === 'ArrowLeft') push = -1; if (e.key === 'ArrowRight') push = 1; };
+    const key = e => { if (!alive('kzSt')) { removeEventListener('keydown', key); removeEventListener('keyup', ku); return; } if (e.key === 'ArrowLeft' || e.key === 'a') push = -1; if (e.key === 'ArrowRight' || e.key === 'd') push = 1; };
     const ku = e => { if ((e.key === 'ArrowLeft' && push < 0) || (e.key === 'ArrowRight' && push > 0)) push = 0; };
     addEventListener('keydown', key); addEventListener('keyup', ku);
+    { const sg = $('kzSt'); sg.onpointerdown = e => { if (e.target.closest('button')) return; e.preventDefault(); const r = sg.getBoundingClientRect(); push = e.clientX < r.left + r.width / 2 ? -1 : 1; }; sg.onpointerup = sg.onpointerleave = sg.onpointercancel = () => { push = 0; }; }
     const place = () => { const s = $('kzSt'), k = s.querySelector('.kz-k'), c = $('kzC'); if (!k.naturalWidth) return; const kw = k.clientWidth, kh = k.clientHeight, kx = (s.clientWidth - kw) / 2;
-      c.style.left = (kx + kw * 0.58 - 45) + 'px'; c.style.bottom = (kh * 0.86) + 'px'; c.style.transform = `translateX(${tilt * 40}px) rotate(${tilt * 30}deg)`; $('kzM').style.left = (50 + tilt * 50) + '%'; };
+      c.style.left = (kx + kw * 0.58 - 45) + 'px'; c.style.bottom = (kh * 0.86) + 'px'; c.style.transform = `translateX(${tilt * 46}px) rotate(${tilt * 22}deg)`;
+      c.style.filter = Math.abs(tilt) > 0.7 ? 'drop-shadow(0 0 8px rgba(255,90,60,.95))' : ''; $('kzM').style.left = (50 + tilt * 50) + '%'; };
+    // a kupa magától egyre jobban a lejtő felé csúszik, a gomb pedig közvetlenül tolja, lendület nélkül, így kiszámítható
     const loop = now => { if (!alive('kzSt') || over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
-      const lvl = Math.min(1, t / 2) * (1 + t / 15); v += (Math.sin(t * 1.3) * 0.22 + Math.sin(t * 2.7 + 1) * 0.14) * dt * lvl + tilt * dt * 0.7 * lvl + push * dt * 1.6; v *= 0.95; tilt += v * dt * 1.6;
+      const lvl = Math.min(1, t / 2) * (0.6 + t / 45), gust = (Math.sin(t * 1.1) * 0.5 + Math.sin(t * 2.3 + 1) * 0.3 + Math.sin(t * 0.37 + 2) * 0.4) * lvl;
+      tilt += (gust * 0.45 + tilt * 0.8 * lvl + push * 1.15) * dt;
       place(); $('kzT').textContent = trf('Még {0} mp', Math.max(0, Math.ceil(TIME - t))); $('kzS').textContent = trf('{0} mp egyensúlyban', Math.floor(t));
       if (Math.abs(tilt) > 1) return end(false); if (t >= TIME) return end(true); requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
@@ -8023,7 +8036,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('A KIRÁLYI KÖNYVTÁRBAN')}</span><h2>${tr('Corvina-másolás')}</h2>
       <p>${tr('A miniátorfestő összekeverte a díszes kezdőbetűket. Fordíts fel kettőt, és ha egyformák, a helyükre kerülnek. Minél kevesebb lépés, annál szebb lesz a kódex.')}</p>
       <div class="ag-hud"><span id="cvM"></span><span id="cvF"></span></div>
-      <div class="ag-stage cv-wrap" id="cvSt"><div class="cv-grid">${cards.map((l, k) => `<button class="cv-c" type="button" data-k="${k}"><img src="${I('e06_mg_ini_' + l + '.jpg')}" alt="${l}"></button>`).join('')}</div></div></div>`, '', 'minimodal');
+      <div class="ag-stage cv-wrap" id="cvSt"><div class="cv-grid">${cards.map((l, k) => `<button class="cv-c" type="button" data-k="${k}" aria-label="${tr('kódexlap')}"><i class="bk"></i><i class="fr"><img src="${I('e06_mg_ini_' + l + '.jpg')}" alt="${l}"><u></u><u></u></i></button>`).join('')}</div></div></div>`, '', 'minimodal');
     const hud = () => { $('cvM').textContent = trf('{0} lépés', moves); $('cvF').textContent = trf('{0} / 6 pár', found); }; hud();
     const bs = [...document.querySelectorAll('#cvSt .cv-c')];
     bs.forEach(b => b.onpointerdown = async e => {
@@ -8045,27 +8058,34 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     if (!miniStart('alruhas')) return;
     const ROUNDS = 5; let round = 0, found = 0, over = false, timer = 0, left = 0;
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KOLOZSVÁR, PIACNAP')}</span><h2>${tr('Álruhás Mátyás')}</h2>
-      <p>${tr('A király álruhában járja a piacot, hogy lássa, hogyan bánnak a néppel. Keresd meg a szalmakalapos, foltos kabátos legényt, akinek kilóg a korona a kalapja alól! Öt körben egyre nagyobb a tömeg.')}</p>
+      <p>${tr('A király álruhában járja a piacot, hogy lássa, hogyan bánnak a néppel. Keresd meg a szalmakalapos, foltos kabátos legényt, akinek kilóg a korona a kalapja alól! 5 körön át egyre nagyobb a tömeg.')}</p>
       <div class="ag-hud"><span id="amR"></span><span id="amT"></span><span id="amF"></span></div>
       <div class="ag-stage am-stage" id="amSt"></div></div>`, '', 'minimodal');
     const host = $('amSt');
     function next() {
       if (over || !alive('amSt')) return; if (round >= ROUNDS) return finish(); round++; host.innerHTML = ''; left = 9 - round;
-      const W = host.clientWidth, H = host.clientHeight, n = 5 + round * 4, ppl = [];
+      const W = host.clientWidth, H = host.clientHeight, n = 8 + round * 6, ppl = [];
       for (let k = 0; k <= n; k++) { const king = k === n, b = document.createElement('button'); b.type = 'button'; b.className = 'am-p';
-        const y = H * (0.45 + Math.random() * 0.52), h = (60 + (y / H) * 90); b.style.height = h + 'px'; b.style.left = (W * (0.05 + Math.random() * 0.9)) + 'px'; b.style.top = y + 'px'; b.style.zIndex = Math.round(y);
-        b.innerHTML = `<img src="${I(king ? 'e06_mg_alruhas.png' : 'e06_mg_jaro' + (k % 8) + '.png')}" alt="">`; if (Math.random() < 0.5) b.firstChild.style.transform = 'scaleX(-1)';
+        const y = H * (0.52 + Math.random() * 0.46), h = (50 + (y / H) * 80); b.style.height = h + 'px'; b.style.left = (W * (0.05 + Math.random() * 0.9)) + 'px'; b.style.top = y + 'px'; b.style.zIndex = Math.round(y);
+        b.innerHTML = `<img src="${I(king ? 'e06_mg_alruhas.png' : 'e06_mg_jaro' + (k % 8) + '.png')}" alt="">`; 
         b.onpointerdown = e => { e.preventDefault(); if (over) return; if (king) { found++; pop(host, parseFloat(b.style.left), y - h, tr('Megvagy, felség!')); try { sfxCollect(); } catch (er) {} clearInterval(timer); setTimeout(next, 700); } else { pop(host, parseFloat(b.style.left), y - h, tr('Nem ő'), 'bad'); left = Math.max(0, left - 1); hud(); } };
-        host.appendChild(b); ppl.push([b, Math.random() * 6, 0.3 + Math.random() * 0.5]); }
-      const t0 = performance.now(); const wander = t => { if (!host.isConnected || over) return; ppl.forEach(([b, ph, sp]) => { b.style.marginLeft = (Math.sin((t - t0) / 1000 * sp + ph) * 30) + 'px'; }); requestAnimationFrame(wander); }; requestAnimationFrame(wander);
+        host.appendChild(b);
+        // a fele áll és beszélget, a többiek lépkednek, nem csúsznak: minden lépésnél kicsit felbillennek
+        const walk = Math.random() < 0.55; ppl.push({ b, img: b.firstChild, x: parseFloat(b.style.left), dir: Math.random() < 0.5 ? -1 : 1, sp: walk ? 14 + Math.random() * 16 : 0, ph: Math.random() * 6, h, pause: 0 }); }
+      let last = performance.now(); const wander = t => { if (!host.isConnected || over) return; const dt = Math.min(0.05, (t - last) / 1000); last = t;
+        ppl.forEach(p => { if (p.sp) { if (p.pause > 0) p.pause -= dt; else { p.x += p.dir * p.sp * dt * (p.h / 100); if (p.x < W * 0.04 || p.x > W * 0.96) p.dir *= -1; else if (Math.random() < dt * 0.15) p.pause = 0.8 + Math.random() * 1.6; } }
+          const moving = p.sp && p.pause <= 0, ph = t / 1000 * (moving ? 7 : 1.6) + p.ph, hop = moving ? Math.abs(Math.sin(ph)) * 5 : Math.sin(ph) * 1.2, rot = moving ? Math.sin(ph) * 3 : Math.sin(ph) * 1;
+          p.b.style.left = p.x + 'px'; p.img.style.transform = `translateY(${-hop}px) rotate(${rot}deg) scaleX(${p.dir})`; });
+        requestAnimationFrame(wander); }; requestAnimationFrame(wander);
       hud(); clearInterval(timer); timer = setInterval(() => { if (!alive('amSt')) return clearInterval(timer); left--; hud(); if (left <= 0) { clearInterval(timer); pop(host, W / 2, H / 3, tr('Elillant!'), 'bad'); setTimeout(next, 800); } }, 1000);
     }
-    const hud = () => { if (!alive('amSt')) return; $('amR').textContent = trf('{0}. kör / {1}', round, ROUNDS); $('amT').textContent = trf('Még {0} mp', Math.max(0, left)); $('amF').textContent = trf('{0}-szor találtad meg', found); };
+    const hud = () => { if (!alive('amSt')) return; $('amR').textContent = trf('{0}. kör / {1}', round, ROUNDS); $('amT').textContent = trf('Még {0} mp', Math.max(0, left)); $('amF').textContent = szor(found); };
+    const SZ = ['', 'szer', 'szer', 'szor', 'szer', 'ször'], szor = n => n ? trf('{0}-{1} találtad meg', n, SZ[n] || 'szor') : tr('Még nem találtad meg');
     setTimeout(next, 300);
     function finish() {
       over = true; const rew = { penz: 200 + found * 120, hirnev: found >= 4 ? 4 : 2 };
       done(found >= 4 ? 'LELEPLEZTED A KIRÁLYT' : 'A KIRÁLY ÜGYES', found >= 4 ? tr('Mátyás nevetve leveszi a kalapját') : tr('Mátyás jól álcázza magát'),
-        [trf('Öt körből {0}-szor találtad meg a királyt.', found), tr('A kolozsvári bíró ma este nagyon meg fog lepődni.')],
+        [found ? trf('{0} körből {1}-{2} találtad meg a királyt.', ROUNDS, found, SZ[found]) : trf('{0} körből egyszer sem találtad meg a királyt.', ROUNDS), tr('A kolozsvári bíró ma este nagyon meg fog lepődni.')],
         'alruhas', rew, 'Mátyás Kolozsváron született 1443-ban, a szülőháza ma is áll. Az álruhás király történetei, például a kolozsvári bíróé, népmesék, nem történeti események. Mégis sokat elmondanak arról, hogy a nép az igazságos királyt látta benne. Ezért is mondták halála után, hogy meghalt Mátyás király, oda az igazság.');
     }
   }
@@ -8078,16 +8098,20 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       <p>${tr('A legenda szerint egy holló elkapta Mátyás anyjának, Szilágyi Erzsébetnek a levelét, és Prágába vitte a hírt. Egy másik történet szerint egy gyűrűt lopott el, és a vitéz lelőtte, így került a holló a gyűrűvel a címerbe. Koppints vagy nyomd a szóközt, hogy a holló szálljon, kerüld ki a tornyokat, és gyűjtsd a gyűrűket!')}</p>
       <div class="ag-hud"><span id="hoT"></span><span id="hoR"></span><span id="hoL"></span></div>
       <div class="ag-stage ho-stage" id="hoSt"><img class="ho-b" id="hoB" src="${I('e06_mg_hollo.png')}" alt=""></div></div>`, '', 'minimodal');
-    const host = $('hoSt'), bird = $('hoB'), flap = () => { if (!over) vy = -0.62; };
+    const host = $('hoSt'), bird = $('hoB'), fr = has('e06_mg_hollo_1.png') && has('e06_mg_hollo_2.png'); let flapT = 0;
+    if (has('e06_mg_hollo_egbolt.jpg')) host.style.background = `url(${I('e06_mg_hollo_egbolt.jpg')}) 0 50%/auto 100% repeat-x`;
+    if (fr) bird.src = I('e06_mg_hollo_1.png');
+    const flap = () => { if (over) return; vy = -0.62; if (fr) { bird.src = I('e06_mg_hollo_2.png'); flapT = 0.18; } };
     host.onpointerdown = e => { e.preventDefault(); flap(); };
     const key = e => { if (!alive('hoSt')) { removeEventListener('keydown', key); return; } if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } }; addEventListener('keydown', key);
     const hud = () => { $('hoT').textContent = trf('Még {0} mp', Math.max(0, Math.ceil(TIME - t))); $('hoR').textContent = trf('{0} gyűrű', rings); $('hoL').textContent = '🪶'.repeat(Math.max(0, 3 - hits)); };
     const loop = now => { if (!alive('hoSt') || over) return; const dt = Math.min(0.04, (now - last) / 1000); last = now; t += dt; inv = Math.max(0, inv - dt);
-      const W = host.clientWidth, H = host.clientHeight; vy += 1.5 * dt; y = Math.max(0.02, Math.min(0.95, y + vy * dt)); if (y >= 0.95) vy = 0;
+      const W = host.clientWidth, H = host.clientHeight; vy += 1.5 * dt; if (fr && flapT > 0 && (flapT -= dt) <= 0) bird.src = I('e06_mg_hollo_1.png');
+      if (has('e06_mg_hollo_egbolt.jpg')) host.style.backgroundPositionX = (-t * W * 0.08) + 'px'; y = Math.max(0.02, Math.min(0.95, y + vy * dt)); if (y >= 0.95) vy = 0;
       bird.style.left = (W * 0.18 - 45) + 'px'; bird.style.top = (y * H - 35) + 'px'; bird.style.transform = `rotate(${Math.max(-25, Math.min(35, vy * 40))}deg)`; bird.style.opacity = inv > 0 ? (Math.floor(inv * 10) % 2 ? 0.4 : 1) : 1;
       nextO -= dt; if (nextO <= 0) { nextO = Math.max(1.1, 1.9 - t / 30); const gap = 0.36 - Math.min(0.08, t / 200), gy = 0.15 + Math.random() * (0.7 - gap), x = W + 40;
-        const top = document.createElement('div'); top.className = 'ho-t top'; top.style.top = '0'; top.style.height = (gy * H) + 'px';
-        const bot = document.createElement('div'); bot.className = 'ho-t bot'; bot.style.top = ((gy + gap) * H) + 'px'; bot.style.height = ((1 - gy - gap) * H) + 'px';
+        const top = document.createElement('div'); top.className = 'ho-t top' + (has('e06_mg_hollo_felho.png') ? ' img' : ''); if (has('e06_mg_hollo_felho.png')) top.style.backgroundImage = `url(${I('e06_mg_hollo_felho.png')})`; top.style.top = '0'; top.style.height = (gy * H) + 'px';
+        const bot = document.createElement('div'); bot.className = 'ho-t bot' + (has('e06_mg_hollo_torony.png') ? ' img' : ''); if (has('e06_mg_hollo_torony.png')) bot.style.backgroundImage = `url(${I('e06_mg_hollo_torony.png')})`; bot.style.top = ((gy + gap) * H) + 'px'; bot.style.height = ((1 - gy - gap) * H) + 'px';
         const ring = document.createElement('img'); ring.className = 'ho-r'; ring.src = I('e06_mg_gyuru.png'); ring.style.top = ((gy + gap / 2) * H - 19) + 'px';
         [top, bot, ring].forEach(e => host.appendChild(e)); obs.push({ x, top, bot, ring, gy, gap, got: false }); }
       const sp = W * 0.32; obs = obs.filter(o => { o.x -= sp * dt; [o.top, o.bot].forEach(e => e.style.left = o.x + 'px'); o.ring.style.left = (o.x + 13) + 'px';
