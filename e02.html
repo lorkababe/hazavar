@@ -5675,13 +5675,23 @@ window.playDur = function (m) {
 // ---------- partra és hegyoldalra épült épületek: elég, ha az út legfeljebb három mezőre megközelíti őket, mert a víz- és sziklaszélre nem lehet utat rakni ----------
 (function terrainConn() {
   if (typeof connected !== 'function' || typeof dimsB !== 'function' || window.__tConn) return; window.__tConn = 1;
+  // a nagy képű épületek (a főépület is) túlnyúlnak a mezőiken: ami szemre hozzáér, az számítson bekötöttnek
+  const _cc = computeConn;
+  computeConn = function () {
+    _cc.apply(this, arguments);
+    try {
+      const fo = S.buildings.find(b => b.type === 'fo'); if (!fo) return; const k = (DEF.fo && DEF.fo.size) || 3, seen = connCache, q = [];
+      for (let a = -2; a <= k + 1; a++) for (let c = -2; c <= k + 1; c++) { const kk = key(fo.i + a, fo.j + c); if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([fo.i + a, fo.j + c]); } }
+      while (q.length) { const [i, j] = q.shift(); NB.forEach(([di, dj]) => { const kk = key(i + di, j + dj); if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([i + di, j + dj]); } }); }
+    } catch (e) {}
+  };
   const _c = connected;
   connected = function (b) {
     if (_c.apply(this, arguments)) return true;
     try {
-      const d = DEF[b.type]; if (!d || !d.terrain) return false;
+      const d = DEF[b.type]; if (!d) return false; const R = d.terrain ? 3 : 2;
       if (!connCache) computeConn(); const [w, h] = dimsB(b);
-      for (let a = -3; a <= w + 2; a++) for (let c = -3; c <= h + 2; c++) {
+      for (let a = -R; a <= w + R - 1; a++) for (let c = -R; c <= h + R - 1; c++) {
         if (a >= -1 && a <= w && c >= -1 && c <= h) continue;
         if (connCache.has(key(b.i + a, b.j + c))) return true;
       }
