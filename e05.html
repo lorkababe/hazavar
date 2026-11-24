@@ -8684,6 +8684,12 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   window.__xrayAt = (bx, by) => setAt(bx, by, true); window.__xrayOff = () => { xr = null; }; window.__xrayState = () => xr;
 })();
+// ---------- egy kis levegő az épületek között: a sima épületek képe kicsit kisebb a telküknél, így a szomszédok nem folynak össze ----------
+(function airGap() {
+  if (typeof DEF === 'undefined' || window.__airGap) return; window.__airGap = 1;
+  Object.keys(DEF).forEach(k => { const d = DEF[k]; if (!d || !d.img || d.stages || d.cat === 'ut' || k === 'fo' || d.terrain) return; if (d.inset == null) d.inset = 0.07; else if (d.inset < 0.07) d.inset = 0.07; });
+  try { if (typeof shadowCache !== 'undefined') shadowCache = null; } catch (e) {}
+})();
 
 // ---------- összefüggő terület: új telek csak a már meglévő terület mellett vehető, a szigetszerű telkek összekötése ----------
 (function lotConn() {
