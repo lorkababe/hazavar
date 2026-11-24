@@ -4429,7 +4429,7 @@ function renderDrawer() {
     const pic = t === 'ut' ? 'ut_egyenes' : d.img;
     const isNew = !!S.newTypes[t];
     return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" title="${(d.desc || '').replace(/"/g, '&quot;')}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
-      <span class="pic">${t === 'ut' ? '<img src="img/ikon_ut.png" alt="">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${dimsT(t).join('×')}</span>${d.bt ? `<span class="chip" style="top:auto;bottom:4px" title="${tr('Építési idő')}">${d.bt >= 3600 ? trf('{0} óra', +(d.bt / 3600).toFixed(1)) : trf('{0} perc', Math.round(d.bt / 60))}</span>` : ''}${d.cat === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
+      <span class="pic">${t === 'ut' ? '<img src="img/ikon_ut.png" alt="">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${dimsT(t).join('×')}</span>${d.bt ? `<span class="chip" style="top:auto;bottom:4px" title="${tr('Építési idő')}">${d.bt >= 3600 ? trf('{0} óra', +(d.bt / 3600).toFixed(1)) : trf('{0} perc', Math.round(d.bt / 60))}</span>` : ''}${d.cat === 'ut' ? '' : d.road ? `<span class="chip rd">${tr(d.terrain ? 'Ösvény a közelébe' : 'Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
       <b>${d.name}</b><span class="desc">${d.desc}</span>
       ${t === 'ut' || d.cat === 'ut' ? (typeof roadGain === 'function' ? roadGain(t) : '') : gainHTML(t)}
       ${!lock && !canPay(costOf(t)) ? `<span class="miss">${trf('Hiányzik · {0}', missText(costOf(t)))}</span>` : ''}
@@ -4481,7 +4481,7 @@ function showInfo(b, refresh) {
   const grassTxt = d.grass && !b.dry ? trf('még {0} legeltetés', grassMax() - (b.uses || 0)) : '';
   const prodTxt = d.prod ? (d.input ? Object.entries(inputNeed(b)).map(([k, v]) => `${v} ${RES[k].name}`).join(', ') + ' → ' : '') + Object.entries(d.prod).map(([k, v]) => `${v * bMul(b)} ${RES[k].name}`).join(tr(' és ')) + ' · ' + dur(bTime(b)) : '';
   const al = auraList(b), auraTxt = al.length ? trf('Környék · {0}', al.map(x => `${DEF[x.s.type].name} ${x.a.mul > 0 ? '+' : ''}${Math.round(x.a.mul * 100)}%`).join(', ')) : '';
-  const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? tr('ösvény kell a táborig') : tr('ösvény nélkül is működik'), d.def ? trf('+{0} Védelem', d.def) : '', prodTxt, auraTxt, d.aura ? trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt) : '', grassTxt].filter(Boolean).join(' · ');
+  const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? (d.terrain ? tr('ösvény kell a közelébe, legfeljebb 3 mezőre') : tr('ösvény kell a táborig')) : tr('ösvény nélkül is működik'), d.def ? trf('+{0} Védelem', d.def) : '', prodTxt, auraTxt, d.aura ? trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt) : '', grassTxt].filter(Boolean).join(' · ');
   if (refresh && el.dataset.id === String(b.id) && el.dataset.ruined === String(!!b.ruined) && el.dataset.dry === String(!!b.dry)) { const s = el.querySelector('.st'); if (s) s.innerHTML = status; return; }
   el.dataset.id = b.id; el.dataset.ruined = !!b.ruined; el.dataset.dry = !!b.dry;
   el.innerHTML = `<h3>${d.name}${d.gb ? ' · ' + trf('{0}. szint', gbLvl(b.type)) : ''}</h3>${LANG === 'hu' ? rovasHTML(DEF[b.type].name) : ''}<p>${d.desc}</p><p>${extra}</p>${d.gb && !off(b) ? gbHTML() : ''}${d.modes && !off(b) ? `<div class="modes"><b>${tr('Termelési idő')}</b>${MODES.map(m => `<button class="btn ${modeOf(b).id === m.id ? 'coral' : 'ghost'}" type="button" data-mode="${m.id}">${tr(m.lbl)}</button>`).join('')}<span>${tr('A hosszabb idő óránként kevesebbet hoz, de ott vár, mire visszajössz. Váltáskor újraindul.')}</span></div>` : ''}${b.baro && !S.rozgony ? `<p class="baro-note">${trf('Ezt az épületet {0} elcsaklizta. Neki termel, nem neked. Rozgony után visszakerül hozzád.', tr(BAR_WHO[b.baro]))}</p>` : ''}<div class="st">${status}</div>
@@ -6348,7 +6348,7 @@ function rearTags(d) {
 function rearHeldInfo() {
   if (REAR.cur == null) return ''; const b = REAR.tray[REAR.cur]; if (!b) return ''; const d = DEF[b.type]; if (b.road) return `<div class="rb-info"><b>${String(d.name)}</b> · ${tr('a meglévő útra koppintva visszaveszed')}</div>`;
   const x = [];
-  x.push(d.road ? tr('ösvény kell hozzá, különben nem termel') : tr('ösvény nélkül is működik'));
+  x.push(d.road ? tr(d.terrain ? 'ösvény kell a közelébe, legfeljebb 3 mezőre, különben nem termel' : 'ösvény kell hozzá, különben nem termel') : tr('ösvény nélkül is működik'));
   if (d.aura) x.push(trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt));
   if (d.terrain && typeof TERRAIN !== 'undefined') x.push(tr(TERRAIN[d.terrain].short));
   if (d.old) x.push(tr('előző korból maradt, Átépítéssel korszerűsíthető'));

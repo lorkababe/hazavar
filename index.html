@@ -1168,7 +1168,7 @@ function renderDrawer() {
     const pic = t === 'ut' ? 'ut_egyenes' : d.img;
     const isNew = !!S.newTypes[t];
     return `<button type="button" class="card${lock ? ' locked' : ''}${!lock && t !== 'ut' && !canPay(costOf(t)) ? ' poor' : ''}${isNew ? ' isnew' : ''}" data-t="${t}" title="${(d.desc || '').replace(/"/g, '&quot;')}" ${lock ? 'aria-disabled="true"' : ''}>${isNew ? `<span class="newtag">${tr('ÚJ')}</span>` : ''}
-      <span class="pic">${t === 'ut' ? '<img src="img/ikon_ut.png" alt="">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${d.size}×${d.size}</span>${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr('Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
+      <span class="pic">${t === 'ut' ? '<img src="img/ikon_ut.png" alt="">' : `<img src="img/${pic}.png" alt="">`}<span class="chip">${d.size}×${d.size}</span>${t === 'ut' ? '' : d.road ? `<span class="chip rd">${tr(d.terrain ? 'Ösvény a közelébe' : 'Ösvény kell')}</span>` : `<span class="chip rd no">${tr('Ösvény nélkül is')}</span>`}</span>
       <b>${d.name}</b><span class="desc">${d.desc}</span>
       ${t === 'ut' || d.cat === 'ut' ? (typeof roadGain === 'function' ? roadGain(t) : '') : gainHTML(t)}
       ${!lock && !canPay(costOf(t)) ? `<span class="miss">${trf('Hiányzik · {0}', missText(costOf(t)))}</span>` : ''}
@@ -1211,7 +1211,7 @@ function showInfo(b, refresh) {
   else if (d.road && !connected(b)) status = `<span class="status" style="color:var(--bad)">${tr('Nincs ösvény a táborig, ezért nem működik.')}</span>`;
   else if (d.prod) status = ready(b) ? `<span class="status" style="color:var(--good)">${tr('Kész van! Koppints rá, vagy húzd végig az egeret a kész épületeken, és mindet begyűjtöd.')}</span>` : `<span class="status">${trf('Még {0} és kész', mmss((d.time - (S.gt - b.t0)) / S.speed))}</span>`;
   const prodTxt = d.prod ? Object.entries(d.prod).map(([k, v]) => `${v} ${RES[k].name}`).join(tr(' és ')) + trf(' {0} másodpercenként', d.time) : '';
-  const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? tr('ösvény kell a táborig') : tr('ösvény nélkül is működik'), prodTxt].filter(Boolean).join(' · ');
+  const extra = [d.pop ? trf('+{0} lakos', d.pop) : '', d.hang ? trf('+{0} Hangulat', d.hang) : '', d.workers ? trf('{0} ember dolgozik benne', d.workers) : '', b.type === 'fo' ? '' : d.road ? (d.terrain ? tr('ösvény kell a közelébe, legfeljebb 3 mezőre') : tr('ösvény kell a táborig')) : tr('ösvény nélkül is működik'), prodTxt].filter(Boolean).join(' · ');
   if (refresh && el.dataset.id === String(b.id) && el.dataset.ruined === String(!!b.ruined)) { const s = el.querySelector('.st'); if (s) s.innerHTML = status; return; }
   el.dataset.id = b.id; el.dataset.ruined = !!b.ruined;
   el.innerHTML = `<h3>${d.name}</h3><p>${d.desc}</p><p>${extra}</p><div class="st">${status}</div>
@@ -2917,7 +2917,7 @@ function rearTags(d) {
 function rearHeldInfo() {
   if (REAR.cur == null) return ''; const b = REAR.tray[REAR.cur]; if (!b) return ''; const d = DEF[b.type]; if (b.road) return `<div class="rb-info"><b>${String(d.name)}</b> · ${tr('a meglévő útra koppintva visszaveszed')}</div>`;
   const x = [];
-  x.push(d.road ? tr('ösvény kell hozzá, különben nem termel') : tr('ösvény nélkül is működik'));
+  x.push(d.road ? tr(d.terrain ? 'ösvény kell a közelébe, legfeljebb 3 mezőre, különben nem termel' : 'ösvény kell hozzá, különben nem termel') : tr('ösvény nélkül is működik'));
   if (d.aura) x.push(trf('{0} mezőn belül {1}', d.aura.r, d.aura.txt));
   if (d.terrain && typeof TERRAIN !== 'undefined') x.push(tr(TERRAIN[d.terrain].short));
   if (d.old) x.push(tr('előző korból maradt, Átépítéssel korszerűsíthető'));
