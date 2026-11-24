@@ -4210,7 +4210,7 @@ function drawBuilding(b, now, pass = 0) {
   ctx.save(); if (b.ghost) ctx.globalAlpha = 0.65;
   else if (tool && hover && tool.type !== 'ut' && b.id !== tool.id) { const [gw, gh] = typeof dimsT === 'function' ? dimsT(tool.type, tool.rot) : [DEF[tool.type].size, DEF[tool.type].size]; const [ow, oh] = typeof dimsB === 'function' ? dimsB(b) : [DEF[b.type].size, DEF[b.type].size]; if (b.i < hover[0] + gw + 2 && b.i + ow > hover[0] - 2 && b.j < hover[1] + gh + 2 && b.j + oh > hover[1] - 2) ctx.globalAlpha = 0.38; }
   // téglalap alakú épületnél nem vágunk, mert a kép nem mindig illik pontosan a rácsra
-  if (bw === bh) { ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1] + CLIPM); ctx.lineTo(r.R[0] + CLIPM, r.R[1] + CLIPM); ctx.lineTo(r.B[0], r.B[1] + CLIPM * 1.6); ctx.lineTo(r.L[0] - CLIPM, r.L[1] + CLIPM); ctx.lineTo(r.x - 2, r.L[1] + CLIPM); ctx.closePath(); ctx.clip(); };
+  if (bw === bh && !(DEF[b.type] || {}).gb) { ctx.beginPath(); ctx.moveTo(r.x - 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.y - 2); ctx.lineTo(r.x + r.w + 2, r.R[1] + CLIPM); ctx.lineTo(r.R[0] + CLIPM, r.R[1] + CLIPM); ctx.lineTo(r.B[0], r.B[1] + CLIPM * 1.6); ctx.lineTo(r.L[0] - CLIPM, r.L[1] + CLIPM); ctx.lineTo(r.x - 2, r.L[1] + CLIPM); ctx.closePath(); ctx.clip(); };
   const _drw = () => { if (r.flip) { ctx.save(); ctx.translate(r.x + r.w, r.y); ctx.scale(-1, 1); ctx.drawImage(r.im, 0, 0, r.w, r.h); ctx.restore(); } else ctx.drawImage(r.im, r.x, r.y, r.w, r.h); };
   if (r.gbB) { // halvány tervrajz, és alulról felfelé színesedik, ahogy épül
     ctx.save(); ctx.filter = 'grayscale(0.85) sepia(0.55) brightness(1.1) contrast(0.85)'; _drw(); ctx.restore();
