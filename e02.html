@@ -3424,6 +3424,79 @@ function hjAct(kind) {
   if (kind === 'parbaj') { hjDuel(st); }
 }
 function hjDuel(st) {
+  // ---------- látványos párviadal: két lovag a küzdőtéren, gördülő kockák ----------
+  if (!document.getElementById('pvCss')) { const cs = document.createElement('style'); cs.id = 'pvCss'; cs.textContent = `
+    .pvm{max-width:min(760px,calc(100vw - 20px))!important}.pvm .inner{padding:0!important;overflow:hidden}
+    .pv-top{padding:16px 22px 6px;text-align:center}.pv-top h2{margin:2px 0 0;text-wrap:balance}
+    .pv-arena{position:relative;height:min(330px,48vh);background:radial-gradient(ellipse at 50% 88%,rgba(255,226,150,.55),transparent 60%),linear-gradient(#8FC6E8 0,#CFE7F2 38%,#9CC56A 38%,#7EA74A 100%);overflow:hidden;border-top:3px solid #C9A46A;border-bottom:3px solid #C9A46A}
+    .pv-arena::before{content:'';position:absolute;left:0;right:0;top:30%;height:16%;background:repeating-linear-gradient(90deg,#B8402C 0 26px,#F2C14E 26px 52px);clip-path:polygon(0 60%,4% 0,8% 60%,12% 0,16% 60%,20% 0,24% 60%,28% 0,32% 60%,36% 0,40% 60%,44% 0,48% 60%,52% 0,56% 60%,60% 0,64% 60%,68% 0,72% 60%,76% 0,80% 60%,84% 0,88% 60%,92% 0,96% 60%,100% 0,100% 100%,0 100%);opacity:.9}
+    .pv-arena::after{content:'';position:absolute;left:8%;right:8%;bottom:14%;height:8px;border-radius:4px;background:#6A4520;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+    .pv-k{position:absolute;bottom:12%;height:60%;max-width:44%;object-fit:contain;object-position:bottom;transition:transform .35s cubic-bezier(.3,1.6,.5,1),filter .3s;filter:drop-shadow(0 8px 6px rgba(40,20,0,.35))}
+    .pv-k.me{left:3%}.pv-k.foe{right:3%}
+    .pv-k.me.hit{transform:translateX(12%) rotate(-4deg)}.pv-k.foe.hit{transform:translateX(-12%) rotate(4deg)}
+    .pv-k.me.hurt{animation:pvHurt .5s}.pv-k.foe.hurt{animation:pvHurtF .5s}.pv-k.down{filter:grayscale(.7) brightness(.8) drop-shadow(0 8px 6px rgba(40,20,0,.35))}
+    @keyframes pvHurt{30%{transform:translateX(-12%) rotate(-10deg)}}@keyframes pvHurtF{30%{transform:translateX(12%) rotate(10deg)}}
+    .pv-dice{position:absolute;left:50%;top:20%;z-index:3;transform:translate(-50%,-50%);display:flex;gap:46px;perspective:600px}
+    .pv-side{display:flex;gap:10px}.pv-cube{width:46px;height:46px;position:relative;transform-style:preserve-3d;transition:transform 1.1s cubic-bezier(.2,.8,.25,1)}
+    .pv-cube i{position:absolute;inset:0;background:#FFF8EA;border-radius:9px;box-shadow:inset 0 0 0 2px #C9A46A,inset 0 -6px 10px rgba(150,100,40,.25);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:6px;box-sizing:border-box}
+    .pv-side.foe .pv-cube i{background:#FBE3DD;box-shadow:inset 0 0 0 2px #B8402C,inset 0 -6px 10px rgba(150,40,20,.2)}
+    .pv-cube i b{width:8px;height:8px;border-radius:50%;background:#33200F;place-self:center}
+    .pv-cube i:nth-child(1){transform:translateZ(23px)}.pv-cube i:nth-child(2){transform:rotateY(180deg) translateZ(23px)}.pv-cube i:nth-child(3){transform:rotateY(90deg) translateZ(23px)}.pv-cube i:nth-child(4){transform:rotateY(-90deg) translateZ(23px)}.pv-cube i:nth-child(5){transform:rotateX(90deg) translateZ(23px)}.pv-cube i:nth-child(6){transform:rotateX(-90deg) translateZ(23px)}
+    .pv-sum{position:absolute;top:6%;z-index:3;font:900 34px/1 var(--display,Nunito),sans-serif;color:#FFF8EA;text-shadow:0 3px 0 #6A4520,0 0 10px rgba(0,0,0,.4);opacity:0;transition:opacity .3s,transform .3s;transform:translateY(8px)}.pv-sum.on{opacity:1;transform:none}.pv-sum.me{left:8%}.pv-sum.foe{right:8%}.pv-sum small{font-size:16px}
+    .pv-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,240,180,.85),transparent 55%);opacity:0}.pv-flash.go{animation:pvF .5s}@keyframes pvF{20%{opacity:1}}
+    .pv-score{display:flex;align-items:center;justify-content:center;gap:18px;padding:12px 18px 4px;font-weight:900}
+    .pv-pips{display:flex;gap:6px}.pv-pips span{width:22px;height:22px;border-radius:50%;background:rgba(90,58,30,.18);box-shadow:inset 0 0 0 2px rgba(90,58,30,.35)}.pv-pips.me span.on{background:radial-gradient(circle at 35% 35%,#FFE58A,#D4A017);box-shadow:0 0 0 2px #9A6420}.pv-pips.foe span.on{background:radial-gradient(circle at 35% 35%,#FF9A80,#B8402C);box-shadow:0 0 0 2px #7A2A1E}
+    .pv-nm{font-size:14px;color:#6A4520;max-width:160px;text-align:center}.pv-vs{font:900 22px var(--display,Nunito),sans-serif;color:#7A2A1E}
+    .pv-msg{text-align:center;min-height:26px;font-weight:800;padding:0 18px}.pv-row{display:flex;justify-content:center;padding:8px 18px 18px}.pv-row .btn{min-width:200px;font-size:18px}
+    @media (max-width:560px){.pv-dice{gap:18px;top:34%}.pv-sum{top:5%}.pv-k{height:46%}.pv-cube{width:34px;height:34px}.pv-cube i:nth-child(1){transform:translateZ(17px)}.pv-cube i:nth-child(2){transform:rotateY(180deg) translateZ(17px)}.pv-cube i:nth-child(3){transform:rotateY(90deg) translateZ(17px)}.pv-cube i:nth-child(4){transform:rotateY(-90deg) translateZ(17px)}.pv-cube i:nth-child(5){transform:rotateX(90deg) translateZ(17px)}.pv-cube i:nth-child(6){transform:rotateX(-90deg) translateZ(17px)}.pv-cube i b{width:6px;height:6px}.pv-sum{font-size:26px}}`; document.head.appendChild(cs); }
+  const R6 = () => 1 + Math.floor(Math.random() * 6); let me = 0, him = 0, round = 0, busy = false;
+  const PIPS = { 1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] };
+  const face = n => `<i>${Array.from({ length: 9 }, (_, k) => PIPS[n].includes(k + 1) ? '<b></b>' : '<span></span>').join('')}</i>`;
+  const cube = () => `<div class="pv-cube">${[1, 6, 2, 5, 3, 4].map(face).join('')}</div>`;
+  const ROT = { 1: [0, 0], 6: [0, 180], 2: [0, -90], 5: [0, 90], 3: [-90, 0], 4: [90, 0] };
+  let spin = 0; const roll = (el, n) => { spin += 2; const [x, y] = ROT[n]; el.style.transform = `rotateX(${x + 360 * spin + (Math.random() * 6 - 3)}deg) rotateY(${y + 360 * spin}deg)`; };
+  const pips = (n, cls) => `<div class="pv-pips ${cls}">${[0, 1].map(k => `<span class="${k < n ? 'on' : ''}"></span>`).join('')}</div>`;
+  const bonus = Math.min(3, Math.floor(hjPower() / Math.max(4, st.need) * 1.5)), fb = Math.floor(st.sz / 2) + 1;
+  modal(`${X_BTN}<div class="inner"><div class="pv-top"><span class="eyebrow">${T('PÁRVIADAL')}</span><h2>${TF('A te bajnokod {0} bajnoka ellen', st.foe)}</h2></div>
+    <div class="pv-arena" id="pvA"><div class="pv-flash" id="pvF"></div>
+      <img class="pv-k me" id="pvMe" src="img/e05_mg_lovag_kek.png" alt=""><img class="pv-k foe" id="pvFoe" src="img/e05_mg_lovag_piros.png" alt="">
+      <div class="pv-sum me" id="pvSm"></div><div class="pv-sum foe" id="pvSf"></div>
+      <div class="pv-dice"><div class="pv-side me">${cube()}${cube()}</div><div class="pv-side foe">${cube()}${cube()}</div></div></div>
+    <div class="pv-score"><div class="pv-nm">${T('Te')}${bonus ? `<br><small>${TF('+{0} a védelmedből', bonus)}</small>` : ''}</div>${pips(0, 'me')}<span class="pv-vs">VS</span>${pips(0, 'foe')}<div class="pv-nm">${esc(st.foe)}<br><small>${TF('+{0} előny', fb)}</small></div></div>
+    <div class="pv-msg" id="pvMsg">${T('Két győztes kör kell. Dobj, és küzdjön a bajnokod!')}</div>
+    <div class="pv-row">${btn(T('Dobás!'), 'id="hjRoll"', true, 'coral')}</div></div>`, 'pvm', 'soc');
+  const cubes = [...document.querySelectorAll('#pvA .pv-cube')];
+  const score = () => { document.querySelector('.pv-pips.me').innerHTML = [0, 1].map(k => `<span class="${k < me ? 'on' : ''}"></span>`).join(''); document.querySelector('.pv-pips.foe').innerHTML = [0, 1].map(k => `<span class="${k < him ? 'on' : ''}"></span>`).join(''); };
+  $('hjRoll').onclick = () => {
+    if (busy) return;
+    if (me >= 2 || him >= 2 || round >= 3) { if (me > him) hjWin(st, TF('Megnyerted a párviadalt {0} ellen', st.foe)); else hjLose(me === him ? T('Döntetlen lett a párviadal, a bajnokok kezet fogtak és hazamentek.') : TF('{0} bajnoka nyert. Legközelebb több szerencse!', st.foe)); return; }
+    busy = true; round++; $('hjRoll').disabled = true; ['pvSm', 'pvSf'].forEach(id => $(id).classList.remove('on')); ['pvMe', 'pvFoe'].forEach(id => $(id).classList.remove('hit', 'hurt'));
+    const d = [R6(), R6(), R6(), R6()]; d.forEach((n, k) => roll(cubes[k], n)); try { sfxClick(); } catch (e) {}
+    $('pvMsg').textContent = TF('{0}. kör · gurulnak a kockák…', round);
+    setTimeout(() => {
+      const a = d[0] + d[1] + bonus, b = d[2] + d[3] + fb;
+      $('pvSm').innerHTML = `${a}${bonus ? ` <small>(${d[0] + d[1]}+${bonus})</small>` : ''}`; $('pvSf').innerHTML = `${b} <small>(${d[2] + d[3]}+${fb})</small>`; $('pvSm').classList.add('on'); $('pvSf').classList.add('on');
+      setTimeout(() => {
+        const win = a > b, lose = b > a, W = win ? $('pvMe') : lose ? $('pvFoe') : null, L = win ? $('pvFoe') : lose ? $('pvMe') : null;
+        if (W) { W.classList.add('hit'); setTimeout(() => { L.classList.add('hurt'); const f = $('pvF'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }, 180); }
+        if (win) me++; else if (lose) him++; score();
+        try { if (win) sfxCollect(); } catch (e) {}
+        const over = me >= 2 || him >= 2 || round >= 3;
+        $('pvMsg').textContent = win ? T('Talált! A bajnokod nyerte a kört.') : lose ? TF('Au! {0} bajnoka nyerte a kört.', st.foe) : T('Egyforma dobás, a lándzsák összecsattantak. Ez a kör döntetlen.');
+        setTimeout(() => {
+          busy = false; $('hjRoll').disabled = false;
+          if (over) { if (me > him) $('pvFoe').classList.add('down'); else if (him > me) $('pvMe').classList.add('down');
+            $('pvMsg').textContent = me > him ? T('Győzelem! A nép a nevedet kiáltja.') : him > me ? T('Most a másik bajnok volt a jobb. Legközelebb visszavágsz!') : T('Döntetlen. A bajnokok kezet fognak.');
+            $('hjRoll').textContent = me > him ? T('Jöhet a zsákmány!') : T('Tovább'); }
+          else $('hjRoll').textContent = T('Következő kör!');
+        }, 700);
+      }, 450);
+    }, 1150);
+  };
+  return;
+}
+window.__pvTest = () => hjDuel(hjStation(0));
+function hjDuelOld(st) {
   const R6 = () => 1 + Math.floor(Math.random() * 6); let me = 0, him = 0, round = 0; const rows = [];
   const draw = () => modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('PÁRVIADAL')}</span><h2>${TF('A te bajnokod {0} bajnoka ellen', st.foe)}</h2>
     <p>${T('Három kör, két kockával. Akinek nagyobb a dobása, viszi a kört. A te bajnokod a védelmedből kap egy kis előnyt.')}</p>
