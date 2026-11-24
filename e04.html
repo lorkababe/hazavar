@@ -7756,6 +7756,9 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   // csak a szomszédos telkek látszanak megvehetőnek
   drawLots = function () {
     if (!tool && $('drawer').hidden && !lotPick) return;
+    // építés közben a főépülethez nem kapcsolódó ösvénydarabok piros jelet kapnak
+    try { if (!connCache) computeConn(); Object.keys(S.roads || {}).forEach(k => { if (connCache.has(k)) return; const [i, j] = k.split(',').map(Number), [x, y] = tileTop(i + .5, j + .5);
+      ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = '#C8553D'; ctx.strokeStyle = '#FFF4DF'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore(); }); } catch (e) {}
     const pulse = lotPick ? 0.5 + 0.5 * Math.sin(performance.now() / 260) : 0;
     LOTS.forEach(l => {
       if (!lotNear(l)) return;
@@ -7776,8 +7779,10 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   computeConn = function () {
     _cc.apply(this, arguments);
     try {
-      const fo = S.buildings.find(b => b.type === 'fo'); if (!fo) return; const k = (DEF.fo && DEF.fo.size) || 3, seen = connCache, q = [];
-      for (let a = -2; a <= k + 1; a++) for (let c = -2; c <= k + 1; c++) { const kk = key(fo.i + a, fo.j + c); if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([fo.i + a, fo.j + c]); } }
+      // a főépület mellett a királyi palota is központ: ami odáig ér, az is be van kötve
+      const hubs = S.buildings.filter(b => b.type === 'fo' || /^(palota|budai_palota|visegrad)/.test(b.type)); if (!hubs.length) return; const seen = connCache, q = [];
+      hubs.forEach(h => { let w = 3, hh = 3; try { [w, hh] = dimsB(h); } catch (e) {}
+        for (let a = -2; a <= w + 1; a++) for (let c = -2; c <= hh + 1; c++) { const kk = key(h.i + a, h.j + c); if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([h.i + a, h.j + c]); } } });
       while (q.length) { const [i, j] = q.shift(); NB.forEach(([di, dj]) => { const kk = key(i + di, j + dj); if (S.roads[kk] && !seen.has(kk)) { seen.add(kk); q.push([i + di, j + dj]); } }); }
     } catch (e) {}
   };
