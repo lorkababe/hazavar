@@ -618,7 +618,7 @@ const QUESTS = [
   { face: 'magyaraz', text: 'Visegrád lesz a székhelyünk, gyönyörű kilátással a Dunára. A palota nevezetes épület. Tanuld ki a királyi székhelyet, ez 3 tervrajzot ad, a maradékot a szomszédaidtól szerzed. Aztán a Nevezetes menüben építsd fel.', check: () => S.buildings.some(b => /^palota/.test(b.type)), rew: { hirnev: 10 } },
   { face: 'nevet', text: 'Három király jön vendégségbe, és mindegyik nagyon éhes. Szintezd a palotát Hírnévvel legalább a 3. szintig, és tanuld ki A visegrádi királytalálkozót.', check: () => !!S.techs.kiraly, rew: { hirnev: 15 } },
   { face: 'orul', text: 'Üdv, Nagy Lajos vagyok! Apám rendet rakott, én fényt hozok. Lovagkirály leszek, ehhez pedig tornapálya kell. Tanuld ki A lovagkirályt, és építs Lovagi tornapályát.', check: () => has('lovagitorna'), rew: { hirnev: 20 } },
-  { face: 'nevet', text: 'A palotám legyen a legszebb Európában. Szintezd a visegrádi palotát a 8. szintig, akkor lesz a legszebb, hadd irigykedjenek a velenceiek.', check: () => !!(S.gb && S.gb.palota1 && S.gb.palota1.lvl >= 8), rew: { hirnev: 30 } }
+  { face: 'nevet', text: 'A palotám legyen a legszebb Európában. Szintezd a Visegrádi királyi palotát az 5. szintig, hadd irigykedjenek a velenceiek. A palotára kattintva, a Beszállás fülön tudsz Hírnevet tenni bele.', check: () => { let l = 0; try { l = (gbTown().palota1 || {}).lvl || 0; } catch (e) {} return Math.max(l, (S.gb && S.gb.palota1 && S.gb.palota1.lvl) || 0) >= 5; }, rew: { hirnev: 30 } }
 ];
 
 const has = t => S.buildings.some(b => b.type === t && !b.ruined);
@@ -3918,6 +3918,15 @@ setInterval(() => { try { if (!isLajos()) return; document.querySelectorAll('img
 // bármelyik mellékküldetés jöhet, amelyikhez már megvan az épület, nem kell sorban várni
 sideCur = function () { const d = (S.side && S.side.doneIds) || []; return SIDE.find(q => !d.includes(q.id) && q.open()) || null; };
 sideDone = function (say) { const q = sideCur(); S.side = S.side || {}; S.side.doneIds = S.side.doneIds || []; if (q) S.side.doneIds.push(q.id); S.side.step = S.side.doneIds.length; save(); closeModal(); if (say) toast(say); hud(); };
+// a korszak vége után a kalauz mindig felkínálja a továbblépést, akkor is, ha a záróablakot bezártad
+{ const _rg = renderGuide; renderGuide = function () { _rg.apply(this, arguments); try {
+  if (!S.eraDone && S.quest < QUESTS.length) return;
+  const bub = $('samuBubble'); if (!bub || document.getElementById('gNext6')) return;
+  if (!S.eraDone) { S.eraDone = true; save(); }
+  bub.innerHTML = '<b>Károly Róbert</b>' + tr('Megcsináltuk, az Anjouk kora lezárult. Vár a Hunyadiak kora, és a városod is jön velünk.') + `<div style="margin-top:8px"><button class="btn coral" type="button" id="gNext6" style="min-height:36px;font-size:15px">${tr('Tovább a 6. korszakba')}</button></div>`;
+  setTimeout(() => { const k = document.getElementById('gKey'); if (k && k.parentElement) k.parentElement.remove(); }, 0);
+  $('gNext6').onclick = () => { try { localStorage.setItem('panelvar-era', '6'); } catch (e) {} save(); location.href = 'e06.html'; };
+} catch (e) {} }; }
 
 // ---------- logika ciklus ----------
 let last = performance.now(), acc = 0, qTimer = 0, saveTimer = 0;

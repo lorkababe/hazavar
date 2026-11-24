@@ -635,7 +635,7 @@ const QUESTS = [
   { face: 'orul', text: 'Nápolyból jön a menyasszonyom, Beatrix. Hozza a szakácsait, a muzsikusait és a hagymát. Tanuld ki A reneszánsz udvart, és építs Herkules-kutat.', check: () => has('herkules_kut'), rew: { hirnev: 10 } },
   { face: 'magyaraz', text: 'A budai palota lesz a legszebb Európában. Ez nevezetes épület, a tervrajzait a reneszánsz udvar és a szomszédok adják. A Nevezetes menüben építsd fel.', check: () => has('budai_palota'), rew: { hirnev: 15 } },
   { face: 'elszant', text: 'III. Frigyes nem adja a jussomat. Tanuld ki Bécs bevételét. A Fekete sereg készen áll.', check: () => !!S.becs, rew: { hirnev: 20 } },
-  { face: 'nevet', text: 'A palotám legyen a legszebb Európában. Szintezd a budai palotát a 8. szintig, és hadd irigykedjenek a firenzeiek.', check: () => !!(S.gb && S.gb.budai_palota && S.gb.budai_palota.lvl >= 8), rew: { hirnev: 30 } }
+  { face: 'nevet', text: 'A palotám legyen a legszebb Európában. Szintezd a budai királyi palotát az 5. szintig, és hadd irigykedjenek a firenzeiek. A palotára kattintva, a Beszállás fülön tudsz Hírnevet tenni bele.', check: () => { let l = 0; try { l = (gbTown().budai_palota || {}).lvl || 0; } catch (e) {} return Math.max(l, (S.gb && S.gb.budai_palota && S.gb.budai_palota.lvl) || 0) >= 5; }, rew: { hirnev: 30 } }
 ];
 
 const has = t => S.buildings.some(b => b.type === t && !b.ruined);
