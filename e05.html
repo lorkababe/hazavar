@@ -5217,7 +5217,18 @@ function doGift(id, gi) {
   toast(TF('Elküldted az ajándékot {0} részére.', b.name)); sfxClick(); commit(); refresh();
 }
 // zsákmány: mindig van benne pénz, mellé véletlenszerűen egy-három másik dolog abból, ami ebben a korban létezik
-function raidLoot(type) {
+// a zsákmány a saját gazdaságodhoz igazodik: legalább kb. negyedórányi termelésed abból, amit hoz
+function hourlyProd() {
+  const h = {}; try { (S.buildings || []).forEach(b => { const d = DEF[b.type]; if (!d || !d.prod || !d.time || b.ruined) return; Object.entries(d.prod).forEach(([k, v]) => { h[k] = (h[k] || 0) + v * 3600 / d.time; }); }); } catch (e) {}
+  return h;
+}
+function scaleLoot(L, share) {
+  const h = hourlyProd(), f = share || 0.25;
+  Object.keys(L).forEach(k => { if (['tudas', 'hirnev'].includes(k)) return; const m = Math.round((h[k] || 0) * f); if (m > L[k]) L[k] = m; });
+  return L;
+}
+function raidLoot(type) { return scaleLoot(raidLoot0(type)); }
+function raidLoot0(type) {
   const L = { penz: amt(rnd(40, 110)) };
   const pool = Object.keys(RES).filter(k => !['penz', 'tudas', 'hirnev'].includes(k));
   const prod = type && DEF[type] && DEF[type].prod ? Object.keys(DEF[type].prod).find(k => pool.includes(k)) : null;
@@ -6082,7 +6093,8 @@ function hjStation(i) {
   const sz = Math.floor(i / HJ_N), k = i % HJ_N, foes = HJ_FOE[hjEra()], kind = k === HJ_N - 1 ? 'csata' : ['csata', 'szeker', 'parbaj'][k % 3];
   return { i, sz, k, kind, foe: foes[(i + sz) % foes.length], need: 4 + i * 1.2, cost: { penz: amt(60 + i * 20), termeny: amt(30 + i * 10) } };
 }
-function hjRew(st) { const r = { penz: amt(40 + st.i * 12) }; if (RES.hirnev) r.hirnev = 1 + Math.floor(st.sz / 2); if (st.k % 4 === 3) r.tudas = 1 + (st.sz > 1 ? 1 : 0); if (st.k === HJ_N - 1) r.penz += amt(200 + st.sz * 100); return r; }
+function hjRew(st) { return scaleLoot(hjRew0(st), 0.2 + st.i * 0.01); }
+function hjRew0(st) { const r = { penz: amt(40 + st.i * 12) }; if (RES.hirnev) r.hirnev = 1 + Math.floor(st.sz / 2); if (st.k % 4 === 3) r.tudas = 1 + (st.sz > 1 ? 1 : 0); if (st.k === HJ_N - 1) r.penz += amt(200 + st.sz * 100); return r; }
 function hjPower() { return Math.max(1, myDef()) + (SOC.ally ? allyDef() : 0) + 4 + hjEra() * 2; }
 function hjChance(st) { return Math.max(0.3, Math.min(0.95, 0.5 + (hjPower() - st.need) / (st.need * 1.6))); }
 function hjWin(st, how) {
@@ -6175,6 +6187,7 @@ function hjDuel(st) {
   return;
 }
 window.__pvTest = () => hjDuel(hjStation(0));
+window.__lootTest = () => [hourlyProd(), raidLoot('polgarhaz'), hjRew(hjStation(5))];
 function hjDuelOld(st) {
   const R6 = () => 1 + Math.floor(Math.random() * 6); let me = 0, him = 0, round = 0; const rows = [];
   const draw = () => modal(`${X_BTN}<div class="inner"><span class="eyebrow">${T('PÁRVIADAL')}</span><h2>${TF('A te bajnokod {0} bajnoka ellen', st.foe)}</h2>
