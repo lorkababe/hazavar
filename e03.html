@@ -4993,13 +4993,15 @@ function cardHTML(id) {
     <div class="row gbbtns"><button class="btn teal" type="button" data-gbi="5" ${me ? '' : 'disabled'}>+5</button><button class="btn teal" type="button" data-gbi="25" ${me ? '' : 'disabled'}>+25</button><button class="btn coral" type="button" data-gbi="9999" ${me ? '' : 'disabled'}>${tr('Amennyi kell')}</button></div>
     <small class="gbnote">${trf('Neked {0} Hírneved van.', fmt(me))}</small>`}
     ${max ? '' : `<div class="gbtop"><b>${tr('Beszállók ebben a szintben')}</b>${topList(id).length ? `<table>${topList(id).map(([k, v], i) => `<tr${k === 'me' ? ' class="me"' : ''}><td>${i + 1}.</td><td>${k === 'me' ? tr('Te') : esc(v.name || '?')}</td><td>${v.n} ${tr('Hírnév')}</td><td>${Math.round(v.n / n * 100)}%</td><td>${i < 3 && k !== 'me' ? trf('jutalma ×{0}', [1.6, 1.35, 1.15][i]) : ''}</td></tr>`).join('')}</table>` : `<p>${tr('Még senki nem szállt be ebbe a szintbe.')}</p>`}
-      <small class="gbnote">${tr('Amikor a szint megtelik, az első három szomszéd a beszállt Hírneve 1,6, 1,35 és 1,15-szörösét kapja vissza, az első még egy tervrajzot is.')}</small></div>`}</div>`;
+      <small class="gbnote">${tr('Amikor a szint megtelik, az első három szomszéd a beszállt Hírneve 1,6, 1,35 és 1,15-szörösét kapja vissza, az első két tervrajzot, a második és a harmadik egyet-egyet.')}</small></div>`}</div>`;
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function levelUp(id) {
   const lv = L(id); let ups = 0;
   while (lv.lvl < GB_TOP && lv.pts >= need(lv.lvl)) {
     lv.pts -= need(lv.lvl); lv.lvl++; ups++;
+    // minden új szint híre mestereket vonz: egy tervrajz egy még meg nem épült nevezetes épülethez
+    try { const c = MINE.filter(x => !R.built[x]); if (c.length) { const g = c[Math.floor(Math.random() * c.length)]; R.tr[g] = (R.tr[g] || 0) + 1; setTimeout(() => toast(trf('A szintlépés híre mestereket vonzott: kaptál egy tervrajzot ({0})', GBC[g].name)), 1500); } } catch (e) {}
     const rank = topList(id).slice(0, 3); lv.top = {};
     rank.forEach(([k, v], i) => { if (k === 'me') return; const rew = { hirnev: Math.round(v.n * [1.6, 1.35, 1.15][i]), penz: Math.round(v.n * 20 * (typeof ERA_F !== 'undefined' ? 1 : 1)) }; if (k.startsWith('u_') && window.__gbNet) window.__gbNet.send(k, 'gbrew', { gb: id, name: GBC[id].name, rank: i + 1, rew, tr: i === 0 ? 1 : 0 }); });
   }
@@ -5046,7 +5048,7 @@ function gfProdTable(id) {
 function gfPlaces(id) {
   const n = need(lvl(id)), top = topList(id).filter(([k]) => k !== 'me');
   return PL.map((m, i) => { const t = top[i]; const rew = Math.round(n * 0.12 * m);
-    return `<div class="gfpl${t ? ' taken' : ''}"><b class="gfno">${i + 1}</b><div class="gfpw"><small>${t ? esc(t[1].name || '?') + ' · ' + t[1].n + ' ' + tr('Hírnév') : tr('Szabad hely')}</small><span>${trf('×{0} Hírnév vissza', String(m).replace('.', ','))}${i === 0 ? ' · ' + tr('+1 tervrajz') : ''}</span></div></div>`; }).join('');
+    return `<div class="gfpl${t ? ' taken' : ''}"><b class="gfno">${i + 1}</b><div class="gfpw"><small>${t ? esc(t[1].name || '?') + ' · ' + t[1].n + ' ' + tr('Hírnév') : tr('Szabad hely')}</small><span>${trf('×{0} Hírnév vissza', String(m).replace('.', ','))}${' · ' + (i === 0 ? tr('+2 tervrajz') : tr('+1 tervrajz'))}</span></div></div>`; }).join('');
 }
 function showCard(id) {
   const g = GBC[id], l = lvl(id), lv = L(id), n = need(l), max = l >= GB_TOP, me = S.res.hirnev || 0, left = Math.max(0, n - lv.pts);
@@ -5063,7 +5065,7 @@ function showCard(id) {
     <div class="gfpls"><small>${tr('Jutalomhelyek a szomszédoknak')}</small>${gfPlaces(id)}</div>`;
   else if (gfTab === 'prod') body = gfProdTable(id);
   else if (gfTab === 'top') body = `<div class="gbtop">${topList(id).length ? `<table>${topList(id).map(([k, v], i) => `<tr${k === 'me' ? ' class="me"' : ''}><td>${i + 1}.</td><td>${k === 'me' ? tr('Te') : esc(v.name || '?')}</td><td>${v.n} ${tr('Hírnév')}</td><td>${Math.round(v.n / n * 100)}%</td><td>${i < 3 && k !== 'me' ? '×' + String(PL[i]).replace('.', ',') : ''}</td></tr>`).join('')}</table>` : `<p>${tr('Még senki nem szállt be ebbe a szintbe.')}</p>`}
-    <small class="gbnote">${tr('Amikor a szint megtelik, az első három szomszéd a beszállt Hírneve 1,6, 1,35 és 1,15-szörösét kapja vissza, az első még egy tervrajzot is.')}</small></div>`;
+    <small class="gbnote">${tr('Amikor a szint megtelik, az első három szomszéd a beszállt Hírneve 1,6, 1,35 és 1,15-szörösét kapja vissza, az első két tervrajzot, a második és a harmadik egyet-egyet.')}</small></div>`;
   else body = `<p class="gfdesc">${tr(g.desc)}</p>`;
   modal(`${X_BTN}<div class="inner gfwrap">
     <div class="gfleft"><span class="eyebrow">${tr('NEVEZETES ÉPÜLET')}</span><h2>${g.name}</h2>
@@ -5112,7 +5114,7 @@ setTimeout(() => { try { carryGb(); } catch (e) {} }, 4000);
 // lebontás után ne jöjjön vissza magától
 setInterval(() => { try { MINE.forEach(id => { if (R.built[id] && R.built[id].era === CUR_ERA && !S.buildings.some(b => b.type === id) && !openModal) { S.gbGone = S.gbGone || {}; } }); } catch (e) {} }, 5000);
 // kalandokból néha tervrajz jár
-try { if (typeof miniGive === 'function') { const _mg = miniGive; miniGive = function () { const r = _mg.apply(this, arguments); try { if (Math.random() < 0.25) { const c = MINE.filter(id => !R.built[id]); if (c.length) { const id = c[Math.floor(Math.random() * c.length)]; R.tr[id] = (R.tr[id] || 0) + 1; gsave(); setTimeout(() => toast(trf('A kaland mellé egy tervrajz is járt: {0}', GBC[id].name)), 900); } } } catch (e) {} return r; }; } } catch (e) {}
+try { if (typeof miniGive === 'function') { const _mg = miniGive; miniGive = function () { const r = _mg.apply(this, arguments); try { if (Math.random() < 0.5) { const c = MINE.filter(id => !R.built[id]); if (c.length) { const id = c[Math.floor(Math.random() * c.length)]; R.tr[id] = (R.tr[id] || 0) + 1; gsave(); setTimeout(() => toast(trf('A kaland mellé egy tervrajz is járt: {0}', GBC[id].name)), 900); } } } catch (e) {} return r; }; } } catch (e) {}
 // ---------- szomszédok nevezetes épületei ----------
 const SOCx = () => (window.__SOC && window.__SOC.get && window.__SOC.get()) || null;
 function botGbs(b) {
@@ -5127,13 +5129,13 @@ function botGbs(b) {
 }
 function payBot(b, id, mine, n) {
   const rank = mine >= n * 0.4 ? 1 : mine >= n * 0.2 ? 2 : 3, rew = { hirnev: Math.round(mine * [1.6, 1.35, 1.15][rank - 1]), penz: mine * 20 };
-  Object.entries(rew).forEach(([k, v]) => { S.res[k] = (S.res[k] || 0) + v; }); if (rank === 1) R.tr[id] = (R.tr[id] || 0) + 1;
-  R.log.unshift({ t: Date.now(), text: trf('{0} {1} épülete szintet lépett. {2}. helyen végeztél: +{3} Hírnév, +{4} Pénz{5}', b.name, GBC[id].name, rank, rew.hirnev, fmt(rew.penz), rank === 1 ? ' ' + tr('és egy tervrajz') : '') }); R.log = R.log.slice(0, 20);
+  Object.entries(rew).forEach(([k, v]) => { S.res[k] = (S.res[k] || 0) + v; }); R.tr[id] = (R.tr[id] || 0) + (rank === 1 ? 2 : 1);
+  R.log.unshift({ t: Date.now(), text: trf('{0} {1} épülete szintet lépett. {2}. helyen végeztél: +{3} Hírnév, +{4} Pénz{5}', b.name, GBC[id].name, rank, rew.hirnev, fmt(rew.penz), ' ' + (rank === 1 ? tr('és két tervrajz') : tr('és egy tervrajz'))) }); R.log = R.log.slice(0, 20);
   toast(trf('{0} épülete szintet lépett, a {1}. helyen végeztél! +{2} Hírnév', GBC[id].name, rank, rew.hirnev));
 }
 function contrib(owner, id, n, real) {
   n = Math.min(n, S.res.hirnev || 0); if (n < 1) return;
-  S.res.hirnev -= n; if (n >= 10) { R.tr[id] = (R.tr[id] || 0) + 1; toast(trf('Köszönik! Kaptál egy tervrajzot: {0} ({1}/{2})', GBC[id].name, R.tr[id], NEED_TR)); } else toast(tr('Köszönik! 10 Hírnévtől tervrajz is jár.'));
+  S.res.hirnev -= n; if (n >= 10) { const k = n >= 60 ? 3 : n >= 30 ? 2 : 1; R.tr[id] = (R.tr[id] || 0) + k; toast(trf('Köszönik! Kaptál {3} tervrajzot: {0} ({1}/{2})', GBC[id].name, R.tr[id], NEED_TR, k)); } else toast(tr('Köszönik! 10 Hírnévtől 1, 30-tól 2, 60-tól 3 tervrajz is jár.'));
   if (real) { window.__gbNet.send(owner.id, 'gbpts', { gb: id, n }); const t = window.__gbNet.town(owner.id); if (t && t.gbs && t.gbs[id]) t.gbs[id].pts += n; }
   else { const g = botGbs(owner)[id]; g.mine += n; g.pts += n; while (g.pts >= need(g.lvl) && g.lvl < GB_TOP) { const nn = need(g.lvl); g.pts -= nn; g.lvl++; payBot(owner, id, g.mine, nn); g.mine = 0; } }
   try { dailyHit('hirnev', n); } catch (e) {} gsave(); save(); try { hud(); } catch (e) {}
