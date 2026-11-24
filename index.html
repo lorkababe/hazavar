@@ -2387,14 +2387,42 @@ function showLogin() {
 }
 async function netStart(user) {
   NET.on = true; NET.me = user.id;
-  try { await netPull(); } catch (e) { console.warn('pull', e); }
+  try { await netPull(); } catch (e) { console.warn('pull', e); if (e && e.message === 'reload') return; }
+  await claimSess();
   try { const r = await NET.sb.rpc('join_megye'); NET.megye = r.data; } catch (e) {}
   await netPushProfile(true); await netRefresh();
   toast(TF('Bejelentkezve. A mentésed a szerveren van, {0}. megye.', NET.megye || '?'));
   setInterval(() => { if (!document.hidden) netPush(); }, 20e3); setInterval(() => netPushProfile(false), 60e3); setInterval(netRefresh, 60e3);
   // háttérben hagyott fül vagy másik gép ne írja felül a frissebb mentést: visszatéréskor előbb megnézzük a szervert
-  document.addEventListener('visibilitychange', () => { if (document.hidden) netPush(); else netPull().catch(e => console.warn('pull', e)); });
-  window.addEventListener('pagehide', netPush);
+  document.addEventListener('visibilitychange', async () => { if (document.hidden) { netPush(); return; } if (!NET.on) return; if (await sessLost()) return; netPull().catch(e => console.warn('pull', e)); });
+  window.addEventListener('pagehide', () => netPush('leave'));
+}
+// ---------- egyszerre csak egy helyen fut a város ----------
+// minden megnyitás új munkamenetet jelent be a szerveren; a régebbi helyen a játék ezt észreveszi, és kiléptet, hogy ne írják felül egymást
+NET.sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+const ACT_KEY = 'pvsync-act'; NET.touched = 0; NET.lastPush = Date.now();
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { NET.touched = Date.now(); }, true));
+async function claimSess() {
+  try { await NET.sb.from('saves').upsert([{ user_id: NET.me, slot: 'pvsession', data: { sid: NET.sid, at: Date.now() }, updated_at: new Date().toISOString() }]); } catch (e) {}
+}
+async function sessLost() {
+  if (!NET.on || NET.kicked) return !!NET.kicked;
+  try { const { data } = await NET.sb.from('saves').select('data').eq('user_id', NET.me).eq('slot', 'pvsession').maybeSingle();
+    if (data && data.data && data.data.sid && data.data.sid !== NET.sid) { kickOut(); return true; } } catch (e) {}
+  return false;
+}
+function kickOut() {
+  NET.kicked = true; NET.on = false; save = function () {}; saveSoc = function () {};
+  if (document.getElementById('netKick')) return;
+  const el = document.createElement('div'); el.id = 'netKick';
+  el.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:rgba(30,18,8,.8);padding:16px';
+  el.innerHTML = `<div style="width:min(440px,100%);background:#F3E2BE;border-radius:22px 26px 20px 24px;box-shadow:0 0 0 4px #FFF4DF,0 0 0 7px #8A5A2B,0 20px 50px rgba(0,0,0,.5);padding:22px;color:#3A2410;font-family:inherit">
+    <div style="font-weight:900;letter-spacing:.14em;font-size:12px;color:#8A3A16">${T('MENTÉS')}</div>
+    <h2 style="margin:6px 0 8px;font-size:24px">${T('Máshol nyitottad meg a városod')}</h2>
+    <p style="margin:0 0 14px;font-size:15px">${T('Egy másik gépen vagy fülön is elindítottad a játékot, ezért itt kiléptettünk, hogy a két példány ne írja felül egymást. Semmi sem veszett el, a frissebb állapot a szerveren van.')}</p>
+    <button class="btn coral" type="button" id="nkHere">${T('Inkább itt játszom tovább')}</button></div>`;
+  document.body.appendChild(el);
+  document.getElementById('nkHere').onclick = () => location.reload();
 }
 // felhőmentés: minden panelvar-* kulcs egy sor a saves táblában
 const nBld = v => { try { const d = JSON.parse(v); return d && Array.isArray(d.buildings) ? d.buildings.length : null; } catch (e) { return null; } };
@@ -2421,7 +2449,7 @@ async function netPull() {
   const { data, error } = await NET.sb.from('saves').select('slot,data,updated_at').eq('user_id', NET.me); if (error) throw error;
   const hashes = getJ(SYNC_HASH), firstHere = !localStorage.getItem(SYNC_AT);
   if (!data || !data.length) { await netPush(true); return; }
-  let took = 0; const conf = [];
+  let took = 0; const conf = [], acts = getJ(ACT_KEY);
   // az átrendezés félkész pillanatképe csak helyi, a régi felhős példány visszaforgatta a várost
   if (data.some(r => /^panelvar-rearr-/.test(r.slot))) { try { await NET.sb.from('saves').delete().eq('user_id', NET.me).like('slot', 'panelvar-rearr-%'); } catch (e) {} }
   const stamp = v => { try { const d = JSON.parse(v); return d && typeof d.savedAt === 'number' ? d.savedAt : null; } catch (e) { return null; } };
@@ -2432,19 +2460,27 @@ async function netPull() {
     if (row.slot === 'panelvar-profile' && loc) { try { if (JSON.parse(loc).name && !JSON.parse(val).name) return; } catch (e) {} }
     // ha mindkettőn van időbélyeg, mindig a frissebb mentés nyer
     const ta = stamp(val), tl = loc == null ? null : stamp(loc);
+    // a legjobb jel az, hogy hol játszottál utoljára ténylegesen (koppintás, gomb), nem az, hogy hol mentett utoljára a gép
+    const aa = row.data && typeof row.data.act === 'number' ? row.data.act : 0, al = acts[row.slot] || 0;
+    if (loc != null && (aa || al)) {
+      if (aa > al) { bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); acts[row.slot] = aa; took++; }
+      else bak(row.slot, val);
+      return;
+    }
     let take;
     if (ta != null && tl != null) take = ta > tl + 1000;
     else take = firstHere || loc == null || hashes[row.slot] === hashStr(loc);
     // ha a vesztes példányban több épület van, nem döntünk helyette: megkérdezzük
     const nl = nBld(loc), na = nBld(val);
     if (loc != null && nl != null && na != null && ((take && nl > na) || (!take && na > nl))) { conf.push({ slot: row.slot, loc, val, nl, na, tl, ta }); return; }
-    if (take) { if (loc != null) bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); took++; }
+    if (take) { if (loc != null) bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); if (aa) acts[row.slot] = aa; took++; }
   });
   for (const c of conf) {
     const pick = await askConflict(c);
-    if (pick === 'srv') { bak(c.slot, c.loc); localStorage.setItem(c.slot, c.val); hashes[c.slot] = hashStr(c.val); took++; }
-    else { bak(c.slot, c.val); hashes[c.slot] = ''; }
+    if (pick === 'srv') { bak(c.slot, c.loc); localStorage.setItem(c.slot, c.val); hashes[c.slot] = ''; acts[c.slot] = Date.now(); took++; }
+    else { bak(c.slot, c.val); hashes[c.slot] = ''; acts[c.slot] = Date.now(); }
   }
+  try { localStorage.setItem(ACT_KEY, JSON.stringify(acts)); } catch (e) {}
   localStorage.setItem(SYNC_HASH, JSON.stringify(hashes)); localStorage.setItem(SYNC_AT, String(Date.now()));
   if (took) {
     save = function () {}; saveSoc = function () {}; // a régi állapot ne írja felül a letöltöttet
@@ -2453,11 +2489,16 @@ async function netPull() {
   await netPush(true);
 }
 async function netPush(force) {
-  if (!NET.on) return; try { save(); saveSoc(); } catch (e) {}
-  const hashes = getJ(SYNC_HASH), rows = [];
-  syncKeys().forEach(k => { const v = localStorage.getItem(k); const h = hashStr(v); if (force === true || hashes[k] !== h) { rows.push({ user_id: NET.me, slot: k, data: { v }, updated_at: new Date().toISOString() }); hashes[k] = h; } });
+  if (!NET.on || NET.kicked) return;
+  // mielőtt feltöltünk, megnézzük, nem nyitották-e meg máshol frissebben (oldalbezáráskor erre nincs idő)
+  if (force !== 'leave' && await sessLost()) return;
+  try { save(); saveSoc(); } catch (e) {}
+  const hashes = getJ(SYNC_HASH), acts = getJ(ACT_KEY), rows = [], now = Date.now(), played = NET.touched > NET.lastPush;
+  syncKeys().forEach(k => { const v = localStorage.getItem(k); const h = hashStr(v); if (force === true || hashes[k] !== h) { if (played && hashes[k] !== h) acts[k] = now; rows.push({ user_id: NET.me, slot: k, data: { v, act: acts[k] || 0 }, updated_at: new Date().toISOString() }); hashes[k] = h; } });
+  NET.lastPush = now;
   if (!rows.length) return;
   const { error } = await NET.sb.from('saves').upsert(rows); if (error) { console.warn('push', error); return; }
+  try { localStorage.setItem(ACT_KEY, JSON.stringify(acts)); } catch (e) {}
   localStorage.setItem(SYNC_HASH, JSON.stringify(hashes)); localStorage.setItem(SYNC_AT, String(Date.now()));
 }
 let lastProf = '';
