@@ -7973,11 +7973,14 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     function spawn() {
       if (over || !alive('nfSt')) return; const W = host.clientWidth, H = host.clientHeight;
       const l = document.createElement('button'); l.type = 'button'; l.className = 'nf-l';
-      const x = W * (0.12 + Math.random() * 0.7), lh = H * (0.52 + Math.random() * 0.16); l.style.left = x + 'px'; l.style.height = lh + 'px';
+      // ne kerüljenek egymásra a létrák: olyan helyet keres, ahol nincs a közelben másik
+      const lh = H * (0.52 + Math.random() * 0.16), gapX = Math.max(70, lh * 0.42); let x = null;
+      for (let tr2 = 0; tr2 < 12 && x == null; tr2++) { const c = W * (0.1 + Math.random() * 0.8); if (![...L].some(o => Math.abs(parseFloat(o.style.left) - c) < gapX)) x = c; }
+      if (x == null) return; l.style.left = x + 'px'; l.style.height = lh + 'px';
       l.style.setProperty('--s', Math.random() < 0.5 ? -1 : 1); l.style.setProperty('--r', (Math.random() * 16 - 8).toFixed(1) + 'deg');
       const lv = ['e06_mg_letra.png'].concat(['e06_mg_letra2.png', 'e06_mg_letra3.png'].filter(has)); l.innerHTML = `<img class="lt" src="${I(lv[Math.floor(Math.random() * lv.length)])}" alt="" style="height:100%;width:auto"><img class="os" src="${I('e06_mg_ostromlo.png')}" alt="" style="bottom:0">`;
       host.appendChild(l); L.add(l); const os = l.querySelector('.os'), dur = Math.max(2600, 6000 - (TIME - left) * 90), t0 = performance.now();
-      const step = t => { if (over || !l.isConnected || l.dataset.x) return; const k = (t - t0) / dur; os.style.bottom = (k * (lh - 60)) + 'px'; os.style.left = (36 + k * 50) + '%';
+      const step = t => { if (over || !l.isConnected || l.dataset.x) return; const k = (t - t0) / dur; os.style.bottom = (k * (lh - 60)) + 'px'; os.style.left = (34 + k * 40) + '%';
         if (k >= 1) { l.dataset.x = 1; L.delete(l); l.remove(); lives--; hud(); host.animate([{ boxShadow: 'inset 0 0 0 40px rgba(184,64,44,.45)' }, { boxShadow: 'inset 0 0 0 3px rgba(74,42,16,.6)' }], 400); if (lives <= 0) end(); return; }
         requestAnimationFrame(step); };
       requestAnimationFrame(step);
@@ -8100,7 +8103,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       <div class="ag-stage ho-stage" id="hoSt"><img class="ho-b" id="hoB" src="${I('e06_mg_hollo.png')}" alt=""></div></div>`, '', 'minimodal');
     const host = $('hoSt'), bird = $('hoB'), fr = has('e06_mg_hollo_1.png') && has('e06_mg_hollo_2.png'); let flapT = 0;
     if (has('e06_mg_hollo_egbolt.jpg')) host.style.background = `url(${I('e06_mg_hollo_egbolt.jpg')}) 0 50%/auto 100% repeat-x`;
-    if (fr) bird.src = I('e06_mg_hollo_1.png');
+    if (fr) { bird.src = I('e06_mg_hollo_1.png'); bird.style.width = '104px'; }
     const flap = () => { if (over) return; vy = -0.62; if (fr) { bird.src = I('e06_mg_hollo_2.png'); flapT = 0.18; } };
     host.onpointerdown = e => { e.preventDefault(); flap(); };
     const key = e => { if (!alive('hoSt')) { removeEventListener('keydown', key); return; } if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } }; addEventListener('keydown', key);
