@@ -3636,12 +3636,12 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 // ---------- heti hadjárat: hétfőtől szombatig nyitva, vasárnap pihen a sereg ----------
 const HJ_SZAK = ['Az előőrs', 'A gázló', 'A palánkvár', 'A fővezér tábora'], HJ_N = 8, HJ_MAXT = 8, HJ_TT = 2 * HOUR;
 const HJ_FOE = [['Kardfogú tigris', 'Barlangi medve', 'A szomszéd törzs', 'Mamutcsorda'], ['Besenyő portyázók', 'Kazár vámszedők', 'Bolgár lovasok', 'Farkasfalka'], ['Morva gyalogság', 'Bajor páncélosok', 'Bizánci zsoldosok', 'Itáliai őrség'],
-  ['Koppány harcosai', 'Egy lázadó törzsfő', 'Besenyő határőrök', 'Rablólovagok'], ['Tatár előőrs', 'Tatár íjászok', 'Osztrák zsoldosok', 'Kóbor rablók'], ['Csák Máté emberei', 'Aba-familiárisok', 'Kőszegi zsoldosok', 'Rablólovagok']];
+  ['Koppány harcosai', 'Egy lázadó törzsfő', 'Besenyő határőrök', 'Rablólovagok'], ['Tatár előőrs', 'Tatár íjászok', 'Osztrák zsoldosok', 'Kóbor rablók'], ['Csák Máté emberei', 'Aba-familiárisok', 'Kőszegi zsoldosok', 'Rablólovagok'], ['Török előőrs', 'Szpáhi lovasok', 'Giskra huszitái', 'Frigyes császár zsoldosai']];
 const hjWeek = () => { const d = new Date(NOW()), m = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return m.getFullYear() + '-' + (m.getMonth() + 1) + '-' + m.getDate(); };
 const hjStart = () => { const d = new Date(NOW()); return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)).getTime(); };
 const hjRest = () => new Date(NOW()).getDay() === 0;
 const hjHash = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
-const hjEra = () => Math.max(0, Math.min(5, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
+const hjEra = () => Math.max(0, Math.min(6, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
 function hjBots(wk) { const A = SOC.ally; if (!A) return 0; const hrs = (Math.min(NOW(), hjStart() + 6 * 24 * HOUR) - hjStart()) / HOUR; return A.members.filter(m => m !== 'me').reduce((s, m) => s + Math.min(HJ_N * 4, Math.floor(hrs / (3 + hjHash(m + wk) % 6))), 0); }
 function hjState() {
   const wk = hjWeek(); let H = SOC.hj;
@@ -3682,6 +3682,7 @@ function hjDuel(st) {
     .pv-top{padding:16px 22px 6px;text-align:center}.pv-top h2{margin:2px 0 0;text-wrap:balance}
     .pv-arena{position:relative;height:min(330px,48vh);background:radial-gradient(ellipse at 50% 88%,rgba(255,226,150,.55),transparent 60%),linear-gradient(#8FC6E8 0,#CFE7F2 38%,#9CC56A 38%,#7EA74A 100%);overflow:hidden;border-top:3px solid #C9A46A;border-bottom:3px solid #C9A46A}
     .pv-arena::before{content:'';position:absolute;left:0;right:0;top:30%;height:16%;background:repeating-linear-gradient(90deg,#B8402C 0 26px,#F2C14E 26px 52px);clip-path:polygon(0 60%,4% 0,8% 60%,12% 0,16% 60%,20% 0,24% 60%,28% 0,32% 60%,36% 0,40% 60%,44% 0,48% 60%,52% 0,56% 60%,60% 0,64% 60%,68% 0,72% 60%,76% 0,80% 60%,84% 0,88% 60%,92% 0,96% 60%,100% 0,100% 100%,0 100%);opacity:.9}
+    .pv-arena.own::before,.pv-arena.own::after{display:none}
     .pv-arena::after{content:'';position:absolute;left:8%;right:8%;bottom:14%;height:8px;border-radius:4px;background:#6A4520;box-shadow:0 3px 0 rgba(0,0,0,.25)}
     .pv-k{position:absolute;bottom:12%;height:60%;max-width:44%;object-fit:contain;object-position:bottom;transition:transform .35s cubic-bezier(.3,1.6,.5,1),filter .3s;filter:drop-shadow(0 8px 6px rgba(40,20,0,.35))}
     .pv-k.me{left:3%}.pv-k.foe{right:3%}
@@ -3709,9 +3710,12 @@ function hjDuel(st) {
   let spin = 0; const roll = (el, n) => { spin += 2; const [x, y] = ROT[n]; el.style.transform = `rotateX(${x + 360 * spin + (Math.random() * 6 - 3)}deg) rotateY(${y + 360 * spin}deg)`; };
   const pips = (n, cls) => `<div class="pv-pips ${cls}">${[0, 1].map(k => `<span class="${k < n ? 'on' : ''}"></span>`).join('')}</div>`;
   const bonus = Math.min(3, Math.floor(hjPower() / Math.max(4, st.need) * 1.5)), fb = Math.floor(st.sz / 2) + 1;
+  // korszakonként saját küzdőtér és bajnokok, ha már megvannak a képek
+  const PVE = 'e0' + Math.max(0, Math.min(6, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
+  { const t = new Image(); t.onload = () => { const a = document.getElementById('pvA'); if (a) { a.style.background = `url(img/${PVE}_pv_arena.jpg) center/cover`; a.classList.add('own'); } }; t.src = `img/${PVE}_pv_arena.jpg`; }
   modal(`${X_BTN}<div class="inner"><div class="pv-top"><span class="eyebrow">${T('PÁRVIADAL')}</span><h2>${TF('A te bajnokod {0} bajnoka ellen', st.foe)}</h2></div>
     <div class="pv-arena" id="pvA"><div class="pv-flash" id="pvF"></div>
-      <img class="pv-k me" id="pvMe" src="img/e05_mg_lovag_kek.png" alt=""><img class="pv-k foe" id="pvFoe" src="img/e05_mg_lovag_piros.png" alt="">
+      <img class="pv-k me" id="pvMe" src="img/${PVE}_pv_hos.png" onerror="this.onerror=null;this.src='img/e05_mg_lovag_kek.png'" alt=""><img class="pv-k foe" id="pvFoe" src="img/${PVE}_pv_ellen.png" onerror="this.onerror=null;this.src='img/e05_mg_lovag_piros.png'" alt="">
       <div class="pv-sum me" id="pvSm"></div><div class="pv-sum foe" id="pvSf"></div>
       <div class="pv-dice"><div class="pv-side me">${cube()}${cube()}</div><div class="pv-side foe">${cube()}${cube()}</div></div></div>
     <div class="pv-score"><div class="pv-nm">${T('Te')}${bonus ? `<br><small>${TF('+{0} a védelmedből', bonus)}</small>` : ''}</div>${pips(0, 'me')}<span class="pv-vs">VS</span>${pips(0, 'foe')}<div class="pv-nm">${esc(st.foe)}<br><small>${TF('+{0} előny', fb)}</small></div></div>
