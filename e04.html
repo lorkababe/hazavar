@@ -7646,6 +7646,52 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   window.__xrayAt = (bx, by) => setAt(bx, by, true); window.__xrayOff = () => { xr = null; }; window.__xrayState = () => xr;
 })();
 
+// ---------- összefüggő terület: új telek csak a már meglévő terület mellett vehető, a szigetszerű telkek összekötése ----------
+(function lotConn() {
+  if (typeof LOTS === 'undefined' || typeof lotAt !== 'function' || typeof inGrid !== 'function' || typeof drawLots !== 'function' || typeof showLot !== 'function') return;
+  const tilesOf = l => { const t = []; for (let a = 0; a < l.w; a++) for (let c = 0; c < l.h; c++) t.push([l.i + a, l.j + c]); return t; };
+  const touch = (l, inSet) => tilesOf(l).some(([i, j]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([di, dj]) => inSet(i + di, j + dj)));
+  const lotTouch = (a, b) => a.i < b.i + b.w + 1 && b.i < a.i + a.w + 1 && a.j < b.j + b.h + 1 && b.j < a.j + a.h + 1 && !((a.i + a.w === b.i || b.i + b.w === a.i) && (a.j + a.h === b.j || b.j + b.h === a.j));
+  function reach() { // a kezdő területtel összefüggő saját telkek
+    const own = LOTS.filter(l => lotOwned(l.id)), got = new Set(), q = [];
+    own.forEach(l => { if (touch(l, inGrid)) { got.add(l.id); q.push(l); } });
+    while (q.length) { const x = q.shift(); own.forEach(l => { if (!got.has(l.id) && lotTouch(x, l)) { got.add(l.id); q.push(l); } }); }
+    return got;
+  }
+  window.lotNear = l => { if (lotOwned(l.id)) return false; const r = reach(); return touch(l, inGrid) || LOTS.some(o => r.has(o.id) && lotTouch(o, l)); };
+  // a régi mentésekben elszigetelt telkek: ingyen összekötjük őket a legrövidebb úton
+  function connect() {
+    if (!S || S.lotConnV === 1) return; let added = 0;
+    for (let guard = 0; guard < 40; guard++) {
+      const r = reach(), lone = LOTS.filter(l => lotOwned(l.id) && !r.has(l.id)); if (!lone.length) break;
+      const start = LOTS.filter(l => r.has(l.id) || (!lotOwned(l.id) && touch(l, inGrid)));
+      const prev = new Map(), seen = new Set(start.map(l => l.id)), q = start.slice(); let hit = null;
+      start.forEach(l => prev.set(l.id, null));
+      while (q.length && !hit) { const x = q.shift(); for (const l of LOTS) { if (seen.has(l.id) || !lotTouch(x, l)) continue; seen.add(l.id); prev.set(l.id, x); if (lone.includes(l)) { hit = l; break; } q.push(l); } }
+      if (!hit) break;
+      for (let x = prev.get(hit.id); x; x = prev.get(x.id)) if (!lotOwned(x.id)) { S.lots.push(x.id); added++; }
+      if (!prev.get(hit.id) && !touch(hit, inGrid)) break;
+    }
+    S.lotConnV = 1; try { save(); } catch (e) {}
+    if (added) setTimeout(() => { try { toast(trf('{0} telket ajándékba kaptál, hogy a területeid összeérjenek.', added)); } catch (e) {} }, 2500);
+  }
+  try { connect(); } catch (e) {}
+  // csak a szomszédos telkek látszanak megvehetőnek
+  drawLots = function () {
+    if (!tool && $('drawer').hidden && !lotPick) return;
+    const pulse = lotPick ? 0.5 + 0.5 * Math.sin(performance.now() / 260) : 0;
+    LOTS.forEach(l => {
+      if (!lotNear(l)) return;
+      ctx.save(); ctx.setLineDash([8, 6]); ctx.lineWidth = 2; rectRaw(l.i, l.j, l.w, l.h, lotPick ? `rgba(245,197,66,${0.28 + 0.3 * pulse})` : 'rgba(70,45,20,0.16)', lotPick ? '#FFF4DF' : 'rgba(255,240,200,0.75)'); ctx.restore();
+      const [cx, cy] = tileTop(l.i + l.w / 2, l.j + l.h / 2); ctx.save(); ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.arc(cx, cy, 16, 0, 7); ctx.fillStyle = '#8A5A2B'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#FFF4DF'; ctx.stroke();
+      ctx.strokeStyle = '#FFF4DF'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(cx - 7, cy); ctx.lineTo(cx + 7, cy); ctx.moveTo(cx, cy - 7); ctx.lineTo(cx, cy + 7); ctx.stroke(); ctx.restore();
+    });
+  };
+  const _sl = showLot;
+  showLot = function (l) { if (l && !lotOwned(l.id) && !lotNear(l)) { toast(tr('Ez a telek még messze van. Előbb a városod melletti telkeket vedd meg.')); return; } return _sl.apply(this, arguments); };
+})();
+
 /*SOCIAL-END*/
 })();
 </script>
