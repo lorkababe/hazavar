@@ -464,7 +464,7 @@ const trf = (x, ...a) => tr(x).replace(/\{(\d)\}/g, (_, i) => a[i]);
 const BGW = 3200, BGH = 1600, TW = 120, TH = 60, N = 20, OX = 1600, OY = 215;
 const SAVE_KEY = 'panelvar-e06-v1';
 const GRASS = 8;
-const TERM_CAP = 2000, TUDAS_CAP = 40, TUDAS_EVERY = 60, WINTER_LEN = 24 * 3600;
+const TERM_CAP = 2000, TUDAS_CAP = 60, TUDAS_EVERY = 90, WINTER_LEN = 24 * 3600;
 
 const RES = {
   penz: { name: 'Pénz', icon: 'e03_ikon_penz' },
@@ -602,19 +602,22 @@ const DEF = {
 const CATS = [['all','Mind'],['telek','Terület'],['lak','Lakóház'],['term','Termelő'],['hang','Hangulat'],['ved','Védelem'],['emlek','Emléktár'],['ut','Út']];
 
 const TECH = [
-  { id: 'kuria', name: 'A köznemesség felemelkedése', cost: { tudas: 4, penz: 400, termeny: 200 }, req: [], unl: 'nemesi_kuria' },
-  { id: 'majolika', name: 'Itáliai mesterek', cost: { tudas: 5, penz: 500, fa: 20 }, req: [], unl: 'majolika' },
-  { id: 'agyu', name: 'Tüzérség', cost: { tudas: 6, penz: 700, vas: 15 }, req: [], unl: 'agyuonto1' },
-  { id: 'vegvar', name: 'A déli végvárak', cost: { tudas: 6, penz: 800, vas: 20, hirnev: 3 }, req: [], unl: 'vegvar' },
-  { id: 'nandor', name: 'Nándorfehérvár, 1456', cost: { tudas: 8, penz: 1200, vas: 30, bor: 10, termeny: 800 }, req: [], key: true, bonus: 'A déli végek kulcsa. Ha megvédjük, évtizedekig nyugalom lesz.' },
-  { id: 'valasztas', name: 'Királyválasztás a jégen', cost: { tudas: 8, penz: 1500, hirnev: 10 }, req: [], key: true, bonus: 'Hunyadi János fia királlyá lesz, és a kalauz ezután Mátyás.' },
-  { id: 'korona', name: 'A Szent Korona hazahozatala', cost: { tudas: 9, penz: 2500, forint: 20 }, req: [], bonus: '1463-ban Mátyás 80 ezer aranyforintért visszavásárolta a koronát III. Frigyes császártól. Ettől kezdve minden épület 5%-kal több Hírnevet ad.' },
-  { id: 'corvina', name: 'A Corvina-könyvtár', cost: { tudas: 9, penz: 1800, forint: 8 }, req: [], unl: 'konyvtar1' },
-  { id: 'sereg', name: 'Az állandó zsoldossereg', cost: { tudas: 10, penz: 2500, vas: 30, forint: 6 }, req: [], unl: 'fekete_sereg1' },
-  { id: 'vasar', name: 'Vásárjog és rendtartás', cost: { tudas: 9, penz: 2000, bor: 10 }, req: [], unl: 'vasar' },
-  { id: 'nyomda', name: 'A könyvnyomtatás, 1473', cost: { tudas: 11, penz: 2400, kovako: 4 }, req: [], unl: 'nyomda' },
-  { id: 'reneszansz', name: 'A reneszánsz udvar', cost: { tudas: 12, penz: 3000, kovako: 6, forint: 12 }, req: [], unl: 'herkules_kut', bonus: 'Beatrix királyné Nápolyból érkezik, és vele jön az itáliai reneszánsz. A budai palota tervrajzai is megnyílnak.' },
-  { id: 'becs', name: 'Bécs bevétele, 1485', cost: { tudas: 14, penz: 5000, vas: 50, forint: 30, kovako: 10, hirnev: 20 }, req: [], key: true, bonus: 'A Fekete sereg bevonul Bécsbe. Mátyás ettől kezdve onnan is uralkodik.' }
+  { id: 'kuria', name: 'A köznemesség felemelkedése', cost: { tudas: 12, penz: 600, termeny: 200 }, req: [], unl: 'nemesi_kuria' },
+  { id: 'majolika', name: 'Itáliai mesterek', cost: { tudas: 15, penz: 750, fa: 20 }, req: [], unl: 'majolika' },
+  { id: 'agyu', name: 'Tüzérség', cost: { tudas: 18, penz: 1050, vas: 15 }, req: [], unl: 'agyuonto1' },
+  { id: 'vegvar', name: 'A déli végvárak', cost: { tudas: 18, penz: 1200, vas: 20, hirnev: 3 }, req: [], unl: 'vegvar' },
+  { id: 'nandor', name: 'Nándorfehérvár, 1456', cost: { tudas: 24, penz: 1800, vas: 30, bor: 10, termeny: 800 }, req: [], key: true, bonus: 'A déli végek kulcsa. Ha megvédjük, évtizedekig nyugalom lesz.' },
+  { id: 'valasztas', name: 'Királyválasztás a jégen', cost: { tudas: 24, penz: 2250, hirnev: 10 }, req: [], key: true, bonus: 'Hunyadi János fia királlyá lesz, és a kalauz ezután Mátyás.' },
+  { id: 'korona', name: 'A Szent Korona hazahozatala', cost: { tudas: 27, penz: 3750, forint: 20 }, req: [], bonus: '1463-ban Mátyás 80 ezer aranyforintért visszavásárolta a koronát III. Frigyes császártól. Ettől kezdve minden épület 5%-kal több Hírnevet ad.' },
+  { id: 'adoreform', name: 'A kincstári reform, 1467', cost: { tudas: 27, penz: 3000, termeny: 600 }, req: [], bonus: '1467-ben Mátyás a régi kapuadó helyett bevezette a kincstári adót, és a koronavámot. A rendek morogtak, a kincstár megtelt. Ettől kezdve minden épület 10%-kal több Pénzt ad.' },
+  { id: 'corvina', name: 'A Corvina-könyvtár', cost: { tudas: 27, penz: 2700, forint: 8 }, req: [], unl: 'konyvtar1' },
+  { id: 'pozsony', name: 'Academia Istropolitana, 1467', cost: { tudas: 30, penz: 3300, kovako: 3 }, req: [], bonus: 'Mátyás és Vitéz János esztergomi érsek egyetemet alapított Pozsonyban. Itáliai és bécsi tudósok tanítottak benne. Ettől kezdve a könyvtárak 20%-kal több Corvinát adnak.' },
+  { id: 'sereg', name: 'Az állandó zsoldossereg', cost: { tudas: 30, penz: 3750, vas: 30, forint: 6 }, req: [], unl: 'fekete_sereg1' },
+  { id: 'vasar', name: 'Vásárjog és rendtartás', cost: { tudas: 27, penz: 3000, bor: 10 }, req: [], unl: 'vasar' },
+  { id: 'nyomda', name: 'A könyvnyomtatás, 1473', cost: { tudas: 33, penz: 3600, kovako: 4 }, req: [], unl: 'nyomda' },
+  { id: 'kenyermezo', name: 'Kenyérmező, 1479', cost: { tudas: 36, penz: 4200, vas: 40, termeny: 1000 }, req: [], bonus: 'Kinizsi Pál és Báthori István Kenyérmezőnél szétverte a betörő török sereget. A legenda szerint Kinizsi a győzelem után egy török katonát a fogával emelt fel táncolás közben. Ettől kezdve minden épület 10%-kal több Hírnevet ad.' },
+  { id: 'reneszansz', name: 'A reneszánsz udvar', cost: { tudas: 36, penz: 4500, kovako: 6, forint: 12 }, req: [], unl: 'herkules_kut', bonus: 'Beatrix királyné Nápolyból érkezik, és vele jön az itáliai reneszánsz. A budai palota tervrajzai is megnyílnak.' },
+  { id: 'becs', name: 'Bécs bevétele, 1485', cost: { tudas: 42, penz: 7500, vas: 50, forint: 30, kovako: 10, hirnev: 20 }, req: [], key: true, bonus: 'A Fekete sereg bevonul Bécsbe. Mátyás ettől kezdve onnan is uralkodik.' }
 ];
 // sorrendben lehet kutatni, így a játék végigvezet a koron
 TECH.forEach((t, k) => { if (k > 0 && !t.after) t.req = [TECH[k - 1].id]; });
@@ -3728,6 +3731,9 @@ auraMul = function (b, res) {
   let m = 1; S.buildings.forEach(s => { if (s === b || off(s)) return; const a = DEF[s.type].aura; if (!a || !auraFits(a, b, res)) return; if (['termeny', 'penz', 'arany'].includes(a.to) && res !== a.to) return; if (auraHits(s, b)) m += a.mul; });
   if (res === 'arany' && S.techs && S.techs.reform) m += 0.2;
   if (res === 'hirnev' && S.techs && S.techs.korona) m += 0.05;
+  if (res === 'hirnev' && S.techs && S.techs.kenyermezo) m += 0.1;
+  if (res === 'penz' && S.techs && S.techs.adoreform) m += 0.1;
+  if (res === 'kovako' && S.techs && S.techs.pozsony) m += 0.2;
   return Math.max(0.4, m);
 };
 // szintek: ugyanaz az épületcsalád (bánya 1-2-3) egyszerinek számít, ha egyedi
@@ -4695,7 +4701,7 @@ function showDaily() {
 // ---------- idővonal ----------
 const ERAS = [
   ['Kőkorszak', 'kb. 400 000 évvel ezelőtt', 'ikon_idovonal'], ['Vándorlás', '9. század', 'ikon_idovonal_e01'], ['Honfoglalás', '895–970', 'ikon_idovonal_e02'], ['Államalapítás', '970–1038', 'e03_ikon_idovonal'], ['Árpád-ház és tatárjárás', '1235–1270', 'e04_ikon_kalakapont'],
-  ['Anjouk', '1301–1382', 'e05_ikon_forint'], ['Hunyadiak', '1440–1490', 'e06_ikon_corvina'], ['Jagellók', '1490–1526'], ['Három részre szakadt ország', '1541–1699'],
+  ['Anjouk', '1301–1382', 'e05_ikon_forint'], ['Hunyadiak', '1440–1490', 'e06_ikon_corvina'], ['Hunyadiak', '1440–1490'], ['Jagellók', '1490–1526'], ['Három részre szakadt ország', '1541–1699'],
   ['Rákóczi-szabadságharc', '1703–1711'], ['Mária Terézia kora', '18. század'], ['Reformkor', '1825–1848'], ['Forradalom', '1848–49'], ['Kiegyezés', '1867'],
   ['Világháború', '1914–1918'], ['Horthy-korszak', '1920–1944'], ['Rákosi-korszak', '1949–1956'], ['Kádár-korszak', '1956–1989'], ['Rendszerváltás', '1989–1990'], ['Európai Unió', '2004']
 ];
@@ -4764,7 +4770,7 @@ function showResearch() {
       ${!done && reqOk ? `<button class="btn ${t.key ? 'coral' : 'teal'}" type="button" data-tech="${t.id}" ${can ? '' : 'disabled'}>${tr(can ? 'Kutatás' : 'Nincs elég nyersanyag')}</button>` : ''}</div>`;
   };
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KUTATÁS')} · ${techCount()} / ${TECH.length}</span><h2>${tr('Mit tanuljon az udvar?')}</h2>
-    <p>${trf('A Tudás magától gyűlik (percenként 1, legfeljebb {0}), a kolostor és az apátság is ad. Minden kutatás új épületet vagy lehetőséget nyit.', TUDAS_CAP)}</p>
+    <p>${trf('A Tudás magától gyűlik (másfél percenként 1, legfeljebb {0}), a kolostor és az apátság is ad. Minden kutatás új épületet vagy lehetőséget nyit.', TUDAS_CAP)}</p>
     <div class="techs">${TECH.map(card).join('')}</div></div>`, '', 'research');
   $('modalRoot').querySelectorAll('[data-tech]').forEach(btn => btn.onclick = () => {
     const t = TECH.find(x => x.id === btn.dataset.tech); if (!canPay(t.cost)) return;
