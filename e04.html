@@ -3473,9 +3473,7 @@ function draw(now) {
   if (tool && DEF[tool.type] && DEF[tool.type].terrain) { const tt = TERRAIN[DEF[tool.type].terrain]; areaTiles().forEach(([i, j]) => { if (tt.test(i, j) && !blocked(i, j)) diamond(i, j, 1, 'rgba(90,220,120,0.32)', null); }); }
   if (tool || !$('drawer').hidden) {
     // szabad mezők világos kitöltéssel, sötét+világos kettős vonallal, hogy a fűn is látsszon
-    const AT = areaTiles(); AT.forEach(([i, j]) => { if (!m[key(i, j)]) diamond(i, j, 1, 'rgba(255,248,220,0.22)', null); });
-    ctx.lineWidth = 3.5; AT.forEach(([i, j]) => diamond(i, j, 1, null, 'rgba(40,25,5,0.28)'));
-    ctx.lineWidth = 1.6; AT.forEach(([i, j]) => diamond(i, j, 1, null, 'rgba(255,255,255,0.8)'));
+    { const G = window.__grid || (window.__grid = {}), sig = S.buildings.length + ':' + S.buildings.reduce((a, b) => a + b.i * 131 + b.j * 17 + (b.rot || 0) * 7 + (b.id || 0), 0) + ':' + Object.keys(S.roads).length + ':' + Object.keys(S.roads).reduce((a, k) => a + k.length * 3 + k.charCodeAt(0), 0) + ':' + (S.lots || []).join(',') + ':' + Object.keys(S.cleared || {}).length; if (G.sig !== sig || !G.cv) { G.sig = sig; const AT = areaTiles(); if (!AT.length) { G.cv = null; } else { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; AT.forEach(([i, j]) => { const [ax, ay] = tileTop(i, j); x0 = Math.min(x0, ax - TW / 2 - 4); x1 = Math.max(x1, ax + TW / 2 + 4); y0 = Math.min(y0, ay - 4); y1 = Math.max(y1, ay + TH + 4); }); const sc = 0.75, cv = G.cv && G.cv.width === Math.ceil((x1 - x0) * sc) && G.cv.height === Math.ceil((y1 - y0) * sc) ? G.cv : document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * sc); cv.height = Math.ceil((y1 - y0) * sc); const g = cv.getContext('2d'); g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc); const pf = new Path2D(), ps = new Path2D(), add = (P, i, j) => { const [ax, ay] = tileTop(i, j), [bx, by] = tileTop(i + 1, j), [cx, cy] = tileTop(i + 1, j + 1), [dx, dy] = tileTop(i, j + 1); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }; AT.forEach(([i, j]) => { add(ps, i, j); if (!m[key(i, j)]) add(pf, i, j); }); g.fillStyle = 'rgba(255,248,220,0.22)'; g.fill(pf); g.lineWidth = 3.5; g.strokeStyle = 'rgba(40,25,5,0.28)'; g.stroke(ps); g.lineWidth = 1.6; g.strokeStyle = 'rgba(255,255,255,0.8)'; g.stroke(ps); G.cv = cv; G.x0 = x0; G.y0 = y0; G.sc = sc; } } if (G.cv) ctx.drawImage(G.cv, G.x0, G.y0, G.cv.width / G.sc, G.cv.height / G.sc); }
     ctx.lineWidth = 6; diamondRaw(0, 0, N, null, 'rgba(40,25,5,0.3)');
     ctx.lineWidth = 3; diamondRaw(0, 0, N, null, 'rgba(255,236,170,0.95)');
     if (hover && tool) { const [hw, hh] = dimsT(tool.type, tool.rot); const ok = free(tool.type, hover[0], hover[1], tool.mode === 'move' ? S.buildings.find(b => b.id === tool.id) : null, tool.rot);
@@ -7841,7 +7839,10 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     while (q.length) { const x = q.shift(); own.forEach(l => { if (!got.has(l.id) && lotTouch(x, l)) { got.add(l.id); q.push(l); } }); }
     return got;
   }
-  window.lotNear = l => { if (lotOwned(l.id)) return false; const r = reach(); return touch(l, inGrid) || LOTS.some(o => r.has(o.id) && lotTouch(o, l)); };
+  // a nagy térképen minden képkockában száz telekre számolnánk újra, ezért a telkek listájához kötve megjegyezzük
+  let rSig = null, rMemo = null; const nearMemo = new Map();
+  const reachC = () => { const sg = (S.lots || []).join(','); if (sg !== rSig) { rSig = sg; rMemo = reach(); nearMemo.clear(); } return rMemo; };
+  window.lotNear = l => { if (lotOwned(l.id)) return false; const r = reachC(); if (nearMemo.has(l.id)) return nearMemo.get(l.id); const v = touch(l, inGrid) || LOTS.some(o => r.has(o.id) && lotTouch(o, l)); nearMemo.set(l.id, v); return v; };
   // a régi mentésekben elszigetelt telkek: ingyen összekötjük őket a legrövidebb úton
   function connect() {
     if (!S || S.lotConnV === 1) return; let added = 0;

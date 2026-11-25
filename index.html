@@ -4993,7 +4993,10 @@ window.playDur = function (m) {
     while (q.length) { const x = q.shift(); own.forEach(l => { if (!got.has(l.id) && lotTouch(x, l)) { got.add(l.id); q.push(l); } }); }
     return got;
   }
-  window.lotNear = l => { if (lotOwned(l.id)) return false; const r = reach(); return touch(l, inGrid) || LOTS.some(o => r.has(o.id) && lotTouch(o, l)); };
+  // a nagy térképen minden képkockában száz telekre számolnánk újra, ezért a telkek listájához kötve megjegyezzük
+  let rSig = null, rMemo = null; const nearMemo = new Map();
+  const reachC = () => { const sg = (S.lots || []).join(','); if (sg !== rSig) { rSig = sg; rMemo = reach(); nearMemo.clear(); } return rMemo; };
+  window.lotNear = l => { if (lotOwned(l.id)) return false; const r = reachC(); if (nearMemo.has(l.id)) return nearMemo.get(l.id); const v = touch(l, inGrid) || LOTS.some(o => r.has(o.id) && lotTouch(o, l)); nearMemo.set(l.id, v); return v; };
   // a régi mentésekben elszigetelt telkek: ingyen összekötjük őket a legrövidebb úton
   function connect() {
     if (!S || S.lotConnV === 1) return; let added = 0;
