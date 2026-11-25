@@ -463,7 +463,7 @@ const trf = (x, ...a) => tr(x).replace(/\{(\d)\}/g, (_, i) => a[i]);
 const BGW = 1672, BGH = 941, TW = 120, TH = 60, N = 12, OX = 920, OY = 92;
 const SAVE_KEY = 'panelvar-e03-v1';
 const GRASS = 8; // ennyiszer lehet egy legelőt lelegeltetni, aztán kimerül
-const TERM_CAP = 1000, TUDAS_CAP = 30, TUDAS_EVERY = 30, WINTER_LEN = 24 * 3600;
+const TERM_CAP = 1000, TUDAS_CAP = 80, TUDAS_EVERY = 75, WINTER_LEN = 24 * 3600;
 
 const RES = {
   penz: { name: 'Pénz', icon: 'e03_ikon_penz' },
@@ -507,6 +507,7 @@ const TECH = [
   { id: 'apatsag', name: 'Apátság alapítása', cost: { tudas: 8, penz: 160 }, req: ['bences'], unl: 'vezeri' },
   { id: 'imre', name: 'Az örökös kérdése', cost: { tudas: 10, termeny: 250, kovako: 4 }, req: ['varmegye', 'apatsag', 'torveny'], key: true }
 ];
+/*PACE*/ (function () { const F = 17.3; TECH.forEach(t => { if (t.cost && t.cost.tudas) { const v = t.cost.tudas * F, r = v > 20 ? 5 : 1; t.cost.tudas = Math.max(1, Math.round(v / r) * r); } }); })();
 
 const QUESTS = [
   { face: 'magyaraz', text: 'Üdv az udvarházban! Innentől nem költözünk, a város itt marad ezer évig. Építs egy Parasztházat, és vezess hozzá utat.', check: () => S.buildings.some(b => b.type === 'haz' && !off(b) && connected(b)), rew: { penz: 50 } },
@@ -2329,7 +2330,7 @@ function showResearch() {
       ${!done && reqOk ? `<button class="btn ${t.key ? 'coral' : 'teal'}" type="button" data-tech="${t.id}" ${can ? '' : 'disabled'}>${tr(can ? 'Kutatás' : 'Nincs elég nyersanyag')}</button>` : ''}</div>`;
   };
   modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('KUTATÁS')} · ${techCount()} / ${TECH.length}</span><h2>${tr('Mit tanuljon a törzs?')}</h2>
-    <p>${trf('A Tudás magától gyűlik (fél percenként 1, legfeljebb {0}). Minden kutatás új épületet nyit.', TUDAS_CAP)}</p>
+    <p>${trf('A Tudás magától gyűlik ({1}, legfeljebb {0}). Minden kutatás új épületet nyit.', TUDAS_CAP, ({30: tr('fél percenként 1'), 60: tr('percenként 1'), 90: tr('másfél percenként 1'), 120: tr('két percenként 1')})[TUDAS_EVERY] || trf('{0} másodpercenként 1', TUDAS_EVERY))}</p>
     <div class="techs">${TECH.map(card).join('')}</div></div>`, '', 'research');
   $('modalRoot').querySelectorAll('[data-tech]').forEach(btn => btn.onclick = () => {
     const t = TECH.find(x => x.id === btn.dataset.tech); if (!canPay(t.cost)) return;
