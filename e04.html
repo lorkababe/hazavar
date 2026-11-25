@@ -495,7 +495,7 @@ const T_FOREST = new Set(["-1,-1","-1,-2","-1,-3","-1,-4","-1,-5","-1,0","-1,1",
 const LOTS2 = [{"id":"B-16_8","i":-16,"j":8,"w":4,"h":4,"k":"E"},{"id":"B-12_4","i":-12,"j":4,"w":4,"h":4,"k":"E"},{"id":"B-12_8","i":-12,"j":8,"w":4,"h":4,"k":"E"},{"id":"B-12_12","i":-12,"j":12,"w":4,"h":4,"k":"E"},{"id":"B-8_0","i":-8,"j":0,"w":4,"h":4,"k":"E"},{"id":"B-8_4","i":-8,"j":4,"w":4,"h":4,"k":"E"},{"id":"B-8_8","i":-8,"j":8,"w":4,"h":4,"k":"E"},{"id":"B-8_12","i":-8,"j":12,"w":4,"h":4,"k":"E"},{"id":"B-8_16","i":-8,"j":16,"w":4,"h":4,"k":"V"},{"id":"B-4_-4","i":-4,"j":-4,"w":4,"h":4,"k":"E"},{"id":"B-4_0","i":-4,"j":0,"w":4,"h":4,"k":"E"},{"id":"B-4_4","i":-4,"j":4,"w":4,"h":4,"k":"E"},{"id":"B-4_8","i":-4,"j":8,"w":4,"h":4,"k":"M"},{"id":"B-4_12","i":-4,"j":12,"w":4,"h":4,"k":"M"},{"id":"B-4_16","i":-4,"j":16,"w":4,"h":4,"k":"V"},{"id":"B-4_20","i":-4,"j":20,"w":4,"h":4,"k":"V"},{"id":"B0_-4","i":0,"j":-4,"w":4,"h":4,"k":"D"},{"id":"B0_20","i":0,"j":20,"w":4,"h":4,"k":"V"},{"id":"B4_-8","i":4,"j":-8,"w":4,"h":4,"k":"D"},{"id":"B4_-4","i":4,"j":-4,"w":4,"h":4,"k":"D"},{"id":"B4_20","i":4,"j":20,"w":4,"h":4,"k":"M"},{"id":"B4_24","i":4,"j":24,"w":4,"h":4,"k":"V"},{"id":"B4_28","i":4,"j":28,"w":4,"h":4,"k":"V"},{"id":"B8_-12","i":8,"j":-12,"w":4,"h":4,"k":"D"},{"id":"B8_-8","i":8,"j":-8,"w":4,"h":4,"k":"D"},{"id":"B8_-4","i":8,"j":-4,"w":4,"h":4,"k":"M"},{"id":"B8_20","i":8,"j":20,"w":4,"h":4,"k":"M"},{"id":"B8_28","i":8,"j":28,"w":4,"h":4,"k":"V"},{"id":"B8_32","i":8,"j":32,"w":4,"h":4,"k":"M"},{"id":"B12_-12","i":12,"j":-12,"w":4,"h":4,"k":"D"},{"id":"B12_-8","i":12,"j":-8,"w":4,"h":4,"k":"D"},{"id":"B12_-4","i":12,"j":-4,"w":4,"h":4,"k":"M"},{"id":"B12_20","i":12,"j":20,"w":4,"h":4,"k":"V"},{"id":"B12_28","i":12,"j":28,"w":4,"h":4,"k":"V"},{"id":"B16_-8","i":16,"j":-8,"w":4,"h":4,"k":"M"},{"id":"B16_-4","i":16,"j":-4,"w":4,"h":4,"k":"M"},{"id":"B16_20","i":16,"j":20,"w":4,"h":4,"k":"V"},{"id":"B20_-4","i":20,"j":-4,"w":4,"h":4,"k":"M"},{"id":"B20_0","i":20,"j":0,"w":4,"h":4,"k":"M"},{"id":"B20_4","i":20,"j":4,"w":4,"h":4,"k":"M"},{"id":"B20_8","i":20,"j":8,"w":4,"h":4,"k":"M"},{"id":"B20_12","i":20,"j":12,"w":4,"h":4,"k":"M"},{"id":"B20_16","i":20,"j":16,"w":4,"h":4,"k":"M"},{"id":"B24_0","i":24,"j":0,"w":4,"h":4,"k":"M"},{"id":"B24_4","i":24,"j":4,"w":4,"h":4,"k":"M"},{"id":"B24_8","i":24,"j":8,"w":4,"h":4,"k":"M"},{"id":"B24_12","i":24,"j":12,"w":4,"h":4,"k":"M"},{"id":"B24_16","i":24,"j":16,"w":4,"h":4,"k":"M"},{"id":"B28_4","i":28,"j":4,"w":4,"h":4,"k":"M"},{"id":"B28_8","i":28,"j":8,"w":4,"h":4,"k":"M"},{"id":"B28_12","i":28,"j":12,"w":4,"h":4,"k":"M"},{"id":"B32_8","i":32,"j":8,"w":4,"h":4,"k":"M"}];
 const TERRAIN = {
   forest: { short: 'Csak az erdőben', name: 'erdő', where: 'az erdőben', hint: 'A város bal felső sarkában van egy kis erdősáv, a többihez erdei telket kell venned. A zölden villogó telkek jók.', test: (i, j) => ROUGH[i + ',' + j] === 'forest' },
-  hill: { short: 'Csak a dombon', name: 'domboldal', where: 'a dombon', hint: 'Ehhez előbb dombi telket kell venned a térkép jobb felső részén. A zölden villogó telkek jók.', test: (i, j) => ROUGH[i + ',' + j] === 'hill' },
+  hill: { short: 'Domb mellé', name: 'domboldal', where: 'a dombon vagy a domb lábánál', hint: 'Elég a domb lábához tenni, legfeljebb 2 mezőre a dombtól. Ehhez előbb dombi telket kell venned a térkép jobb felső részén. A zölden villogó telkek jók.', test: (i, j) => { for (let a = -2; a <= 2; a++) for (let c = -2; c <= 2; c++) if (ROUGH[(i + a) + ',' + (j + c)] === 'hill') return true; return false; } },
   bank: { short: 'Csak a vízen', name: 'folyópart', where: 'a vízen', hint: 'Úgy tedd le, hogy bele is érjen a folyóba. A vízparti telkeket a térkép bal alsó részén veheted meg, a zölden villogó telkek jók.', test: (i, j) => wetTile(i, j) }
 };
 
@@ -5317,12 +5317,14 @@ async function netPull() {
       else bak(row.slot, val);
       return;
     }
+    // régi mentés, amin még nincs játékjel: ha a szerverre azóta töltöttek fel, hogy ez a gép utoljára szinkronizált, a szerveré a frissebb
+    // (a gép saját mentési ideje nem számít, mert megnyitáskor azonnal a mostani időre íródik át)
     let take;
-    if (ta != null && tl != null) take = ta > tl + 1000;
-    else take = firstHere || loc == null || hashes[row.slot] === hashStr(loc);
-    // ha a vesztes példányban több épület van, nem döntünk helyette: megkérdezzük
-    const nl = nBld(loc), na = nBld(val);
-    if (loc != null && nl != null && na != null && ((take && nl > na) || (!take && na > nl))) { conf.push({ slot: row.slot, loc, val, nl, na, tl, ta }); return; }
+    const lastSync = +localStorage.getItem(SYNC_AT) || 0, srvAt = row.updated_at ? Date.parse(row.updated_at) : 0;
+    if (loc == null || firstHere) take = true;
+    else if (srvAt && lastSync) take = srvAt > lastSync + 1000;
+    else if (ta != null && tl != null) take = ta > tl + 1000;
+    else take = hashes[row.slot] === hashStr(loc);
     if (take) { if (loc != null) bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); if (aa) acts[row.slot] = aa; took++; }
   });
   for (const c of conf) {

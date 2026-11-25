@@ -496,7 +496,7 @@ const LOTS2 = [{"id":"B-12_12","i":-12,"j":12,"w":4,"h":4,"k":"M"},{"id":"B-8_8"
 
 const TERRAIN = {
   forest: { short: 'Csak az erdőben', name: 'erdő', where: 'az erdőben', hint: 'Fás rész csak a Duna-part bal felső csücskében van. A zölden villogó telkek jók.', test: (i, j) => ROUGH[i + ',' + j] === 'forest' },
-  hill: { short: 'Csak a hegyoldalon', name: 'hegyoldal', where: 'a budai hegyek oldalán', hint: 'A budai hegyek és a szőlők a térkép jobb felső részén vannak. A zölden villogó telkek jók.', test: (i, j) => ROUGH[i + ',' + j] === 'hill' },
+  hill: { short: 'Hegy mellé', name: 'hegyoldal', where: 'a hegyoldalon vagy a hegy lábánál', hint: 'Elég a hegy lábához tenni, legfeljebb 2 mezőre a hegytől. A budai hegyek és a szőlők a térkép jobb felső részén vannak. A zölden villogó telkek jók.', test: (i, j) => { for (let a = -2; a <= 2; a++) for (let c = -2; c <= 2; c++) if (ROUGH[(i + a) + ',' + (j + c)] === 'hill') return true; return false; } },
   bank: { short: 'Csak a Dunán', name: 'Duna-part', where: 'a Duna partján', hint: 'Úgy tedd le, hogy bele is érjen a vízbe. A Duna a térkép bal alsó szélén folyik.', test: (i, j) => wetTile(i, j) }
 };
 
@@ -5913,12 +5913,14 @@ async function netPull() {
       else bak(row.slot, val);
       return;
     }
+    // régi mentés, amin még nincs játékjel: ha a szerverre azóta töltöttek fel, hogy ez a gép utoljára szinkronizált, a szerveré a frissebb
+    // (a gép saját mentési ideje nem számít, mert megnyitáskor azonnal a mostani időre íródik át)
     let take;
-    if (ta != null && tl != null) take = ta > tl + 1000;
-    else take = firstHere || loc == null || hashes[row.slot] === hashStr(loc);
-    // ha a vesztes példányban több épület van, nem döntünk helyette: megkérdezzük
-    const nl = nBld(loc), na = nBld(val);
-    if (loc != null && nl != null && na != null && ((take && nl > na) || (!take && na > nl))) { conf.push({ slot: row.slot, loc, val, nl, na, tl, ta }); return; }
+    const lastSync = +localStorage.getItem(SYNC_AT) || 0, srvAt = row.updated_at ? Date.parse(row.updated_at) : 0;
+    if (loc == null || firstHere) take = true;
+    else if (srvAt && lastSync) take = srvAt > lastSync + 1000;
+    else if (ta != null && tl != null) take = ta > tl + 1000;
+    else take = hashes[row.slot] === hashStr(loc);
     if (take) { if (loc != null) bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); if (aa) acts[row.slot] = aa; took++; }
   });
   for (const c of conf) {

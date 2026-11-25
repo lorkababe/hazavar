@@ -3183,12 +3183,14 @@ async function netPull() {
       else bak(row.slot, val);
       return;
     }
+    // régi mentés, amin még nincs játékjel: ha a szerverre azóta töltöttek fel, hogy ez a gép utoljára szinkronizált, a szerveré a frissebb
+    // (a gép saját mentési ideje nem számít, mert megnyitáskor azonnal a mostani időre íródik át)
     let take;
-    if (ta != null && tl != null) take = ta > tl + 1000;
-    else take = firstHere || loc == null || hashes[row.slot] === hashStr(loc);
-    // ha a vesztes példányban több épület van, nem döntünk helyette: megkérdezzük
-    const nl = nBld(loc), na = nBld(val);
-    if (loc != null && nl != null && na != null && ((take && nl > na) || (!take && na > nl))) { conf.push({ slot: row.slot, loc, val, nl, na, tl, ta }); return; }
+    const lastSync = +localStorage.getItem(SYNC_AT) || 0, srvAt = row.updated_at ? Date.parse(row.updated_at) : 0;
+    if (loc == null || firstHere) take = true;
+    else if (srvAt && lastSync) take = srvAt > lastSync + 1000;
+    else if (ta != null && tl != null) take = ta > tl + 1000;
+    else take = hashes[row.slot] === hashStr(loc);
     if (take) { if (loc != null) bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); if (aa) acts[row.slot] = aa; took++; }
   });
   for (const c of conf) {
