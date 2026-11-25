@@ -1432,13 +1432,13 @@ function wobble(a, b, seed) {
 }
 const ROADSTYLE = 'rut';
 function buildRoadLayer(fast) {
-  const { segs, dots } = roadSegs(); const K = fast ? 1 : 2;
+  const { segs, dots } = roadSegs(); let K = fast ? 1 : 2;
   const c = document.createElement('canvas'); c.ox = 0; c.oy = 0; c.width = 2; c.height = 2;
   if (!segs.length && !dots.length) return c;
   // csak az utak körüli téglalapot rajzoljuk, nem az egész térképet
   const xs = segs.flatMap(sg => [sg[0][0], sg[1][0]]).concat(dots.map(d => d[0])), ys = segs.flatMap(sg => [sg[0][1], sg[1][1]]).concat(dots.map(d => d[1]));
   const ox = Math.floor(Math.min(...xs) - TW * 0.5), oy = Math.floor(Math.min(...ys) - TH * 0.6), cw = Math.ceil(Math.max(...xs) + TW * 0.5) - ox, ch = Math.ceil(Math.max(...ys) + TH * 0.6) - oy;
-  c.ox = ox; c.oy = oy; c.width = cw * K; c.height = ch * K; const g = c.getContext('2d');
+  K = Math.min(K, Math.sqrt((fast ? 2e6 : 5e6) / Math.max(1, cw * ch))); c.K = K; c.ox = ox; c.oy = oy; c.width = Math.ceil(cw * K); c.height = Math.ceil(ch * K); const g = c.getContext('2d');
   // mintavétel az út középvonalán, a szélesség finoman hullámzik, hogy ne legyen gépies
   const RX = TW * 0.2, pts = [];
   const wob = (x, y) => 1 + 0.04 * Math.sin(x * 0.05 + y * 0.09) + 0.03 * Math.sin(x * 0.17 - y * 0.11) + 0.02 * Math.sin(x * 0.43 + y * 0.61);
@@ -1451,7 +1451,7 @@ function buildRoadLayer(fast) {
   const blob = (ctx, s, dy = 0) => { ctx.beginPath(); pts.forEach(([x, y, w]) => { const r = RX * s * w; ctx.moveTo(x + r, y + dy); ctx.ellipse(x, y + dy, r, r * 0.5, 0, 0, Math.PI * 2); }); ctx.fill(); };
   g.scale(K, K); g.translate(-ox, -oy);
   // kitaposott, kopott fű az út körül
-  g.filter = 'blur(5px)'; g.fillStyle = 'rgba(92,70,20,0.22)'; blob(g, 1.35); g.filter = 'none';
+  g.filter = fast ? 'none' : 'blur(5px)'; g.fillStyle = 'rgba(92,70,20,0.22)'; blob(g, 1.35); g.filter = 'none';
   // föld külön rétegen, hogy az árnyalás ne lógjon ki
   const d = document.createElement('canvas'); d.width = c.width; d.height = c.height; const h = d.getContext('2d'); h.scale(K, K); h.translate(-ox, -oy);
   h.fillStyle = ROADSTYLE === 'cobble' ? '#B4854F' : '#BF8748'; blob(h, 1);
@@ -1493,7 +1493,7 @@ function drawRoads() {
   const sig = Object.keys(S.roads).sort().join('|');
   const fast = !!roadPaint; // húzás közben egyszerűbb, gyors rajz; elengedéskor a szép változat
   if (!roadCache || sig !== roadSig || (roadCache.fast && !fast)) { roadCache = buildRoadLayer(fast); roadCache.fast = fast; roadSig = sig; }
-  if (roadCache.width > 2) ctx.drawImage(roadCache, roadCache.ox, roadCache.oy, roadCache.width / (roadCache.fast ? 1 : 2), roadCache.height / (roadCache.fast ? 1 : 2));
+  if (roadCache.width > 2) ctx.drawImage(roadCache, roadCache.ox, roadCache.oy, roadCache.width / (roadCache.K || (roadCache.fast ? 1 : 2)), roadCache.height / (roadCache.K || (roadCache.fast ? 1 : 2)));
 }
 function diamondRaw(i, j, k, fill, stroke) {
   const [x0, y0] = tileTop(i, j), [x1, y1] = tileTop(i + k, j), [x2, y2] = tileTop(i + k, j + k), [x3, y3] = tileTop(i, j + k);
