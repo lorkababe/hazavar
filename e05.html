@@ -5713,7 +5713,7 @@ const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(locati
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
 window.__gbNet = { send: (id, kind, p) => netEvent(id, kind, p), town: id => (NET.towns || {})[id] || null };
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e06_nagy_alapterkep.jpg', ox: 2300, oy: 450, n: 20, bgw: 4400, bgh: 2200 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-(sync|rearr)-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
