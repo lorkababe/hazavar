@@ -1754,8 +1754,8 @@ function buildRoadLayer(fast) {
 function drawRoads() {
   const sig = Object.keys(S.roads).sort().join('|');
   const fast = !!roadPaint; // húzás közben egyszerűbb, gyors rajz; elengedéskor a szép változat
-  if (!roadCache || sig !== roadSig || (roadCache.fast && !fast)) { roadCache = buildRoadLayer(fast); roadCache.fast = fast; roadSig = sig; }
-  if (roadCache.width > 2) ctx.drawImage(roadCache, roadCache.ox, roadCache.oy, roadCache.width / (roadCache.K || (roadCache.fast ? 1 : 2)), roadCache.height / (roadCache.K || (roadCache.fast ? 1 : 2)));
+  if (fast && roadCache && roadCache.keys) { } else if (!roadCache || sig !== roadSig || roadCache.fast) { roadCache = buildRoadLayer(false); roadCache.fast = false; roadSig = sig; roadCache.keys = new Set(Object.keys(S.roads)); }
+  if (roadCache.width > 2) ctx.drawImage(roadCache, roadCache.ox, roadCache.oy, roadCache.width / (roadCache.K || (roadCache.fast ? 1 : 2)), roadCache.height / (roadCache.K || (roadCache.fast ? 1 : 2))); if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); } if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); } if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); } if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); } if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); } if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); } if (fast && roadCache.keys) { const P = new Path2D(); Object.keys(S.roads).forEach(k => { if (roadCache.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [ax, ay] = tileTop(i + 0.18, j + 0.18), [bx, by] = tileTop(i + 0.82, j + 0.18), [cx, cy] = tileTop(i + 0.82, j + 0.82), [dx, dy] = tileTop(i + 0.18, j + 0.82); P.moveTo(ax, ay); P.lineTo(bx, by); P.lineTo(cx, cy); P.lineTo(dx, dy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.92)'; ctx.fill(P); }
 }
 function diamondRaw(i, j, k, fill, stroke) {
   const [x0, y0] = tileTop(i, j), [x1, y1] = tileTop(i + k, j), [x2, y2] = tileTop(i + k, j + k), [x3, y3] = tileTop(i, j + k);
@@ -1795,17 +1795,23 @@ function depthOrder(items) {
 // az épületek árnyékát egyszer rajzoljuk meg egy külön rétegre, mert a képkockánkénti elmosás nagyon lassú
 let shadowCache = null, shadowSig = '';
 function drawShadows(items) {
-  const list = items.filter(b => !b.ghost);
+  // csak az épületek körüli téglalapot rajzoljuk, fél felbontásban: a teljes térképnyi vászon lassú volt
+  const list = items.filter(b => !b.ghost && !b.obst);
   const sig = list.map(b => b.type + b.i + ',' + b.j + (b.rot ? 'r' : '')).join('|');
   if (!shadowCache || sig !== shadowSig) {
-    shadowSig = sig; const c = shadowCache || document.createElement('canvas'); c.width = BGW; c.height = BGH; const g = c.getContext('2d');
-    g.clearRect(0, 0, BGW, BGH); g.filter = 'blur(9px)'; g.fillStyle = 'rgba(40,30,10,0.18)';
+    shadowSig = sig; const polys = []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     list.forEach(b => { const d = DEF[b.type]; if (!d) return; let w = d.w || d.size || 1, h = d.h || d.size || 1; if (b.rot) [w, h] = [h, w];
       const i0 = b.i - 0.06, j0 = b.j - 0.06, P = [tileTop(i0 + 0.08, j0 + 0.08), tileTop(i0 + w + 0.06, j0 + 0.08), tileTop(i0 + w + 0.06, j0 + h + 0.06), tileTop(i0 + 0.08, j0 + h + 0.06)];
-      g.beginPath(); g.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(p => g.lineTo(p[0], p[1])); g.closePath(); g.fill(); });
+      polys.push(P); P.forEach(([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }); });
+    const c = document.createElement('canvas'), sc = 0.5, pad = 24; c.sc = sc;
+    if (!polys.length) { c.width = 2; c.height = 2; c.ox = 0; c.oy = 0; shadowCache = c; return; }
+    c.ox = x0 - pad; c.oy = y0 - pad; c.width = Math.ceil((x1 - x0 + pad * 2) * sc); c.height = Math.ceil((y1 - y0 + pad * 2) * sc);
+    const g = c.getContext('2d'); g.setTransform(sc, 0, 0, sc, -c.ox * sc, -c.oy * sc); g.filter = 'blur(4.5px)'; g.fillStyle = 'rgba(40,30,10,0.18)';
+    polys.forEach(P => { g.beginPath(); g.moveTo(P[0][0], P[0][1]); P.slice(1).forEach(p => g.lineTo(p[0], p[1])); g.closePath(); g.fill(); });
     g.filter = 'none'; shadowCache = c;
+    try { createImageBitmap(c).then(bm => { if (shadowCache === c) { bm.ox = c.ox; bm.oy = c.oy; bm.sc = c.sc; shadowCache = bm; } }); } catch (e) {}
   }
-  ctx.drawImage(shadowCache, 0, 0, BGW, BGH);
+  if (shadowCache.width > 2) ctx.drawImage(shadowCache, shadowCache.ox, shadowCache.oy, shadowCache.width / shadowCache.sc, shadowCache.height / shadowCache.sc);
 }
 const CLIPM = 9; // a vágás kicsit a mező széle alá ér, hogy a sarokoszlopok és a kerítés ne csonkuljon
 function drawBuilding(b, now, pass = 0) {
