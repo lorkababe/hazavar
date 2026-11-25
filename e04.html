@@ -3603,25 +3603,39 @@ function buildRoadLayer(fast) {
   return c;
 }
 function drawRoads() {
-  // az utakat 6×6 mezős darabokban rajzoljuk és tároljuk: egy új útdarab csak a saját darabját rajzoltatja újra, nem az egész várost
-  const C = 6, RC = window.__roadChunks || (window.__roadChunks = new Map()), fast = !!roadPaint, groups = new Map();
+  // az utakat 6×6 mezős darabokban rajzoljuk és tároljuk: egy új útdarab csak a saját darabját rajzoltatja újra, nem az egész várost.
+  // Ha semmi sem változott, minden képkockában csak kirajzoljuk a kész darabokat, számolás nélkül.
+  const C = 6, RC = window.__roadChunks || (window.__roadChunks = new Map()), fast = !!roadPaint;
+  const fo0 = S.buildings.find(x => x.type === 'fo') || {}, style = (typeof ROADSTYLE !== 'undefined' ? ROADSTYLE : '') + (IMG.fold ? 'f' : '') + fo0.i + ',' + fo0.j;
+  const gsig = style + ':' + JSON.stringify(S.roads), GC = window.__roadGroups || (window.__roadGroups = {});
+  const blit = e => { if (e && e.cv.width > 2) ctx.drawImage(e.cv, e.cv.ox, e.cv.oy, e.cv.width / (e.cv.K || 2), e.cv.height / (e.cv.K || 2)); };
+  const comp = () => { const L = [...RC.values()].filter(e => e.cv.width > 2); if (!L.length) { GC.comp = null; return; }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; L.forEach(e => { const K = e.cv.K || 2; x0 = Math.min(x0, e.cv.ox); y0 = Math.min(y0, e.cv.oy); x1 = Math.max(x1, e.cv.ox + e.cv.width / K); y1 = Math.max(y1, e.cv.oy + e.cv.height / K); });
+    const K = Math.min(1, Math.sqrt(5e6 / Math.max(1, (x1 - x0) * (y1 - y0)))), c = document.createElement('canvas'); c.width = Math.ceil((x1 - x0) * K); c.height = Math.ceil((y1 - y0) * K); c.ox = x0; c.oy = y0; c.K = K;
+    const g = c.getContext('2d'); g.setTransform(K, 0, 0, K, -x0 * K, -y0 * K); L.forEach(e => g.drawImage(e.cv, e.cv.ox, e.cv.oy, e.cv.width / (e.cv.K || 2), e.cv.height / (e.cv.K || 2))); GC.comp = { cv: c }; };
+  if (GC.sig === gsig && GC.done) { blit(GC.comp); return; }
+  const groups = new Map();
   for (const k in S.roads) { const p = k.indexOf(','), i = +k.slice(0, p), j = +k.slice(p + 1), ci = Math.floor(i / C), cj = Math.floor(j / C);
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const ii = ci + a, jj = cj + b; if (i >= ii * C - 1 && i < ii * C + C + 1 && j >= jj * C - 1 && j < jj * C + C + 1) { const id = ii + ',' + jj; let g = groups.get(id); if (!g) groups.set(id, g = { ci: ii, cj: jj, r: {}, own: 0 }); g.r[k] = S.roads[k]; if (a === 0 && b === 0) g.own++; } } }
-  let built = 0; const t0 = performance.now();
+  let built = 0, done = true; const t0 = performance.now(), PV = new Path2D();
   for (const [id, g] of groups) {
     if (!g.own) continue;
-    const ks = Object.keys(g.r), sig = ks.sort().map(k => k + g.r[k]).join('|'), style = (typeof ROADSTYLE !== 'undefined' ? ROADSTYLE : '') + (IMG.fold ? 'f' : '') + (((S.buildings.find(x => x.type === 'fo')) || {}).i || 0) + ',' + (((S.buildings.find(x => x.type === 'fo')) || {}).j || 0); let e = RC.get(id);
-    if ((!e || e.sig !== sig + style) && !(fast && e) && (built < 2 || performance.now() - t0 < 25)) {
+    const ks = Object.keys(g.r).sort(), sig = style + '|' + ks.map(k => k + g.r[k]).join('|'); let e = RC.get(id);
+    if ((!e || e.sig !== sig) && !(fast && e) && (built < 2 || performance.now() - t0 < 25)) {
       const keep = S.roads; S.roads = g.r; let cv = null; try { cv = buildRoadLayer(false); } catch (x) {} finally { S.roads = keep; }
-      if (cv) { e = { sig: sig + style, cv, keys: new Set(ks) }; RC.set(id, e); built++; }
+      // a darab határán kívüli részt egyszer, rajzoláskor vágjuk le, nem minden képkockában
+      if (cv && cv.width > 2) { try { const K = cv.K || 2, g2 = cv.getContext('2d'), [ax, ay] = tileTop(g.ci * C, g.cj * C), [bx, by] = tileTop(g.ci * C + C, g.cj * C), [cx, cy] = tileTop(g.ci * C + C, g.cj * C + C), [dx, dy] = tileTop(g.ci * C, g.cj * C + C);
+        g2.save(); g2.setTransform(K, 0, 0, K, -cv.ox * K, -cv.oy * K); g2.globalCompositeOperation = 'destination-in'; g2.filter = 'none'; g2.globalAlpha = 1; g2.beginPath(); g2.moveTo(ax, ay); g2.lineTo(bx, by); g2.lineTo(cx, cy); g2.lineTo(dx, dy); g2.closePath(); g2.fillStyle = '#000'; g2.fill(); g2.restore(); } catch (x) {} }
+      // tárolni elég egyszeres felbontásban: az egész város képe úgyis kb. ekkora felbontású lesz, és így negyed annyi memória
+      if (cv && cv.width > 2 && (cv.K || 2) > 1.05) { const k1 = document.createElement('canvas'), K0 = cv.K || 2; k1.width = Math.ceil(cv.width / K0); k1.height = Math.ceil(cv.height / K0); k1.getContext('2d').drawImage(cv, 0, 0, k1.width, k1.height); k1.ox = cv.ox; k1.oy = cv.oy; k1.K = 1; cv = k1; }
+      if (cv) { e = { sig, cv, keys: new Set(ks) }; RC.set(id, e); built++; }
     }
-    const [ax, ay] = tileTop(g.ci * C, g.cj * C), [bx, by] = tileTop(g.ci * C + C, g.cj * C), [cx, cy] = tileTop(g.ci * C + C, g.cj * C + C), [dx, dy] = tileTop(g.ci * C, g.cj * C + C);
-    ctx.save(); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(dx, dy); ctx.closePath(); ctx.clip();
-    if (e && e.cv.width > 2) ctx.drawImage(e.cv, e.cv.ox, e.cv.oy, e.cv.width / (e.cv.K || 2), e.cv.height / (e.cv.K || 2));
-    if (!e || e.sig !== sig + style) { const P = new Path2D(); ks.forEach(k => { if (e && e.keys.has(k)) return; const [i, j] = k.split(',').map(Number), [px, py] = tileTop(i + 0.18, j + 0.18), [qx, qy] = tileTop(i + 0.82, j + 0.18), [rx, ry] = tileTop(i + 0.82, j + 0.82), [sx, sy] = tileTop(i + 0.18, j + 0.82); P.moveTo(px, py); P.lineTo(qx, qy); P.lineTo(rx, ry); P.lineTo(sx, sy); P.closePath(); }); ctx.fillStyle = 'rgba(176,128,72,0.9)'; ctx.fill(P); }
-    ctx.restore();
+    if (!e || e.sig !== sig) { done = false; const P = PV; ks.forEach(k => { if (e && e.keys.has(k)) return; const [i, j] = k.split(',').map(Number); if (Math.floor(i / C) !== g.ci || Math.floor(j / C) !== g.cj) return; const [px, py] = tileTop(i + 0.18, j + 0.18), [qx, qy] = tileTop(i + 0.82, j + 0.18), [rx, ry] = tileTop(i + 0.82, j + 0.82), [sx, sy] = tileTop(i + 0.18, j + 0.82); P.moveTo(px, py); P.lineTo(qx, qy); P.lineTo(rx, ry); P.lineTo(sx, sy); P.closePath(); }); }
   }
-  for (const id of RC.keys()) if (!groups.has(id) || !groups.get(id).own) RC.delete(id);
+  let gone = false; for (const id of [...RC.keys()]) if (!groups.has(id) || !groups.get(id).own) { RC.delete(id); gone = true; }
+  if (built || gone || !GC.comp !== !RC.size) comp();
+  GC.sig = gsig; GC.done = done;
+  blit(GC.comp); if (!done) { ctx.fillStyle = 'rgba(176,128,72,0.9)'; ctx.fill(PV); }
 }
 function diamondRaw(i, j, k, fill, stroke) {
   const [x0, y0] = tileTop(i, j), [x1, y1] = tileTop(i + k, j), [x2, y2] = tileTop(i + k, j + k), [x3, y3] = tileTop(i, j + k);
