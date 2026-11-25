@@ -6082,6 +6082,8 @@ function rearUI() {
       renderBar(); return;
     }
     if (!isNight(now)) { if (S.nightAsk) S.nightAsk = null; renderBar(); return; }
+    // hajnalban (4 és 7 között) már nem kínálunk lefekvést: aki ilyenkor játszik, az épp felkelt
+    { const h = hourOf(now); if (h >= 4 && h < NIGHT_TO) { if (S.nightAsk) S.nightAsk = null; renderBar(); return; } }
     // éjszaka van, de a város még ébren: ha régóta senki sem játszik, magától lefekszik
     if (now - lastAct >= IDLE) { startNight(Math.max(lastAct, bounds(now)[0])); return; }
     const A = S.nightAsk;
