@@ -8122,7 +8122,7 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .ho-t{position:absolute;width:64px;background:linear-gradient(90deg,#B9A27A,#E8DCC0 40%,#B9A27A);border:3px solid #7A6240;border-radius:6px}
   .ho-t.top{border-top:0;border-radius:0 0 6px 6px}.ho-t.bot::before{content:'';position:absolute;left:-8px;right:-8px;top:-14px;height:14px;background:repeating-linear-gradient(90deg,#B9A27A 0 12px,transparent 12px 18px)}
   .ho-r{position:absolute;width:38px;pointer-events:none}
-  .ho-t.img{background:none;border:0;border-radius:0;background-repeat:no-repeat;background-size:100% auto}.ho-t.img::before{display:none}.ho-t.top.img{background-position:50% 100%;width:84px;margin-left:-10px}.ho-t.bot.img{background-position:50% 0;width:84px;margin-left:-10px}`;
+  .ho-t.img{background:none;border:0;border-radius:0;background-repeat:no-repeat;background-size:100% auto}.ho-t.img::before{display:none}.ho-t.top.img{background-position:50% 100%;background-size:cover;width:84px;margin-left:-10px}.ho-t.bot.img{background-position:50% 0;width:84px;margin-left:-10px}`;
   document.head.appendChild(st);
 
   // ---------- 1. Nándorfehérvár védelme ----------
@@ -8277,15 +8277,15 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     const loop = now => { if (!alive('hoSt') || over) return; const dt = Math.min(0.04, (now - last) / 1000); last = now; t += dt; inv = Math.max(0, inv - dt);
       const W = host.clientWidth, H = host.clientHeight; vy += 1.5 * dt; if (fr && flapT > 0 && (flapT -= dt) <= 0) bird.src = I('e06_mg_hollo_1.png');
       if (has('e06_mg_hollo_egbolt.jpg')) host.style.backgroundPositionX = (-t * W * 0.08) + 'px'; y = Math.max(0.02, Math.min(0.95, y + vy * dt)); if (y >= 0.95) vy = 0;
-      bird.style.left = (W * 0.18 - 45) + 'px'; bird.style.top = (y * H - 35) + 'px'; bird.style.transform = `rotate(${Math.max(-25, Math.min(35, vy * 40))}deg)`; bird.style.opacity = inv > 0 ? (Math.floor(inv * 10) % 2 ? 0.4 : 1) : 1;
+      bird.style.left = (W * 0.18 - (fr ? 62 : 45)) + 'px'; bird.style.top = (y * H - (fr ? 62 : 35)) + 'px'; bird.style.transform = `rotate(${Math.max(-25, Math.min(35, vy * 40))}deg)`; bird.style.opacity = inv > 0 ? (Math.floor(inv * 10) % 2 ? 0.4 : 1) : 1;
       nextO -= dt; if (nextO <= 0) { nextO = Math.max(1.1, 1.9 - t / 30); const gap = 0.36 - Math.min(0.08, t / 200), gy = 0.15 + Math.random() * (0.7 - gap), x = W + 40;
         const top = document.createElement('div'); top.className = 'ho-t top' + (has('e06_mg_hollo_felho.png') ? ' img' : ''); if (has('e06_mg_hollo_felho.png')) top.style.backgroundImage = `url(${I('e06_mg_hollo_felho.png')})`; top.style.top = '0'; top.style.height = (gy * H) + 'px';
         const bot = document.createElement('div'); bot.className = 'ho-t bot' + (has('e06_mg_hollo_torony.png') ? ' img' : ''); if (has('e06_mg_hollo_torony.png')) bot.style.backgroundImage = `url(${I('e06_mg_hollo_torony.png')})`; bot.style.top = ((gy + gap) * H) + 'px'; bot.style.height = ((1 - gy - gap) * H) + 'px';
         const ring = document.createElement('img'); ring.className = 'ho-r'; ring.src = I('e06_mg_gyuru.png'); ring.style.top = ((gy + gap / 2) * H - 19) + 'px';
-        [top, bot, ring].forEach(e => host.appendChild(e)); obs.push({ x, top, bot, ring, gy, gap, got: false }); }
+        [top, bot, ring].forEach(e => host.appendChild(e)); obs.push({ x, top, bot, ring, gy, gap, got: false, flag: has('e06_mg_hollo_torony.png') ? 36 : 0 }); }
       const sp = W * 0.32; obs = obs.filter(o => { o.x -= sp * dt; [o.top, o.bot].forEach(e => e.style.left = o.x + 'px'); o.ring.style.left = (o.x + 13) + 'px';
         const bx = W * 0.18, by = y * H; if (!o.got && Math.abs(o.x + 32 - bx) < 30 && Math.abs((o.gy + o.gap / 2) * H - by) < 40) { o.got = true; rings++; o.ring.remove(); pop(host, bx, by - 20, '+1'); try { sfxCollect(); } catch (e) {} }
-        if (inv <= 0 && bx + 30 > o.x && bx - 30 < o.x + 64 && (by - 20 < o.gy * H || by + 20 > (o.gy + o.gap) * H)) { hits++; inv = 1.2; host.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'none' }], 220); if (hits >= 3) { end(); return false; } }
+        if (inv <= 0 && bx + 24 > o.x + 6 && bx - 24 < o.x + 58 && (by - 14 < o.gy * H || by + 14 > (o.gy + o.gap) * H + (o.flag || 0))) { hits++; inv = 1.2; host.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'none' }], 220); if (hits >= 3) { end(); return false; } }
         if (o.x < -80) { o.top.remove(); o.bot.remove(); o.ring.remove(); return false; } return true; });
       hud(); if (t >= TIME) return end(); if (!over) requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
