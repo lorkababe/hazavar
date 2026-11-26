@@ -3016,7 +3016,7 @@ async function netStart(user) {
 // ---------- egyszerre csak egy helyen fut a város ----------
 // minden megnyitás új munkamenetet jelent be a szerveren; a régebbi helyen a játék ezt észreveszi, és kiléptet, hogy ne írják felül egymást
 NET.sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-const ACT_KEY = 'pvsync-act'; NET.touched = 0; NET.lastPush = Date.now();
+const ACT_KEY = 'pvsync-act', PLAY_KEY = 'pvsync-play'; NET.touched = 0; NET.lastPush = Date.now();
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { NET.touched = Date.now(); }, true));
 async function claimSess() {
   const at = Date.now();
@@ -3071,6 +3071,18 @@ async function netPull() {
   // az átrendezés félkész pillanatképe csak helyi, a régi felhős példány visszaforgatta a várost
   if (data.some(r => /^panelvar-rearr-/.test(r.slot))) { try { await NET.sb.from('saves').delete().eq('user_id', NET.me).like('slot', 'panelvar-rearr-%'); } catch (e) {} }
   const stamp = v => { try { const d = JSON.parse(v); return d && typeof d.savedAt === 'number' ? d.savedAt : null; } catch (e) { return null; } };
+  // EGY döntés az egész mentésre: ha a város és a nevezetes épületek külön-külön döntenének, az egyik gépről a város, a másikról a nevezetesek jönnének,
+  // és így tűnt el és került újra lerakásra ugyanaz az épület. Az nyer, ahol utoljára ténylegesen játszottál.
+  const myPlay = +localStorage.getItem(PLAY_KEY) || 0, rows0 = data.filter(r => !/^panelvar-rearr-/.test(r.slot) && r.data && typeof r.data.v === 'string');
+  const srvPlay = rows0.reduce((m, r) => Math.max(m, +(r.data.play || 0)), 0);
+  if (srvPlay || myPlay) {
+    const takeAll = srvPlay > myPlay + 1000;
+    rows0.forEach(row => { const val = row.data.v, loc = localStorage.getItem(row.slot); if (loc === val) { hashes[row.slot] = hashStr(val); return; }
+      if (row.slot === 'panelvar-profile' && loc) { try { if (JSON.parse(loc).name && !JSON.parse(val).name) return; } catch (e) {} }
+      if (takeAll || loc == null) { if (loc != null) bak(row.slot, loc); localStorage.setItem(row.slot, val); hashes[row.slot] = hashStr(val); took++; } else bak(row.slot, val); });
+    if (takeAll) try { localStorage.setItem(PLAY_KEY, String(srvPlay)); } catch (e) {}
+    data.length = 0;
+  }
   data.forEach(row => {
     if (/^panelvar-rearr-/.test(row.slot)) return;
     const val = row.data && typeof row.data.v === 'string' ? row.data.v : null; if (val == null) return;
@@ -3114,7 +3126,10 @@ async function netPush(force) {
   if (force !== 'leave' && await sessLost()) return;
   try { save(); saveSoc(); } catch (e) {}
   const hashes = getJ(SYNC_HASH), acts = getJ(ACT_KEY), rows = [], now = Date.now(), played = NET.touched > NET.lastPush;
-  syncKeys().forEach(k => { const v = localStorage.getItem(k); const h = hashStr(v); if (force === true || hashes[k] !== h) { if (played && hashes[k] !== h) acts[k] = now; rows.push({ user_id: NET.me, slot: k, data: { v, act: acts[k] || 0 }, updated_at: new Date().toISOString() }); hashes[k] = h; } });
+  // az utolsó tényleges játék ideje az egész mentésre közös, minden sorba bekerül
+  if (played) try { localStorage.setItem(PLAY_KEY, String(NET.touched)); } catch (e) {}
+  const play = +localStorage.getItem(PLAY_KEY) || 0, all = played && force !== true;
+  syncKeys().forEach(k => { const v = localStorage.getItem(k); const h = hashStr(v); if (force === true || all || hashes[k] !== h) { if (played && hashes[k] !== h) acts[k] = now; rows.push({ user_id: NET.me, slot: k, data: { v, act: acts[k] || 0, play }, updated_at: new Date().toISOString() }); hashes[k] = h; } });
   NET.lastPush = now;
   if (!rows.length) return;
   const { error } = await NET.sb.from('saves').upsert(rows); if (error) { console.warn('push', error); return; }
@@ -3844,9 +3859,11 @@ function rearUI() {
   // ---- a nap ritmusa ----
   function check() {
     if (typeof S === 'undefined' || !S) return; const now = Date.now(), vis = !document.hidden;
-    if (vis) markSeen();
+    if (vis) { markSeen(); if (!S.seenAt || now - S.seenAt > 60e3) S.seenAt = now; }
     if (S.night) {
-      if (!S.night.test && !isNight(now) && vis && !openModal) morning(false);
+      // hajnalban (5 és 7 között), ha játszol, már felkel a város; és ha egy másik gépről régi éjszaka maradt itt, azt is lezárjuk
+      const h = hourOf(now), stale = now > (S.night.e || 0) + 3600e3;
+      if (!S.night.test && (!isNight(now) || (h >= 5 && h < NIGHT_TO) || stale) && vis && !openModal) morning(false);
       renderBar(); return;
     }
     if (!isNight(now)) { if (S.nightAsk) S.nightAsk = null; renderBar(); return; }
@@ -3862,7 +3879,7 @@ function rearUI() {
   }
   // ha zárva volt a játék, és közben éjszaka lett, az a rész éjszakai műszaknak számít
   function fromAway() {
-    if (S.night || !seenPrev) return; const gap = lastNightIn(seenPrev, Date.now());
+    const seen = Math.max(seenPrev, (S && S.seenAt) || 0); if (S.night || !seen) return; const gap = lastNightIn(seen, Date.now());
     if (gap && gap[1] - gap[0] >= 45 * 60e3) { startNight(gap[0]); S.night.e = gap[2]; save(); }
   }
 
