@@ -8272,12 +8272,21 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .cs-cover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.35)}
   .cs-cd{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);font:900 72px Nunito,sans-serif;color:#FFE58A;text-shadow:0 4px 0 #6A4520,0 0 18px #000;pointer-events:none}
   /* Rézút */
-  .ru-stage{height:min(460px,58vh);background:url(${I('e07_mg_terkep.jpg')}) center/cover}
-  .ru-c{position:absolute;transform:translate(-50%,-50%);border:0;border-radius:999px;padding:6px 10px;font:900 13px Nunito,sans-serif;background:#FFF8E8;color:#3A2410;box-shadow:0 3px 0 rgba(0,0,0,.35);cursor:pointer;white-space:nowrap}
-  .ru-c.home{background:#C9372C;color:#fff}.ru-c.done{background:#7BD47B}.ru-c.next{outline:3px solid #E8C46A;animation:pulse 1s infinite}@keyframes pulse{50%{outline-color:transparent}}
-  .ru-c .pr{display:block;font-size:11px;font-weight:800;opacity:.8}
-  .ru-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-  .ru-wag{position:absolute;width:56px;transform:translate(-50%,-80%);transition:left 1.1s ease-in-out,top 1.1s ease-in-out;pointer-events:none;z-index:3}
+  .ru-stage{width:100%;aspect-ratio:1280/801;max-height:52vh;margin:0 auto;background:url(${I('e07_mg_terkep.jpg')}) center/100% 100% no-repeat}
+  .ru-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+  .ru-pin{position:absolute;z-index:2;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;border:3px solid #FFF4DF;background:#B8442E;box-shadow:0 2px 0 rgba(0,0,0,.4);cursor:pointer;padding:0}
+  .ru-pin.home{background:#2F6B9A}.ru-pin.here{box-shadow:0 0 0 5px rgba(255,229,138,.85),0 2px 0 rgba(0,0,0,.4)}.ru-pin.go{animation:ruGlow 1.2s infinite}@keyframes ruGlow{50%{box-shadow:0 0 0 7px rgba(255,229,138,.6)}}
+  .ru-pin.new{animation:ruNew 1.4s ease-out}@keyframes ruNew{0%{transform:translate(-50%,-50%) scale(0)}60%{transform:translate(-50%,-50%) scale(1.5)}100%{transform:translate(-50%,-50%) scale(1)}}
+  .ru-tag{position:absolute;z-index:2;transform:translate(-50%,0);margin-top:16px;white-space:nowrap;pointer-events:none;background:rgba(255,248,232,.95);color:#3A2410;border-radius:8px;padding:2px 7px;font:900 12px/1.15 Nunito,sans-serif;box-shadow:0 2px 0 rgba(0,0,0,.25);text-align:center}
+  .ru-tag i{display:block;font-style:normal;font-weight:800;font-size:11px;color:#8A5A10}.ru-tag i.up{color:#2F7A2A}.ru-tag i.dn{color:#B3261E}
+  .ru-wag{position:absolute;z-index:3;width:clamp(56px,10%,84px);transform:translate(-50%,-78%);pointer-events:none}
+  .ru-days{font:900 2.6px Nunito,sans-serif;fill:#3A2410;paint-order:stroke;stroke:#FFF4DF;stroke-width:.8px}
+  .ru-panel{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}@media(max-width:560px){.ru-panel{grid-template-columns:1fr}}
+  .ru-box{background:rgba(255,248,232,.7);border-radius:14px;padding:10px 12px;font-size:14px}.ru-box h4{margin:0 0 6px;font:900 15px Nunito,sans-serif}
+  .ru-box .btn{min-height:36px;padding:0 12px;font-size:14px;margin:4px 6px 0 0}
+  .ru-dest{display:flex;align-items:center;gap:8px;width:100%;border:0;border-radius:10px;background:#FFF8E8;margin-top:5px;padding:6px 8px;font:800 14px Nunito,sans-serif;color:#3A2410;cursor:pointer;text-align:left;box-shadow:0 2px 0 rgba(0,0,0,.18)}
+  .ru-dest b{flex:1}.ru-dest small{font-weight:800;opacity:.75}.ru-dest.best{background:#FFE9A8;box-shadow:0 0 0 2px #E0A526}.ru-dest:disabled{opacity:.45;cursor:default}
+  .ru-news{margin-top:8px;padding:8px 10px;border-radius:10px;background:#3A2618;color:#FFF4DF;font-size:13.5px;font-weight:700;animation:ruNews .5s ease-out}@keyframes ruNews{from{transform:translateY(-6px);opacity:0}}
   /* Kápolna */
   .kp-wrap{display:grid;gap:3px;margin:0 auto;width:min(100%,420px);aspect-ratio:3/2;background:#3A2410;border-radius:10px;padding:3px}
   .kp-t{border:0;padding:0;border-radius:4px;background-repeat:no-repeat;cursor:pointer;transition:outline .1s,transform .15s}
@@ -8398,38 +8407,89 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   }
 
   // ---------- 3. A rézút ----------
+  // a térképre festett városok helye (a kép arányában), és az utak: [a, b, kanyar x, kanyar y]
   const CITIES = [
-    { id: 'beszt', name: 'Besztercebánya', x: 0.6, y: 0.62, home: 1 }, { id: 'krakko', name: 'Krakkó', x: 0.6, y: 0.47, p: 3 }, { id: 'danzig', name: 'Danzig', x: 0.55, y: 0.22, p: 5 },
-    { id: 'antwerpen', name: 'Antwerpen', x: 0.24, y: 0.36, p: 8 }, { id: 'velence', name: 'Velence', x: 0.4, y: 0.78, p: 6 }, { id: 'becs', name: 'Bécs', x: 0.5, y: 0.6, p: 2 }, { id: 'augsburg', name: 'Augsburg', x: 0.36, y: 0.52, p: 5 }
+    { id: 'beszt', name: 'Besztercebánya', x: 0.68, y: 0.537, home: 1 },
+    { id: 'becs', name: 'Bécs', x: 0.498, y: 0.455, p: 4 },
+    { id: 'krakko', name: 'Krakkó', x: 0.66, y: 0.297, p: 5 },
+    { id: 'danzig', name: 'Danzig', x: 0.288, y: 0.272, p: 7 },
+    { id: 'velence', name: 'Velence', x: 0.47, y: 0.72, p: 6 },
+    { id: 'augsburg', name: 'Augsburg', x: 0.25, y: 0.5, p: 8, hidden: 1, why: 'A Fuggerek augsburgi irodája levelet küldött: ők is vesznek rezet, és jól fizetnek!' },
+    { id: 'antwerpen', name: 'Antwerpen', x: 0.1, y: 0.2, p: 10, hidden: 1, why: 'Danzigban hajósok mesélik, hogy Antwerpenben a portugálok mindent megvesznek, amit Indiába vihetnek. Megnyílt a tengeri út!' }
   ];
-  const EDGES = [['beszt', 'krakko'], ['krakko', 'danzig'], ['danzig', 'antwerpen'], ['beszt', 'becs'], ['becs', 'velence'], ['becs', 'augsburg'], ['augsburg', 'antwerpen'], ['augsburg', 'velence'], ['krakko', 'becs']];
+  const ROADS = [['beszt', 'becs', 0.6, 0.53], ['becs', 'krakko', 0.6, 0.37], ['becs', 'danzig', 0.4, 0.33], ['beszt', 'velence', 0.6, 0.66], ['beszt', 'krakko', 0.72, 0.42], ['becs', 'velence', 0.47, 0.6], ['becs', 'augsburg', 0.37, 0.5], ['augsburg', 'velence', 0.33, 0.64], ['danzig', 'antwerpen', 0.18, 0.18, 1], ['augsburg', 'antwerpen', 0.15, 0.36]];
   function playRezut() {
     if (!miniStart('rezut')) return;
-    const C = id => CITIES.find(c => c.id === id), adj = id => EDGES.filter(e => e.includes(id)).map(e => e[0] === id ? e[1] : e[0]);
-    let at = 'beszt', days = 18, gold = 0, sold = {}, trip = 0, busy = false;
-    const cost = (a, b) => { const A = C(a), B = C(b); return Math.max(2, Math.round(Math.hypot(A.x - B.x, (A.y - B.y) * 0.7) * 14)); };
+    const C = id => CITIES.find(c => c.id === id);
+    const st = { at: 'beszt', days: 24, gold: 0, load: 10, trips: 0, busy: false, price: {}, open: {}, slow: {} };
+    CITIES.forEach(c => { st.price[c.id] = c.p || 0; st.open[c.id] = !c.hidden; });
+    const rk = r => r[0] + '-' + r[1], roadsOf = id => ROADS.filter(r => (r[0] === id || r[1] === id) && st.open[r[0]] && st.open[r[1]]);
+    const other = (r, id) => r[0] === id ? r[1] : r[0];
+    const path = r => { const A = C(r[0]), B = C(r[1]); return `M${A.x * 100} ${A.y * 100} Q${r[2] * 100} ${r[3] * 100} ${B.x * 100} ${B.y * 100}`; };
+    const daysOf = r => { const A = C(r[0]), B = C(r[1]); return Math.max(2, Math.round(Math.hypot(A.x - B.x, (A.y - B.y) * 0.65) * 13)) + (st.slow[rk(r)] || 0); };
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('RÉZ EURÓPÁBA')}</span><h2>${tr('A rézút')}</h2>
-      <p>${tr('A szekér Besztercebányáról indul. Minden városban egyszer adhatsz el rezet, a messzebbi városok többet fizetnek, de az út napokba telik. 18 napod van. Koppints egy szomszédos városra!')}</p>
-      <div class="ag-hud"><span id="ruD"></span><span id="ruG"></span></div>
-      <div class="ag-stage ru-stage" id="ruSt"><svg class="ru-svg" id="ruV" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><img class="ru-wag" id="ruW" src="${I('e07_mg_kocsi.png')}" alt="${tr('a szekér')}"></div></div>`, '', 'minimodal');
-    const host = $('ruSt'), svg = $('ruV');
-    svg.innerHTML = EDGES.map(([a, b]) => `<line x1="${C(a).x * 100}" y1="${C(a).y * 100}" x2="${C(b).x * 100}" y2="${C(b).y * 100}" stroke="#6A3A1E" stroke-width=".6" stroke-dasharray="1.5 1.2" vector-effect="non-scaling-stroke" style="stroke-width:3px"/>`).join('');
-    CITIES.forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ru-c' + (c.home ? ' home' : ''); b.dataset.c = c.id; b.style.left = c.x * 100 + '%'; b.style.top = c.y * 100 + '%'; b.innerHTML = `${tr(c.name)}${c.p ? `<span class="pr">${trf('{0} arany', c.p)}</span>` : ''}`; host.appendChild(b);
-      b.onclick = () => go(c.id); });
-    const wag = () => { const c = C(at); $('ruW').style.left = c.x * 100 + '%'; $('ruW').style.top = c.y * 100 + '%'; };
-    const hud = () => { $('ruD').textContent = trf('{0} nap van hátra', days); $('ruG').textContent = trf('{0} aranyforintnyi bevétel', gold);
-      host.querySelectorAll('.ru-c').forEach(b => { const id = b.dataset.c; b.classList.toggle('done', !!sold[id]); b.classList.toggle('next', adj(at).includes(id) && cost(at, id) <= days); }); };
-    wag(); hud();
-    async function go(id) { if (busy || id === at) return; if (!adj(at).includes(id)) { pop(host, C(id).x * host.clientWidth, C(id).y * host.clientHeight, tr('Oda nem vezet út innen'), 'bad'); return; }
-      const d = cost(at, id); if (d > days) { pop(host, C(id).x * host.clientWidth, C(id).y * host.clientHeight, tr('Nem érsz oda időben'), 'bad'); return; }
-      busy = true; days -= d; at = id; trip++; wag(); await sleep(1150); if (!alive('ruSt')) return; busy = false;
-      const c = C(id); if (c.p && !sold[id]) { sold[id] = 1; gold += c.p; try { sfxCollect(); } catch (e) {} pop(host, c.x * host.clientWidth, c.y * host.clientHeight, '+' + c.p); }
-      hud(); if (!adj(at).some(n => cost(at, n) <= days)) finish(); }
-    host.insertAdjacentHTML('afterend', `<div class="ag-btns"><button class="btn ghost" type="button" id="ruEnd">${tr('Hazatérek')}</button></div>`);
-    $('ruEnd').onclick = finish;
-    function finish() { if (!alive('ruSt')) return; const good = gold >= 20, rew = { forint: Math.max(1, Math.round(gold / 3)), penz: 200 + gold * 60 };
-      done(good ? 'NAGY ÜZLET' : 'HAZAÉRT A SZEKÉR', good ? tr('A Fuggerek is irigykednek') : tr('Jövőre messzebb megyünk'), [trf('{0} aranyforintnyi bevétel, {1} úton.', gold, trip)], 'rezut', rew,
-        'A felvidéki réz két nagy úton jutott el Európába. Észak felé Krakkón át a Visztulán Danzigig, onnan hajón Antwerpenig, dél felé Bécsen át Velencébe. Antwerpenből a portugálok egészen Indiáig vitték, és ott fűszerre cserélték. A Thurzó–Fugger vállalat néhány évtizedig Európa egyik legnagyobb üzlete volt.'); }
+      <p>${tr('Thurzó szekere Besztercebányáról indul 10 mázsa rézzel. Vidd oda, ahol a legjobban fizetnek! Minden eladás után lejjebb megy az ár abban a városban, és útközben hírek jönnek: új városok, drágulás, árvíz. Otthon újra megrakhatod a szekeret. 24 napod van.')}</p>
+      <div class="ag-hud"><span id="ruD"></span><span id="ruL"></span><span id="ruG"></span></div>
+      <div class="ag-stage ru-stage" id="ruSt"><svg class="ru-svg" id="ruV" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><img class="ru-wag" id="ruW" src="${I('e07_mg_kocsi.png')}" alt="${tr('a szekér')}"></div>
+      <div class="ru-panel"><div class="ru-box" id="ruHere"></div><div class="ru-box" id="ruTo"></div></div>
+      <div class="ag-btns"><button class="btn ghost" type="button" id="ruEnd">${tr('Befejezem az utat')}</button></div></div>`, '', 'minimodal');
+    const host = $('ruSt'), svg = $('ruV'), wagEl = $('ruW');
+    const placeWag = (x, y, flip) => { wagEl.style.left = x + '%'; wagEl.style.top = y + '%'; if (flip != null) wagEl.style.transform = `translate(-50%,-78%) scaleX(${flip ? -1 : 1})`; };
+    const draw = (fresh) => {
+      svg.innerHTML = ROADS.filter(r => st.open[r[0]] && st.open[r[1]]).map(r => { const A = C(r[0]), B = C(r[1]), mx = 0.36 * A.x + 0.48 * r[2] + 0.16 * B.x, my = 0.36 * A.y + 0.48 * r[3] + 0.16 * B.y - 0.015;
+        return `<path id="ruP_${rk(r)}" d="${path(r)}" fill="none" stroke="${r[4] ? '#2F6B9A' : '#7A3A1A'}" stroke-width="3" stroke-dasharray="7 5" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".9"/><text class="ru-days" x="${mx * 100}" y="${my * 100}" text-anchor="middle">${trf('{0} nap', daysOf(r))}</text>`; }).join('');
+      host.querySelectorAll('.ru-pin,.ru-tag').forEach(e => e.remove());
+      const nb = roadsOf(st.at).map(r => other(r, st.at));
+      CITIES.filter(c => st.open[c.id]).forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'ru-pin' + (c.home ? ' home' : '') + (c.id === st.at ? ' here' : '') + (nb.includes(c.id) ? ' go' : '') + (fresh === c.id ? ' new' : ''); b.style.left = c.x * 100 + '%'; b.style.top = c.y * 100 + '%'; b.title = tr(c.name); b.onclick = () => go(c.id); host.appendChild(b);
+        const t = document.createElement('div'); t.className = 'ru-tag'; t.style.left = c.x * 100 + '%'; t.style.top = c.y * 100 + '%'; const pr = st.price[c.id], d = pr - (c.p || 0);
+        t.innerHTML = `${tr(c.name)}${c.home ? `<i>${tr('itthon')}</i>` : `<i class="${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${trf('{0} arany/mázsa', pr)}${d > 0 ? ' ▲' : d < 0 ? ' ▼' : ''}</i>`}`; host.appendChild(t); });
+      const c = C(st.at); placeWag(c.x * 100, c.y * 100);
+      $('ruD').textContent = trf('{0} nap van hátra', st.days); $('ruL').textContent = trf('A szekéren {0} mázsa réz', st.load); $('ruG').textContent = trf('{0} arany bevétel', st.gold);
+      // itt vagy
+      const pr = st.price[st.at];
+      $('ruHere').innerHTML = `<h4>${trf('Itt vagy: {0}', tr(c.name))}</h4>` + (c.home
+        ? `<div>${tr('Itthon a bánya újra megrakja a szekeret. Ez 1 napba telik.')}</div><button class="btn coral" type="button" id="ruLoad" ${st.load >= 10 || st.days < 1 ? 'disabled' : ''}>${tr('Felrakodok, 10 mázsáig')}</button>`
+        : `<div>${trf('Itt most {0} aranyat adnak egy mázsáért.', pr)} ${tr('Minden második eladott mázsa után 1 arannyal lejjebb megy az ár.')}</div><button class="btn coral" type="button" id="ruS1" ${!st.load || pr < 1 ? 'disabled' : ''}>${trf('Eladok 1 mázsát, +{0}', pr)}</button><button class="btn ghost" type="button" id="ruSA" ${!st.load || pr < 1 ? 'disabled' : ''}>${tr('Eladom mind')}</button>`) + (st.news ? `<div class="ru-news">${st.news}</div>` : '');
+      if ($('ruLoad')) $('ruLoad').onclick = () => { st.load = 10; st.days -= 1; st.news = ''; draw(); checkEnd(); };
+      const sell = n => { for (let k = 0; k < n && st.load > 0 && st.price[st.at] > 0; k++) { st.gold += st.price[st.at]; st.load--; st.sold = (st.sold || 0) + 1; st.sc = (st.sc || {}); st.sc[st.at] = (st.sc[st.at] || 0) + 1; if (st.sc[st.at] % 2 === 0) st.price[st.at] = Math.max(1, st.price[st.at] - 1); } try { sfxCollect(); } catch (e) {} pop(host, c.x * host.clientWidth, c.y * host.clientHeight - 20, '+' + tr('arany')); st.news = ''; draw(); };
+      if ($('ruS1')) $('ruS1').onclick = () => sell(1); if ($('ruSA')) $('ruSA').onclick = () => sell(99);
+      // merre tovább
+      const opts = roadsOf(st.at).map(r => ({ r, id: other(r, st.at), d: daysOf(r) })); const best = opts.filter(o => !C(o.id).home && o.d <= st.days).sort((a, b) => st.price[b.id] - st.price[a.id])[0];
+      $('ruTo').innerHTML = `<h4>${tr('Merre tovább?')}</h4>` + opts.map(o => { const cc = C(o.id); return `<button type="button" class="ru-dest${best && best.id === o.id && st.load ? ' best' : ''}" data-go="${o.id}" ${o.d > st.days || st.busy ? 'disabled' : ''}><b>${tr(cc.name)}</b><small>${cc.home ? tr('itthon újra rakodhatsz') : trf('{0} arany', st.price[o.id])} · ${trf('{0} nap', o.d)}</small>${best && best.id === o.id && st.load ? ' ★' : ''}</button>`; }).join('');
+      $('ruTo').querySelectorAll('[data-go]').forEach(x => x.onclick = () => go(x.dataset.go));
+    };
+    // utazás: a szekér végiggördül az úton
+    function go(id) {
+      if (st.busy || id === st.at) return; const r = roadsOf(st.at).find(x => other(x, st.at) === id);
+      if (!r) { pop(host, C(id).x * host.clientWidth, C(id).y * host.clientHeight, tr('Innen nem vezet oda út'), 'bad'); return; }
+      const d = daysOf(r); if (d > st.days) { pop(host, C(id).x * host.clientWidth, C(id).y * host.clientHeight, tr('Erre már nincs elég napod'), 'bad'); return; }
+      st.busy = true; st.news = ''; draw(); const p = document.getElementById('ruP_' + rk(r)), L = p.getTotalLength(), fwd = r[0] === st.at, T = 900 + d * 260, t0 = performance.now();
+      let lastX = null;
+      const step = now => { if (!alive('ruSt')) return; const k = Math.min(1, (now - t0) / T), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, pt = p.getPointAtLength((fwd ? e : 1 - e) * L);
+        const flip = lastX != null ? pt.x < lastX - 0.01 : null; if (lastX == null || Math.abs(pt.x - lastX) > 0.01) lastX = pt.x; placeWag(pt.x, pt.y, flip);
+        if (k < 1) { requestAnimationFrame(step); return; } st.days -= d; st.at = id; st.trips++; st.busy = false; arrive(id); };
+      requestAnimationFrame(step);
+    }
+    // érkezéskor átrendeződik a világ
+    function arrive(id) {
+      const c = C(id), vis = CITIES.filter(x => st.open[x.id] && !x.home && x.id !== id), rnd = a => a[Math.floor(Math.random() * a.length)];
+      // a többi város ára lassan visszaáll
+      CITIES.forEach(x => { if (x.p && st.price[x.id] < x.p && x.id !== id && Math.random() < 0.5) st.price[x.id]++; });
+      let news = '', fresh = null;
+      const hid = CITIES.filter(x => !st.open[x.id] && ROADS.some(r => (r[0] === x.id && st.open[r[1]]) || (r[1] === x.id && st.open[r[0]])));
+      const ev = Math.random();
+      if (hid.length && (st.trips === 2 || (st.trips > 2 && ev < 0.3)) && (hid[0].id !== 'antwerpen' || id === 'danzig' || st.open.augsburg)) { const h = hid[0]; st.open[h.id] = true; fresh = h.id; news = tr(h.why); }
+      else if (ev < 0.5 && vis.length) { const x = rnd(vis); st.price[x.id] += 2; news = trf('Hír jött: {0} városában ágyút öntenek a török ellen, kell a réz! Ott most 2 arannyal többet adnak.', tr(x.name)); }
+      else if (ev < 0.68 && vis.length) { const x = rnd(vis); st.price[x.id] = Math.max(1, st.price[x.id] - 2); news = trf('{0} piacára svéd réz érkezett, ezért ott 2 arannyal olcsóbb lett.', tr(x.name)); }
+      else if (ev < 0.82) { const rs = ROADS.filter(r => st.open[r[0]] && st.open[r[1]] && !st.slow[rk(r)]); if (rs.length) { const r = rnd(rs); st.slow[rk(r)] = 2; news = trf('Megáradtak a folyók: a {0} és {1} közötti út 2 nappal hosszabb lett.', tr(C(r[0]).name), tr(C(r[1]).name)); } }
+      else if (ev < 0.92 && st.load > 1) { st.load--; news = tr('Vámszedő állt a hídon, és 1 mázsa rezet elvitt vámba.'); }
+      st.news = news; draw(fresh); if (news) try { sfxClick(); } catch (e) {} checkEnd();
+    }
+    function checkEnd() { const can = roadsOf(st.at).some(r => daysOf(r) <= st.days); if (!can || st.days <= 0) setTimeout(finish, 900); }
+    $('ruEnd').onclick = finish; draw();
+    function finish() { if (!alive('ruSt')) return; const g = st.gold, good = g >= 70, rew = { forint: Math.max(1, Math.round(g / 9)), penz: 200 + g * 18 };
+      done(good ? 'NAGY ÜZLET' : 'HAZAÉRT A SZEKÉR', good ? tr('A Fuggerek is irigykednek') : tr('Jövőre ügyesebben kereskedünk'), [trf('{0} arany bevétel, {1} mázsa eladott réz, {2} úton.', g, st.sold || 0, st.trips)], 'rezut', rew,
+        'A felvidéki réz két nagy úton jutott el Európába. Észak felé Krakkón át a Visztulán Danzigig, onnan hajón Antwerpenig, dél felé Bécsen át Velencébe. Antwerpenből a portugálok egészen Indiáig vitték, és ott fűszerre cserélték. A magyar réz legnagyobb versenytársa a svéd réz volt. A Thurzó–Fugger vállalat néhány évtizedig Európa egyik legnagyobb üzlete volt.'); }
   }
 
   // ---------- 4. A Bakócz-kápolna kirakója ----------
