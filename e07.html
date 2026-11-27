@@ -8768,6 +8768,32 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     if (added) setTimeout(() => { try { toast(trf('{0} telket ajándékba kaptál, hogy a területeid összeérjenek.', added)); } catch (e) {} }, 2500);
   }
   try { connect(); } catch (e) {}
+  // lyukak betömése: ha néhány meg nem vett telket nagyrészt a saját területed vesz körül, azokat ingyen hozzácsatoljuk, hogy a város egyben legyen
+  const tileLot = new Map(); LOTS.forEach(l => tilesOf(l).forEach(([i, j]) => tileLot.set(i + ',' + j, l)));
+  const sideNb = l => { const out = new Set(); tilesOf(l).forEach(([i, j]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj]) => { const o = tileLot.get((i + di) + ',' + (j + dj)); if (o && o !== l) out.add(o); })); return out; };
+  const nbMemo = new Map(); const nbOf = l => { if (!nbMemo.has(l.id)) nbMemo.set(l.id, sideNb(l)); return nbMemo.get(l.id); };
+  function fillHoles() {
+    if (!S || !S.lots) return 0; let added = 0;
+    for (let round = 0; round < 6; round++) {
+      const seen = new Set(); let grew = false;
+      for (const l0 of LOTS) {
+        if (lotOwned(l0.id) || seen.has(l0.id)) continue;
+        const comp = [l0], q = [l0]; seen.add(l0.id); let big = false;
+        while (q.length) { const x = q.shift(); nbOf(x).forEach(o => { if (!lotOwned(o.id) && !seen.has(o.id)) { seen.add(o.id); comp.push(o); q.push(o); if (comp.length > 10) big = true; } }); }
+        if (big) continue;
+        const inC = new Set(comp.map(c => c.id)); let own = 0, free = 0, edge = 0;
+        comp.forEach(c => tilesOf(c).forEach(([i, j]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([di, dj]) => { const ii = i + di, jj = j + dj, o = tileLot.get(ii + ',' + jj);
+          if (o && inC.has(o.id)) return; if (inGrid(ii, jj) || (o && lotOwned(o.id))) own++; else if (o) free++; else edge++; })));
+        // legalább a határ fele a tiéd, és nem nyílik ki szabad telkek felé jobban, mint amennyire be van zárva
+        if (own >= 8 && own >= 0.5 * (own + free + edge) && free <= own * 0.35) { comp.forEach(c => { S.lots.push(c.id); added++; }); grew = true; }
+      }
+      if (!grew) break;
+    }
+    return added;
+  }
+  let fhSig = null;
+  const fhRun = (quiet) => { try { const sg = (S.lots || []).join(','); if (sg === fhSig) return; const n = fillHoles(); fhSig = (S.lots || []).join(','); if (n) { try { connCache = null; } catch (e) {} try { save(); } catch (e) {} if (!quiet) setTimeout(() => { try { toast(trf('{0} közrezárt telket ingyen hozzácsatoltunk, hogy egyben legyen a városod.', n)); } catch (e) {} }, 1500); } } catch (e) {} };
+  setTimeout(() => fhRun(false), 3000); setInterval(() => fhRun(false), 3000);
   // csak a szomszédos telkek látszanak megvehetőnek
   drawLots = function () {
     if (!tool && $('drawer').hidden && !lotPick) return;
