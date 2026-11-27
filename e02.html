@@ -5840,6 +5840,20 @@ window.playDur = function (m) {
   };
 })();
 
+// ---------- a kalandok és a napi feladatok jutalma a saját gazdaságodhoz igazodik ----------
+// Fix összegek helyett legalább néhány percnyi saját termelést adnak, így a késői korokban sem aprópénz.
+(function () {
+  const SKIP = ['tudas', 'hirnev', 'korona', 'hang'];
+  const hourly = () => { const h = {}; try { (S.buildings || []).forEach(b => { const d = DEF[b.type]; if (!d || !d.prod || !d.time || b.ruined) return; Object.entries(d.prod).forEach(([k, v]) => { h[k] = (h[k] || 0) + v * 3600 / d.time; }); }); } catch (e) {} return h; };
+  const scale = (rew, share) => { const h = hourly(), out = Object.assign({}, rew); let hit = false;
+    Object.keys(out).forEach(k => { if (SKIP.includes(k)) return; const m = Math.round((h[k] || 0) * share); if (m > (out[k] || 0)) { out[k] = m; hit = true; } else if (h[k]) hit = true; });
+    // ha a jutalom olyan alapanyag, amit nem termelsz, Pénz is jár mellé
+    if (!hit && h.penz) out.penz = Math.max(out.penz || 0, Math.round(h.penz * share));
+    return out; };
+  try { if (typeof miniGive === 'function') { const _g = miniGive; miniGive = function (id, rew) { try { const f = Math.max(0.5, Math.min(1, ((rew && rew.penz) || 0) / 600 + ((rew && rew.tudas) || 0) / 4 + 0.3)); const s = scale(rew || {}, 0.2 * f); Object.keys(s).forEach(k => { rew[k] = s[k]; }); } catch (e) {} return _g.apply(this, arguments); }; } } catch (e) {}
+  try { if (typeof DAILY !== 'undefined') DAILY.forEach(d => { const base = d.rew; Object.defineProperty(d, 'rew', { configurable: true, get: () => { try { return scale(base, 0.25); } catch (e) { return base; } } }); }); } catch (e) {}
+})();
+
 /*SOCIAL-END*/
 })();
 </script>
