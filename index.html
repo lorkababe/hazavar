@@ -5194,7 +5194,13 @@ window.playDur = function (m) {
   const onBad = (type, i, j, rot) => { let w = 1, h = 1; try { [w, h] = dimsT(type, rot || 0); } catch (e) {} const ter = (DEF[type] || {}).terrain; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (badTile(ter, (i + a) + ',' + (j + c), i + a, j + c)) return true; return false; };
   window.onPaintBad = onBad;
   const _free = free;
-  free = function (type, i, j, ignore, rot) { if (!_free.apply(this, arguments)) return false; try { if (DEF[type] && DEF[type].cat !== 'ut' && onBad(type, i, j, rot)) return false; } catch (e) {} return true; };
+  // a vízi épületek a part köveit nem foglalhatják el, ezért elég, ha a sima mezőn állnak legfeljebb négy mezőre a víztől
+  const bankFree = (type, i, j, ignore, rot) => { let w = 1, h = 1; try { [w, h] = dimsT(type, rot || 0); } catch (e) {} const m = occ(); let near = false;
+    for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const x = i + a, y = j + c, k = key(x, y); if (!inArea(x, y) || blocked(x, y) || (m[k] && m[k] !== ignore) || (wetTile && wetTile(x, y))) return false;
+      if (!near) for (let u = -5; u <= 5 && !near; u++) for (let v = -5; v <= 5 && !near; v++) if ((window.WETS || T_BANK).has((x + u) + ',' + (y + v))) near = true; }
+    return near; };
+  free = function (type, i, j, ignore, rot) { try { if (hasN && DEF[type] && DEF[type].terrain === 'bank' && typeof T_BANK === 'object' && !_free.apply(this, arguments)) { if (!bankFree(type, i, j, ignore, rot) || onBad(type, i, j, rot)) return false; return true; } } catch (e) {}
+    if (!_free.apply(this, arguments)) return false; try { if (DEF[type] && DEF[type].cat !== 'ut' && onBad(type, i, j, rot)) return false; } catch (e) {} return true; };
   // a part mellé került épülethez a legközelebbi meglévő úttól a sima mezőn át vezetünk ösvényt
   function roadTo(b) {
     if (connected(b)) return; if (!connCache) computeConn(); const m = occ(); let w = 1, h = 1; try { [w, h] = dimsT(b.type, b.rot || 0); } catch (e) {}
