@@ -1,5 +1,5 @@
 // HazaVár: az oldalak mindig a legfrissebb változatból jönnek, a képek a telefonon maradnak, így gyorsan indul és net nélkül is megnyílik
-const PAGES = 'hazavar-pages-v2', IMGS = 'hazavar-img-v11';
+const PAGES = 'hazavar-pages-v2', IMGS = 'hazavar-img-v12';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('hazavar-') && k !== PAGES && k !== IMGS).map(k => caches.delete(k)))).then(() => self.clients.claim())
