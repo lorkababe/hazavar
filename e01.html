@@ -5761,6 +5761,29 @@ window.playDur = function (m) {
     return false;
   };
 })();
+// ---------- a festett erdőre nem kerülhet épület: a fák tetején lógna. Az erdei épületek az erdő szélére kerülnek ----------
+(function forestTidy() {
+  if (typeof ROUGH !== 'object' || !ROUGH || typeof free !== 'function' || window.__fTidy) return; window.__fTidy = 1;
+  if (!Object.values(ROUGH).some(v => v === 'forest')) return;
+  const onTrees = (type, i, j, rot) => { let w = 1, h = 1; try { [w, h] = dimsT(type, rot || 0); } catch (e) {} for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (ROUGH[(i + a) + ',' + (j + c)] === 'forest') return true; return false; };
+  const _free = free;
+  free = function (type, i, j, ignore, rot) { if (!_free.apply(this, arguments)) return false; try { if (DEF[type] && !DEF[type].gb && DEF[type].cat !== 'ut' && onTrees(type, i, j, rot)) return false; } catch (e) {} return true; };
+  const failed = new Set();
+  function tidy() {
+    if (!S || !S.buildings || (typeof REAR !== 'undefined' && REAR)) return; try { if (openModal) return; } catch (e) {}
+    const fo = S.buildings.find(b => b.type === 'fo'); if (!fo) return; let moved = 0;
+    S.buildings.forEach(b => {
+      if (b.type === 'fo' || failed.has(b.id) || !DEF[b.type] || DEF[b.type].gb || !onTrees(b.type, b.i, b.j, b.rot || 0)) return;
+      let best = null; const rot = b.rot || 0;
+      areaTiles().forEach(([i, j]) => { if (!free(b.type, i, j, b, rot)) return; const d = Math.hypot(i - fo.i, j - fo.j); if (!best || d < best[2]) best = [i, j, d]; });
+      if (!best) { failed.add(b.id); return; }
+      b.i = best[0]; b.j = best[1]; delete b.far; moved++;
+    });
+    if (moved) { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} try { if (typeof autoRoads === 'function' && autoRoads.length >= 2) autoRoads(S, true); } catch (e) {} try { save(); } catch (e) {}
+      setTimeout(() => { try { toast(trf('{0} épületet lehoztunk a fák tetejéről az erdő szélére, közelebb a városhoz.', moved)); } catch (e) {} }, 1200); }
+  }
+  setTimeout(tidy, 6000); setInterval(tidy, 12000);
+})();
 
 // ---------- a kalandok és a napi feladatok jutalma a saját gazdaságodhoz igazodik ----------
 // Fix összegek helyett legalább néhány percnyi saját termelést adnak, így a késői korokban sem aprópénz.
