@@ -8247,15 +8247,30 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .dz-doc img{width:46px;float:left;margin:-4px 8px 0 -4px}.dz-doc small{display:block;font-size:11px;letter-spacing:.12em;color:#8A3A16;margin-bottom:4px}
   .dz-doc.ok{transform:translate(-50%,-30px) rotate(-4deg);opacity:0}.dz-doc.bad{transform:translate(120%,140px) rotate(25deg) scale(.6);opacity:0}
   .dz-fire{position:absolute;right:2%;bottom:2%;width:26%;max-width:150px;pointer-events:none}
+  .dz-stamp{position:absolute;z-index:6;width:clamp(70px,14%,120px);left:50%;top:6%;transform:translate(-50%,-140%) rotate(-12deg);opacity:0;pointer-events:none;filter:drop-shadow(0 8px 6px rgba(0,0,0,.45))}
+  .dz-stamp.go{animation:dzStamp .75s cubic-bezier(.3,.0,.4,1) forwards}
+  @keyframes dzStamp{0%{opacity:0;transform:translate(-50%,-160%) rotate(-14deg) scale(1.25)}35%{opacity:1;transform:translate(-50%,-10%) rotate(0) scale(1.05)}45%{transform:translate(-50%,0) rotate(0) scale(.92)}60%{transform:translate(-50%,-6%) scale(1)}100%{opacity:0;transform:translate(-50%,-150%) rotate(10deg) scale(1.1)}}
+  .dz-seal{position:absolute;right:10px;bottom:-14px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F0605A,#B3261E 55%,#6E1410);box-shadow:0 3px 0 #5A100C,inset 0 0 0 4px rgba(255,255,255,.12);color:#FFD9A0;font-size:28px;line-height:54px;text-align:center;overflow:hidden;animation:dzSeal .35s ease-out}
+  .dz-seal img{width:100%;height:100%;object-fit:contain}
+  .dz-seal::after{content:'';position:absolute;inset:-20%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.85) 50%,transparent 65%);transform:translateX(-120%);animation:dzGlint .7s .2s ease-out forwards}
+  @keyframes dzSeal{0%{transform:scale(1.8);opacity:0}70%{transform:scale(.9);opacity:1}100%{transform:scale(1)}}@keyframes dzGlint{to{transform:translateX(120%)}}
+  .dz-spark{position:absolute;z-index:7;width:10px;height:10px;pointer-events:none;background:radial-gradient(circle,#FFF6C8,#FFD36A 40%,transparent 70%);animation:dzSpark .7s ease-out forwards}@keyframes dzSpark{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+  .dz-doc.burn{transition:transform .65s cubic-bezier(.4,-.3,.6,1),opacity .65s,filter .65s;transform:translate(calc(-50% + var(--fx)),var(--fy)) rotate(200deg) scale(.15);opacity:.2;filter:sepia(1) brightness(.6)}
+  .dz-fire{transition:transform .25s,filter .25s;transform-origin:50% 100%}.dz-fire.flare{animation:dzFlare .9s ease-out}
+  @keyframes dzFlare{0%{transform:scale(1)}25%{transform:scale(1.14);filter:brightness(1.6) drop-shadow(0 0 22px #FF9A3C)}100%{transform:scale(1);filter:none}}
+  .dz-glow{position:absolute;z-index:0;right:-6%;bottom:-10%;width:45%;height:60%;pointer-events:none;background:radial-gradient(circle at 60% 70%,rgba(255,160,60,.75),transparent 60%);opacity:0}.dz-glow.on{animation:dzGlow 1s ease-out}@keyframes dzGlow{25%{opacity:1}100%{opacity:0}}
+  .dz-ember{position:absolute;z-index:5;width:7px;height:7px;border-radius:50%;background:#FFB347;box-shadow:0 0 8px #FF7A1A;pointer-events:none;animation:dzEmber 1.1s ease-out forwards}@keyframes dzEmber{to{transform:translate(var(--dx),-120px);opacity:0}}
+  .dz-zs{position:absolute;left:56%;top:30%;z-index:4;pointer-events:none;display:none}.dz-zs.on{display:block}.dz-zs b{position:absolute;font:900 34px Nunito,sans-serif;color:#E8F0FF;text-shadow:0 2px 0 #3A3A70,0 0 10px #000;opacity:0;animation:dzZ 2.1s infinite}.dz-zs b:nth-child(2){animation-delay:.7s;font-size:26px}.dz-zs b:nth-child(3){animation-delay:1.4s;font-size:20px}
+  @keyframes dzZ{0%{opacity:0;transform:translate(0,20px) rotate(-10deg)}30%{opacity:1}100%{opacity:0;transform:translate(46px,-60px) rotate(12deg)}}
+  .dz-wake{position:absolute;left:50%;top:44%;z-index:5;transform:translate(-50%,-50%);padding:8px 16px;border-radius:999px;background:#FFF4DF;color:#7A2410;font:900 16px Nunito,sans-serif;box-shadow:0 4px 0 rgba(0,0,0,.35);display:none;animation:pulse2 1s infinite;pointer-events:none}.dz-wake.on{display:block}@keyframes pulse2{50%{transform:translate(-50%,-50%) scale(1.08)}}
+  .dz-king.jolt{animation:dzJolt .45s}@keyframes dzJolt{0%,100%{transform:translateX(-50%)}20%{transform:translateX(-50%) translateY(-6%) rotate(3deg)}50%{transform:translateX(-50%) rotate(-3deg)}}
   .dz-bar{position:absolute;left:12px;right:12px;top:8px;height:8px;border-radius:4px;background:rgba(0,0,0,.35)}.dz-bar i{display:block;height:100%;border-radius:4px;background:#E8C46A;transition:width .1s linear}
   /* Csille */
-  .cs-stage{height:min(360px,48vh);background:url(${I('e07_mg_banya.jpg')}) 0 50%/auto 100% repeat-x;cursor:pointer}
-  .cs-man{position:absolute;left:16%;width:clamp(80px,15%,130px);bottom:12%;pointer-events:none;z-index:2}
-  .cs-cart{position:absolute;left:2%;width:clamp(76px,14%,120px);bottom:11%;pointer-events:none;z-index:2}
-  .cs-o{position:absolute;width:40px;height:40px;z-index:1;bottom:15%;border-radius:40% 50% 45% 55%;background:radial-gradient(circle at 35% 30%,#7BC8A4,#B8633A 55%,#6A3A1E);box-shadow:0 3px 0 rgba(0,0,0,.35)}
-  .cs-r{position:absolute;width:56px;height:38px;z-index:1;bottom:13%;border-radius:45% 55% 30% 30%;background:radial-gradient(circle at 40% 30%,#9A9088,#5C534B);box-shadow:0 3px 0 rgba(0,0,0,.35)}
-  .cs-dark{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 24% 62%,transparent 0,transparent var(--lr,40%),rgba(0,0,0,.86) calc(var(--lr,40%) + 18%))}
-  .cs-lamp{position:absolute;z-index:1;width:28px;height:32px;bottom:44%;border-radius:6px;background:radial-gradient(circle,#FFE58A,#E8A23C);box-shadow:0 0 16px #FFD36A}
+  .cs-stage{height:min(400px,50vh);background:#2A1A0E}.cs-stage canvas{display:block;touch-action:none}
+  .cs-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 12px;margin:6px 0}.cs-lg{display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.2}.cs-lg img{width:40px;height:40px;object-fit:contain;flex:none}.cs-lg b{display:block;font-size:14px}
+  .cs-how{font-size:13px;font-weight:700;opacity:.85;margin:4px 0}
+  .cs-cover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,10,0,.35)}
+  .cs-cd{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);font:900 72px Nunito,sans-serif;color:#FFE58A;text-shadow:0 4px 0 #6A4520,0 0 18px #000;pointer-events:none}
   /* Rézút */
   .ru-stage{height:min(460px,58vh);background:url(${I('e07_mg_terkep.jpg')}) center/cover}
   .ru-c{position:absolute;transform:translate(-50%,-50%);border:0;border-radius:999px;padding:6px 10px;font:900 13px Nunito,sans-serif;background:#FFF8E8;color:#3A2410;box-shadow:0 3px 0 rgba(0,0,0,.35);cursor:pointer;white-space:nowrap}
@@ -8293,17 +8308,26 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('BUDA, A TRÓNTEREMBEN')}</span><h2>${tr('Dobzse pecsételése')}</h2>
       <p>${tr('II. Ulászló mindenre azt mondja, dobzse. Te vigyázz helyette! A jó iratot pecsételd le, a rosszat dobd a kandallóba. Ha a király elalszik, koppints a terembe, hogy felébredjen.')}</p>
       <div class="ag-hud"><span id="dzS"></span><span id="dzN"></span></div>
-      <div class="ag-stage dz-stage" id="dzSt"><div class="dz-bar"><i id="dzT"></i></div><img class="dz-king" id="dzK" src="${I('e07_dobzse.png')}" alt="${tr('Ulászló király a trónon')}"><div class="dz-dim" id="dzDim"></div><b class="dz-zz" id="dzZ">Z z z</b><img class="dz-fire" src="${I('e07_mg_kandallo.png')}" alt=""><div class="dz-doc" id="dzD"></div></div>
+      <div class="ag-stage dz-stage" id="dzSt"><div class="dz-bar"><i id="dzT"></i></div><img class="dz-king" id="dzK" src="${I('e07_dobzse.png')}" alt="${tr('Ulászló király a trónon')}"><div class="dz-dim" id="dzDim"></div><b class="dz-zz" id="dzZ"></b><div class="dz-glow" id="dzGl"></div><img class="dz-fire" id="dzF" src="${I('e07_mg_kandallo.png')}" alt=""><div class="dz-zs" id="dzZs"><b>Z</b><b>z</b><b>z</b></div><div class="dz-wake" id="dzW">${tr('Elaludt! Koppints rá, hogy felébredjen!')}</div><div class="dz-doc" id="dzD"></div><img class="dz-stamp" id="dzP" src="${I('e07_mg_pecset.png')}" alt=""></div>
       <div class="ag-btns"><button class="btn coral" type="button" id="dzOk">${tr('Lepecsételem')}</button><button class="btn ghost" type="button" id="dzNo">${tr('A kandallóba')}</button></div></div>`, '', 'minimodal');
+    const opt = (n, cb) => { const im = new Image(); im.onload = () => cb(I(n)); im.src = I(n); };
+    let kingSleep = null, kingAwake = I('e07_dobzse.png'), fireFlare = null, sealImg = null; opt('e07_dobzse_alszik.png', u => kingSleep = u); opt('e07_mg_kandallo_lang.png', u => fireFlare = u); opt('e07_mg_viaszpecset.png', u => sealImg = u);
+    const setSleep = on => { $('dzDim').classList.toggle('on', on); $('dzK').classList.toggle('sleep', on && !kingSleep); $('dzZs').classList.toggle('on', on); $('dzW').classList.toggle('on', on); if (kingSleep) $('dzK').src = on ? kingSleep : kingAwake; };
+    const sparks = (x, y, n, cls) => { for (let k = 0; k < n; k++) { const e = document.createElement('i'); e.className = cls; const a = Math.random() * 6.28, r = 40 + Math.random() * 60; e.style.left = x + 'px'; e.style.top = y + 'px'; e.style.setProperty('--dx', (cls === 'dz-ember' ? (Math.random() - 0.5) * 60 : Math.cos(a) * r) + 'px'); e.style.setProperty('--dy', Math.sin(a) * r + 'px'); e.style.animationDelay = (Math.random() * 0.25) + 's'; host.appendChild(e); setTimeout(() => e.remove(), 1500); } };
+    const doStamp = () => { const p = $('dzP'), d = $('dzD'); p.classList.remove('go'); void p.offsetWidth; p.classList.add('go');
+      setTimeout(() => { if (!alive('dzSt')) return; const sl = document.createElement('span'); sl.className = 'dz-seal'; sl.innerHTML = sealImg ? `<img src="${sealImg}" alt="">` : '⚜'; d.appendChild(sl); const r = d.getBoundingClientRect(), h = host.getBoundingClientRect(); sparks(r.right - h.left - 37, r.bottom - h.top - 2, 14, 'dz-spark'); }, 300);
+      setTimeout(() => { if (alive('dzSt')) d.classList.add('ok'); }, 950); };
+    const doBurn = () => { const d = $('dzD'), f = $('dzF'), r = d.getBoundingClientRect(), fr = f.getBoundingClientRect(); d.style.setProperty('--fx', (fr.left + fr.width / 2 - (r.left + r.width / 2)) + 'px'); d.style.setProperty('--fy', (fr.top + fr.height * 0.6 - (r.top + r.height / 2)) + 'px'); d.classList.add('burn');
+      setTimeout(() => { if (!alive('dzSt')) return; f.classList.remove('flare'); void f.offsetWidth; f.classList.add('flare'); const g = $('dzGl'); g.classList.remove('on'); void g.offsetWidth; g.classList.add('on'); if (fireFlare) { f.src = fireFlare; setTimeout(() => { if (alive('dzSt')) f.src = I('e07_mg_kandallo.png'); }, 800); } const h = host.getBoundingClientRect(); sparks(fr.left + fr.width / 2 - h.left, fr.top + fr.height * 0.5 - h.top, 16, 'dz-ember'); }, 600); };
     const host = $('dzSt'), hud = () => { $('dzS').textContent = trf('{0} jó döntés', score); $('dzN').textContent = trf('{0} / {1} irat', Math.min(n, ROUNDS), ROUNDS); };
     const deal = () => { if (n >= ROUNDS) { finish(); return; } n++; hud(); cur = DOCS[Math.floor(Math.random() * DOCS.length)]; const d = $('dzD'); d.className = 'dz-doc'; d.innerHTML = `<img src="${I('e07_mg_irat.png')}" alt=""><small>${tr('KIRÁLYI IRAT')}</small>${tr(cur[0])}`; left = Math.max(2.4, T - n * 0.25);
-      sleepy = n > 3 && Math.random() < 0.25; $('dzDim').classList.toggle('on', sleepy); $('dzK').classList.toggle('sleep', sleepy); $('dzZ').classList.toggle('on', sleepy); };
+      sleepy = n > 3 && Math.random() < 0.25; setSleep(sleepy); };
     const judge = stamp => { if (over || !cur) return; if (sleepy) { pop(host, host.clientWidth / 2, host.clientHeight * 0.5, tr('Előbb ébreszd fel!'), 'bad'); return; }
       const right = stamp === cur[1]; if (right) { score++; try { sfxCollect(); } catch (e) {} pop(host, host.clientWidth / 2, host.clientHeight * 0.3, stamp ? tr('Dobzse!') : tr('Hamuba vele!')); } else { miss++; pop(host, host.clientWidth / 2, host.clientHeight * 0.3, tr('Hoppá!'), 'bad'); }
-      $('dzD').classList.add(stamp ? 'ok' : 'bad'); cur = null; hud(); setTimeout(() => { if (alive('dzSt')) deal(); }, 420); };
+      if (stamp) doStamp(); else doBurn(); cur = null; hud(); setTimeout(() => { if (alive('dzSt')) deal(); }, stamp ? 1250 : 1300); };
     $('dzOk').onclick = () => judge(true); $('dzNo').onclick = () => judge(false);
     host.style.cursor = 'pointer';
-    host.onpointerdown = () => { if (sleepy) { sleepy = false; $('dzDim').classList.remove('on'); $('dzK').classList.remove('sleep'); $('dzZ').classList.remove('on'); pop(host, host.clientWidth / 2, host.clientHeight * 0.4, tr('Hm? Dobzse!')); } };
+    host.onpointerdown = () => { if (sleepy) { sleepy = false; setSleep(false); const k = $('dzK'); k.classList.remove('jolt'); void k.offsetWidth; k.classList.add('jolt'); pop(host, host.clientWidth / 2, host.clientHeight * 0.4, tr('Hm? Dobzse!')); } };
     const loop = t => { if (!alive('dzSt') || over) return; const dt = Math.min(0.1, (t - last) / 1000); last = t; if (cur && !sleepy) { left -= dt; if (left <= 0) { miss++; pop(host, host.clientWidth / 2, host.clientHeight * 0.3, tr('A király aláírta magától!'), 'bad'); if (!cur[1]) score = Math.max(0, score - 1); $('dzD').classList.add('ok'); cur = null; setTimeout(() => { if (alive('dzSt')) deal(); }, 420); } }
       $('dzT').style.width = (cur ? Math.max(0, left / Math.max(2.4, T - n * 0.25)) * 100 : 0) + '%'; requestAnimationFrame(loop); };
     deal(); requestAnimationFrame(loop);
@@ -8312,35 +8336,62 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
         'II. Ulászló 1490-től 1516-ig volt magyar király. A Dobzse becenevet a cseh dobře, azaz rendben szóról kapta, mert szinte minden kérésre igent mondott. Uralkodása alatt a főurak megerősödtek, a királyi kincstár pedig kiürült, olyannyira, hogy néha a király ebédjére sem jutott pénz.'); }
   }
 
-  // ---------- 2. Csille a rézbányában ----------
+  // ---------- 2. Csille a rézbányában: a vájár fejti a tárna tetejét, te a csillével elkapod a rézércet, a meddő követ kikerülöd ----------
+  const SVG = s => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+  const ORE = SVG(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86"><defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0A060"/><stop offset=".55" stop-color="#C0602E"/><stop offset="1" stop-color="#6E3018"/></linearGradient></defs><path d="M8 52 22 18 52 6 82 16 94 46 80 74 44 82 14 72Z" fill="url(#a)" stroke="#4A2010" stroke-width="4" stroke-linejoin="round"/><path d="M22 18 52 6 50 34Z" fill="#F7B67C" opacity=".8"/><path d="M52 6 82 16 50 34Z" fill="#E08A4C" opacity=".7"/><path d="M50 34 94 46 80 74Z" fill="#8E4220" opacity=".55"/><path d="M8 52 22 18 50 34 44 82 14 72Z" fill="#D27440" opacity=".35"/><path d="M18 60 30 44 40 50 52 38 58 46" fill="none" stroke="#3FB98A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M60 64 70 56 80 60" fill="none" stroke="#5AD3A0" stroke-width="5" stroke-linecap="round"/><circle cx="64" cy="24" r="4" fill="#FFE1B8"/></svg>`);
+  const RICH = SVG(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86"><defs><radialGradient id="g" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#9DF0C8"/><stop offset=".5" stop-color="#2FB07A"/><stop offset="1" stop-color="#11583C"/></radialGradient></defs><path d="M8 50 20 16 50 4 84 14 96 44 82 74 46 84 14 72Z" fill="url(#g)" stroke="#0C3E2A" stroke-width="4" stroke-linejoin="round"/><path d="M20 16 50 4 48 32Z" fill="#C8FFE4" opacity=".7"/><path d="M48 32 96 44 82 74Z" fill="#0F4C33" opacity=".45"/><path d="M30 56c8-2 16 2 14 10s-14 6-16 0 0-9 2-10Z" fill="#E08A4C" stroke="#6E3018" stroke-width="2.5"/><path d="M70 10l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#FFF6C8"/><path d="M30 26l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#FFF6C8"/></svg>`);
+  const ROCK = SVG(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 86"><defs><linearGradient id="r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9B2A8"/><stop offset=".6" stop-color="#7C746B"/><stop offset="1" stop-color="#4A433C"/></linearGradient></defs><path d="M6 56 18 22 46 8 78 14 96 42 86 72 50 82 16 76Z" fill="url(#r)" stroke="#2E2924" stroke-width="4" stroke-linejoin="round"/><path d="M18 22 46 8 44 36Z" fill="#D6D0C6" opacity=".7"/><path d="M44 36 96 42 86 72Z" fill="#3E3832" opacity=".45"/><path d="M30 50l14 6M58 30l10 12" stroke="#3A342E" stroke-width="3" stroke-linecap="round"/></svg>`);
+  const OIL = SVG(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100"><circle cx="40" cy="56" r="34" fill="#FFD36A" opacity=".28"/><path d="M28 18h24l4 10H24Z" fill="#6A4520" stroke="#3A2410" stroke-width="3"/><path d="M40 4v14" stroke="#3A2410" stroke-width="4"/><circle cx="40" cy="6" r="4" fill="none" stroke="#3A2410" stroke-width="3"/><rect x="22" y="28" width="36" height="42" rx="6" fill="#FFE9A0" stroke="#3A2410" stroke-width="4"/><path d="M40 38c6 8 6 14 0 20-6-6-6-12 0-20Z" fill="#FF9A3C"/><path d="M40 46c3 4 3 7 0 10-3-3-3-6 0-10Z" fill="#FFF2B0"/><path d="M20 70h40l-4 10H24Z" fill="#6A4520" stroke="#3A2410" stroke-width="3"/></svg>`);
+  const KINDS = { o: { img: ORE, pts: 1, w: 0.075 }, g: { img: RICH, pts: 3, w: 0.08 }, r: { img: ROCK, pts: 0, w: 0.085 }, l: { img: OIL, pts: 0, w: 0.06 } };
   function playCsille() {
     if (!miniStart('csille')) return;
-    let over = false, y = 0, vy = 0, t = 0, last = performance.now(), got = 0, hits = 0, lamp = 1, objs = [], spawn = 1, dist = 0;
+    const legend = (img, t, d) => `<div class="cs-lg"><img src="${img}" alt=""><span><b>${tr(t)}</b>${tr(d)}</span></div>`;
     modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('BESZTERCEBÁNYA, A TÁRNÁBAN')}</span><h2>${tr('Csille a rézbányában')}</h2>
-      <p>${tr('Told a csillét, gyűjts rezet, és ugord át a köveket! Ugráshoz koppints, vagy nyomd meg a szóközt. A lámpa lassan fogy, a sárga olajos lámpákkal újratöltheted.')}</p>
-      <div class="ag-hud"><span id="csG"></span><span id="csL"></span><span id="csH"></span></div>
-      <div class="ag-stage cs-stage" id="csSt"><img class="cs-cart" id="csC" src="${I('e07_mg_csille.png')}" alt=""><img class="cs-man" id="csM" src="${I('e07_mg_banyasz.png')}" alt="${tr('a bányász')}"><div class="cs-dark" id="csD"></div></div></div>`, '', 'minimodal');
-    const host = $('csSt'), jump = () => { if (y <= 0.001 && !over) vy = 1.25; };
-    host.onpointerdown = e => { e.preventDefault(); jump(); };
-    const kd = e => { if (!alive('csSt')) { document.removeEventListener('keydown', kd); return; } if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); jump(); } }; document.addEventListener('keydown', kd);
-    const hud = () => { $('csG').textContent = trf('{0} réz', got); $('csL').textContent = trf('Lámpa {0}%', Math.round(lamp * 100)); $('csH').textContent = '❤'.repeat(Math.max(0, 3 - hits)); }; hud();
-    const loop = now => { if (!alive('csSt') || over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; const W = host.clientWidth, H = host.clientHeight, sp = W * (0.32 + Math.min(0.35, t / 120));
-      dist += sp * dt; host.style.backgroundPositionX = (-dist * 0.6) + 'px';
-      vy -= 3.2 * dt; y = Math.max(0, y + vy * dt); if (y === 0) vy = 0; $('csM').style.transform = `translateY(${-y * H * 0.32}px)`;
-      lamp = Math.max(0, lamp - dt / 38); $('csD').style.setProperty('--lr', (14 + lamp * 40) + '%');
-      if ((spawn -= dt) <= 0) { spawn = 0.75 + Math.random() * 0.9; const r = Math.random(), k = r < 0.5 ? 'o' : r < 0.85 ? 'r' : 'l'; const e = document.createElement('div'); e.className = k === 'o' ? 'cs-o' : k === 'r' ? 'cs-r' : 'cs-lamp'; host.insertBefore(e, $('csD')); objs.push({ e, k, x: W + 30, hy: k === 'o' && Math.random() < 0.4 ? 0.28 : 0 }); }
-      const mx = W * 0.16 + Math.min(130, Math.max(80, W * 0.15)) / 2;
-      objs = objs.filter(o => { o.x -= sp * dt; o.e.style.left = o.x + 'px'; if (o.hy) o.e.style.bottom = (15 + o.hy * 100) + '%'; if (o.x < -60) { o.e.remove(); return false; }
-        if (Math.abs(o.x + 18 - mx) < 30) { const mh = y * 0.32; if (o.k === 'r' && mh < 0.12) { hits++; o.e.remove(); pop(host, mx, H * 0.6, tr('Jaj!'), 'bad'); hud(); if (hits >= 3) finish(); return false; }
-          if (o.k === 'o' && Math.abs(mh - o.hy) < 0.16) { got++; o.e.remove(); try { sfxCollect(); } catch (e) {} pop(host, mx, H * 0.5, '+1'); hud(); return false; }
-          if (o.k === 'l' && mh > 0.1) { lamp = Math.min(1, lamp + 0.45); o.e.remove(); pop(host, mx, H * 0.4, tr('Olaj!')); hud(); return false; } }
-        return true; });
-      if (lamp <= 0) { finish(); return; } if (t > 75) { finish(); return; }
-      if (Math.round(t * 4) % 4 === 0) hud(); requestAnimationFrame(loop); };
-    requestAnimationFrame(loop);
-    function finish() { if (over) return; over = true; const good = got >= 20, rew = { rez: Math.max(2, Math.round(got / 2)), penz: 200 + got * 30 };
-      done(good ? 'GAZDAG ÉR!' : 'FELJÖTTÜNK A TÁRNÁBÓL', good ? tr('Thurzó úr elégedett') : tr('Holnap mélyebbre megyünk'), [trf('{0} darab rézércet gyűjtöttél.', got)], 'csille', rew,
-        'A besztercebányai rézbányák a 15. század végén Európa leggazdagabb rézbányái közé tartoztak. 1495-ben Thurzó János és az augsburgi Fugger Jakab közös vállalatot alapított. A mély tárnák legnagyobb ellensége a beömlő víz volt, Thurzó a lóval hajtott vízemelő gépeiről volt híres. A bányászok fehér, csuklyás kámzsát viseltek, és sok szavunk, például a csille is a bányásznyelvből jön.'); }
+      <p>${tr('A vájár fent fejti a tárna falát, a darabok lehullanak. Told a csillét a sínen jobbra és balra, és kapd el, ami jó!')}</p>
+      <div class="cs-legend">${legend(ORE, 'Rézérc', 'kapd el, 1 pont')}${legend(RICH, 'Malachitos gazdag ér', 'kapd el, 3 pont')}${legend(ROCK, 'Meddő kő', 'kerüld ki, mert eltöri a csillét')}${legend(OIL, 'Olajos mécses', 'kapd el, ettől világosabb lesz')}</div>
+      <p class="cs-how">${tr('Irányítás: húzd az ujjadat vagy az egeret a képen, vagy használd a bal és jobb nyilat.')}</p>
+      <div class="ag-hud"><span id="csG"></span><span id="csT"></span><span id="csH"></span></div>
+      <div class="ag-stage cs-stage" id="csSt"><canvas id="csCv"></canvas><div class="cs-cover" id="csCo"><button class="btn coral" type="button" id="csGo">${tr('Indulás a tárnába')}</button></div></div></div>`, '', 'minimodal');
+    const host = $('csSt'), cv = $('csCv'), cx = cv.getContext('2d'), load = src => { const im = new Image(); im.src = src; return im; };
+    const IM = { bg: load(I('e07_mg_banya.jpg')), cart: load(I('e07_mg_csille.png')), man: load(I('e07_mg_banyasz.png')) }; Object.keys(KINDS).forEach(k => IM[k] = load(KINDS[k].img));
+    let over = false, started = false, got = 0, hits = 0, lamp = 1, t = 0, last = 0, spawn = 0.6, items = [], fx = [], cartX = 0.5, target = 0.5, face = 1, shake = 0, keys = {};
+    const LEN = 50, hud = () => { $('csG').textContent = trf('{0} pont', got); $('csT').textContent = trf('{0} mp', Math.max(0, Math.ceil(LEN - t))); $('csH').textContent = '❤'.repeat(Math.max(0, 3 - hits)) + '♡'.repeat(Math.min(3, hits)); }; hud();
+    const size = () => { const r = host.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px'; cx.setTransform(d, 0, 0, d, 0, 0); };
+    size();
+    const setT = e => { const r = host.getBoundingClientRect(); target = Math.max(0.16, Math.min(0.84, (e.clientX - r.left) / r.width)); };
+    host.onpointerdown = e => { if (!started) return; e.preventDefault(); setT(e); }; host.onpointermove = e => { if (!started) return; if (e.pointerType === 'mouse' || e.buttons) setT(e); };
+    const kd = e => { if (!alive('csSt')) { document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); return; } if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); keys[e.key] = 1; } };
+    const ku = e => { delete keys[e.key]; }; document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
+    $('csGo').onclick = () => { $('csCo').remove(); let n = 3; const cd = document.createElement('div'); cd.className = 'cs-cd'; host.appendChild(cd); const tick = () => { if (!alive('csSt')) return; if (n === 0) { cd.remove(); started = true; last = performance.now(); requestAnimationFrame(loop); return; } cd.textContent = n; n--; setTimeout(tick, 650); }; tick(); };
+    const draw = () => { const W = host.clientWidth, H = host.clientHeight; cx.clearRect(0, 0, W, H);
+      const bg = IM.bg; if (bg.complete && bg.naturalWidth) { const nw = bg.naturalWidth * (IM.bgFull ? 1 : 0.7), nh = bg.naturalHeight, s = Math.max(W / nw, H / nh), w = nw * s, h = nh * s; cx.drawImage(bg, 0, 0, nw, nh, (W - w) / 2, H - h, w, h); cx.fillStyle = 'rgba(25,12,4,.28)'; cx.fillRect(0, 0, W, H); }
+      items.forEach(o => { const im = IM[o.k], w = Math.max(44, KINDS[o.k].w * W * 1.35) * (o.k === 'l' ? 1.1 : 1), h = w * (o.k === 'l' ? 1.25 : 0.86); if (!im.complete) return; cx.save(); cx.translate(o.x * W, o.y * H); cx.rotate(o.k === 'l' ? Math.sin(o.rot) * 0.25 : o.rot); cx.shadowColor = o.k === 'r' ? 'rgba(0,0,0,.7)' : o.k === 'l' ? 'rgba(255,220,120,.95)' : 'rgba(255,240,200,.9)'; cx.shadowBlur = 14; cx.drawImage(im, -w / 2, -h / 2, w, h); cx.restore(); });
+      const cw = Math.min(170, W * 0.2), ch = cw * 221 / 256, cxp = cartX * W, cyp = H * 0.93, sx = shake > 0 ? Math.sin(shake * 60) * 6 : 0;
+      const mw = cw * 0.78, mh = mw * 256 / 226; if (IM.man.complete) { cx.save(); if (face > 0) { cx.translate(cxp - cw / 2 - mw * 0.72 + sx, cyp - mh); cx.drawImage(IM.man, 0, 0, mw, mh); } else { cx.translate(cxp + cw / 2 + mw * 0.72 + sx, cyp - mh); cx.scale(-1, 1); cx.drawImage(IM.man, 0, 0, mw, mh); } cx.restore(); }
+      if (IM.cart.complete) cx.drawImage(IM.cart, cxp - cw / 2 + sx, cyp - ch, cw, ch);
+      fx.forEach(f => { cx.save(); cx.globalAlpha = Math.max(0, f.a); cx.font = '900 22px Nunito,sans-serif'; cx.textAlign = 'center'; cx.lineWidth = 4; cx.strokeStyle = '#4A2410'; cx.fillStyle = f.bad ? '#FF8A70' : '#FFE58A'; cx.strokeText(f.txt, f.x, f.y); cx.fillText(f.txt, f.x, f.y); cx.restore(); });
+      // a mécses fénye: minél kevesebb az olaj, annál sötétebb a tárna
+      const r0 = Math.max(W, H) * (0.22 + 0.55 * lamp), g = cx.createRadialGradient(cxp, cyp - ch, r0 * 0.35, cxp, cyp - ch, r0); g.addColorStop(0, 'rgba(10,5,0,0)'); g.addColorStop(1, `rgba(10,5,0,${0.55 + 0.35 * (1 - lamp)})`); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+      return [cw, ch, cxp, cyp]; };
+    const loop = now => { if (!alive('csSt') || over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; const W = host.clientWidth, H = host.clientHeight;
+      if (keys.ArrowLeft) target = Math.max(0.16, target - dt * 0.9); if (keys.ArrowRight) target = Math.min(0.84, target + dt * 0.9);
+      const prev = cartX; cartX += (target - cartX) * Math.min(1, dt * 9); if (Math.abs(cartX - prev) > 0.0008) face = cartX > prev ? 1 : -1; shake = Math.max(0, shake - dt);
+      lamp = Math.max(0.15, lamp - dt / 30);
+      const lvl = Math.min(1, t / LEN); if ((spawn -= dt) <= 0) { spawn = 0.85 - 0.4 * lvl + Math.random() * 0.35; const r = Math.random(), k = r < 0.5 ? 'o' : r < 0.62 ? 'g' : r < 0.92 ? 'r' : 'l'; items.push({ k, x: 0.14 + Math.random() * 0.72, y: -0.08, v: 0.32 + 0.3 * lvl + Math.random() * 0.12, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 3 }); }
+      const [cw, ch, cxp, cyp] = draw(), top = (cyp - ch * 0.78) / H, half = cw * 0.42 / W;
+      items = items.filter(o => { o.y += o.v * dt; o.rot += o.vr * dt;
+        if (o.y >= top && o.y <= top + 0.06 && Math.abs(o.x - cartX) < half) {
+          if (o.k === 'r') { hits++; shake = 0.35; fx.push({ txt: tr('Meddő! Reccs!'), x: cxp, y: cyp - ch - 10, a: 1, bad: 1 }); hud(); if (hits >= 3) finish(); }
+          else if (o.k === 'l') { lamp = 1; fx.push({ txt: tr('Világos!'), x: cxp, y: cyp - ch - 10, a: 1 }); }
+          else { got += KINDS[o.k].pts; try { sfxCollect(); } catch (e) {} fx.push({ txt: '+' + KINDS[o.k].pts, x: cxp, y: cyp - ch - 10, a: 1 }); hud(); }
+          return false; }
+        return o.y < 1.1; });
+      fx = fx.filter(f => { f.y -= dt * 50; f.a -= dt * 1.3; return f.a > 0; });
+      if (t >= LEN) { finish(); return; } if (Math.floor(t * 4) !== Math.floor((t - dt) * 4)) hud(); requestAnimationFrame(loop); };
+    const idle = () => { if (!alive('csSt') || started) return; draw(); requestAnimationFrame(idle); }; requestAnimationFrame(idle);
+    function finish() { if (over) return; over = true; const good = got >= 25, rew = { rez: Math.max(2, Math.round(got / 2)), penz: 200 + got * 30 };
+      done(good ? 'GAZDAG ÉR!' : 'FELJÖTTÜNK A TÁRNÁBÓL', good ? tr('Thurzó úr elégedett') : tr('Holnap mélyebbre megyünk'), [trf('{0} pontnyi rézércet gyűjtöttél.', got)], 'csille', rew,
+        'A besztercebányai rézbányák a 15. század végén Európa leggazdagabb rézbányái közé tartoztak. 1495-ben Thurzó János és az augsburgi Fugger Jakab közös vállalatot alapított. A bányászok a hasznos ércet elválogatták a meddőtől, vagyis attól a kőzettől, amiben nincs érc. A zöld színű malachit rézben gazdag ásvány, erről ismerték fel a jó eret. A csille szó is a bányásznyelvből jön.'); }
   }
 
   // ---------- 3. A rézút ----------
