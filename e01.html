@@ -5854,6 +5854,16 @@ window.playDur = function (m) {
   }
   setTimeout(tidy, 6000); setInterval(tidy, 12000);
 })();
+// ---------- út nem maradhat épület alatt: ha bármi (áthelyezés, költözés, régi mentés) épület alá tett utat, azt a mezőt felszedjük ----------
+(function roadUnder() {
+  if (window.__roadUnder || typeof S === 'undefined') return; window.__roadUnder = 1;
+  const sweep = () => { try {
+    if (!S || !S.roads || !S.buildings || (typeof REAR !== 'undefined' && REAR)) return; let n = 0;
+    S.buildings.forEach(b => { if (!DEF[b.type] || DEF[b.type].cat === 'ut') return; let w = 1, h = 1; try { [w, h] = dimsB(b); } catch (e) {} for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) { const k = key(b.i + a, b.j + c); if (S.roads[k]) { delete S.roads[k]; n++; } } });
+    if (n) { try { connCache = null; } catch (e) {} try { roadCache = null; } catch (e) {} try { if (typeof roadChunksReset === 'function') roadChunksReset(); } catch (e) {} try { save(); } catch (e) {} }
+  } catch (e) {} };
+  setTimeout(sweep, 2500); setInterval(sweep, 5000);
+})();
 
 // ---------- a kalandok és a napi feladatok jutalma a saját gazdaságodhoz igazodik ----------
 // Fix összegek helyett legalább néhány percnyi saját termelést adnak, így a késői korokban sem aprópénz.
@@ -5873,6 +5883,10 @@ window.playDur = function (m) {
 })();
 </script>
 <script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
+<script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
+<script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
+<script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
+<script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
 <script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
 <script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
 <script>(function(){var pe=1,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
