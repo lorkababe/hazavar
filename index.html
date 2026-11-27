@@ -2361,7 +2361,7 @@ const ONLINE = /github\.io$/.test(location.hostname) || /[?&]online/.test(locati
 const NET = { on: false, sb: null, me: null, megye: null, real: [], names: {}, towns: {}, walls: {}, myWall: [] };
 window.__NET = NET;
 window.__gbNet = { send: (id, kind, p) => netEvent(id, kind, p), town: id => (NET.towns || {})[id] || null };
-const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e06_nagy_alapterkep.jpg', ox: 2300, oy: 450, n: 20, bgw: 4400, bgh: 2200 }];
+const ERA_MAP = [{ bg: 'alapterkep.jpg', ox: 800, oy: 245 }, { bg: 'e01_alapterkep.jpg', ox: 900, oy: 225 }, { bg: 'e02_alapterkep.jpg', ox: 790, oy: 240 }, { bg: 'e03_alapterkep.jpg', ox: 920, oy: 92, n: 12 }, { bg: 'e04_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e05_alapterkep.jpg', ox: 1600, oy: 215, n: 20, bgw: 3200, bgh: 1600 }, { bg: 'e06_nagy_alapterkep.jpg', ox: 2300, oy: 450, n: 20, bgw: 4400, bgh: 2200 }, { bg: 'e07_nagy_alapterkep.jpg', ox: 2300, oy: 450, n: 20, bgw: 4400, bgh: 2200 }];
 const SYNC_HASH = 'panelvar-sync-hash', SYNC_AT = 'panelvar-sync-at';
 const syncKeys = () => { const out = []; try { for (let k = 0; k < localStorage.length; k++) { const key = localStorage.key(k); if (/^panelvar-/.test(key) && !/^panelvar-(sync|rearr)-/.test(key) && key !== 'panelvar-lang') out.push(key); } } catch (e) {} return out; };
 const hashStr = s => { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
@@ -2791,12 +2791,12 @@ if (typeof S !== 'undefined') setTimeout(boot, 300); else window.addEventListene
 // ---------- heti hadjárat: hétfőtől szombatig nyitva, vasárnap pihen a sereg ----------
 const HJ_SZAK = ['Az előőrs', 'A gázló', 'A palánkvár', 'A fővezér tábora'], HJ_N = 8, HJ_MAXT = 8, HJ_TT = 2 * HOUR;
 const HJ_FOE = [['Kardfogú tigris', 'Barlangi medve', 'A szomszéd törzs', 'Mamutcsorda'], ['Besenyő portyázók', 'Kazár vámszedők', 'Bolgár lovasok', 'Farkasfalka'], ['Morva gyalogság', 'Bajor páncélosok', 'Bizánci zsoldosok', 'Itáliai őrség'],
-  ['Koppány harcosai', 'Egy lázadó törzsfő', 'Besenyő határőrök', 'Rablólovagok'], ['Tatár előőrs', 'Tatár íjászok', 'Osztrák zsoldosok', 'Kóbor rablók'], ['Csák Máté emberei', 'Aba-familiárisok', 'Kőszegi zsoldosok', 'Rablólovagok'], ['Török előőrs', 'Szpáhi lovasok', 'Giskra huszitái', 'Frigyes császár zsoldosai']];
+  ['Koppány harcosai', 'Egy lázadó törzsfő', 'Besenyő határőrök', 'Rablólovagok'], ['Tatár előőrs', 'Tatár íjászok', 'Osztrák zsoldosok', 'Kóbor rablók'], ['Csák Máté emberei', 'Aba-familiárisok', 'Kőszegi zsoldosok', 'Rablólovagok'], ['Török előőrs', 'Szpáhi lovasok', 'Giskra huszitái', 'Frigyes császár zsoldosai'], ['Akindzsik', 'Szpáhi lovasok', 'Rablóbárók', 'Janicsár előőrs']];
 const hjWeek = () => { const d = new Date(NOW()), m = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return m.getFullYear() + '-' + (m.getMonth() + 1) + '-' + m.getDate(); };
 const hjStart = () => { const d = new Date(NOW()); return new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)).getTime(); };
 const hjRest = () => new Date(NOW()).getDay() === 0;
 const hjHash = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); };
-const hjEra = () => Math.max(0, Math.min(6, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
+const hjEra = () => Math.max(0, Math.min(7, typeof CUR_ERA === 'number' ? CUR_ERA : 0));
 function hjBots(wk) { const A = SOC.ally; if (!A) return 0; const hrs = (Math.min(NOW(), hjStart() + 6 * 24 * HOUR) - hjStart()) / HOUR; return A.members.filter(m => m !== 'me').reduce((s, m) => s + Math.min(HJ_N * 4, Math.floor(hrs / (3 + hjHash(m + wk) % 6))), 0); }
 function hjState() {
   const wk = hjWeek(); let H = SOC.hj;
@@ -3113,7 +3113,8 @@ function rearUI() {
   const G = {
     e00: { name: 'Samu', img: 'e00_samu' }, e01: { name: 'Álmos', img: 'e01_almos' }, e02: { name: 'Árpád', img: 'e02_arpad' },
     e03: { name: 'István', img: 'e03_istvan' }, e04: { name: 'IV. Béla', img: 'e04_bela' }, e05: { name: 'Károly Róbert', img: 'e05_karoly' },
-    e06: { get name() { try { return S.matyas ? 'Mátyás király' : 'Hunyadi János'; } catch (e) { return 'Hunyadi János'; } }, get img() { try { return S.matyas ? 'e06_matyas' : 'e06_hunyadi'; } catch (e) { return 'e06_hunyadi'; } } }
+    e06: { get name() { try { return S.matyas ? 'Mátyás király' : 'Hunyadi János'; } catch (e) { return 'Hunyadi János'; } }, get img() { try { return S.matyas ? 'e06_matyas' : 'e06_hunyadi'; } catch (e) { return 'e06_hunyadi'; } } },
+    e07: { get name() { try { return S.lajos ? 'II. Lajos király' : 'Thurzó János'; } catch (e) { return 'Thurzó János'; } }, get img() { try { return S.lajos ? 'e07_lajos' : 'e07_thurzo'; } catch (e) { return 'e07_thurzo'; } } }
   }[ERA];
   const ASK = {
     e00: ['Samu ásít. A tűz is ásít. Mindenki ásít. Alszunk?', 'Sötét van, a bogyót sem látni. Samu szerint ilyenkor a legokosabb dolog az alvás.'],
@@ -3122,7 +3123,8 @@ function rearUI() {
     e03: ['Elmondtuk az esti imát, ideje nyugovóra térni. A szerzetesek majd virrasztanak helyettünk.', 'Késő van, a gyertya is csonkig égett. Holnap is királynak kell lennem.'],
     e04: ['Késő van, egész nap az országot építettük. Még a hálósapkám is fáradt.', 'A bárók már alszanak, és most az egyszer igazuk van. Lefekszünk?'],
     e05: ['Késő van, a kiskirályok is alszanak. Végre senki nem szed vámot. Lefekszünk?', 'Elfújtam a gyertyát, de a pénzverdében még csilingel az arany. Pihenjünk, holnap is király leszek.'],
-    e06: ['Késő van, a végvárakban már csak az őrök virrasztanak. Lefekszünk?', 'A könyvtárban még ég egy gyertya, de a másolók is elaludtak. Pihenjünk, holnap is lesz dolgunk.']
+    e06: ['Késő van, a végvárakban már csak az őrök virrasztanak. Lefekszünk?', 'A könyvtárban még ég egy gyertya, de a másolók is elaludtak. Pihenjünk, holnap is lesz dolgunk.'],
+    e07: ['Késő van, a bányászok is feljöttek a tárnából. Lefekszünk?', 'Megszámoltam a rezet, kétszer. Most már aludhatunk, a kemence magától is ég.']
   }[ERA];
   const MORNING = {
     e00: ['Jó reggelt! Samu kipihente magát, és már éhes is. Nézd, mit gyűjtöttek a többiek éjjel!', 'Felkelt a nap, Samu is felkelt. Ez nem mindig sikerül egyszerre.'],
@@ -3131,10 +3133,19 @@ function rearUI() {
     e03: ['Jó reggelt! A reggeli mise után már az ország dolgain jár az eszem. Ezt hozta az éjszaka.', 'Áldott jó reggelt! A szerzetesek szerint az éjszaka termékeny volt.'],
     e04: ['Jó reggelt! Megittam a kamillateámat, és remek kedvem van. Az éjszakai műszak szépen dolgozott.', 'Felkelt a nap Buda fölött. Lássuk, mit termett a város, amíg aludtunk!'],
     e05: ['Jó reggelt! A Duna fölött felkelt a nap, és a bányák is ébren voltak egész éjjel.', 'Szép reggelt, felség! Megszámoltam az aranyat, kétszer. Lássuk, mit hozott az éjszaka.'],
-    e06: ['Jó reggelt! Megszólalt a déli harang, ja nem, ez még csak a reggeli. Lássuk, mi gyűlt össze éjjel!', 'Szép reggelt! A Duna fölött köd van, de a raktár tele. Nézzük meg!']
+    e06: ['Jó reggelt! Megszólalt a déli harang, ja nem, ez még csak a reggeli. Lássuk, mi gyűlt össze éjjel!', 'Szép reggelt! A Duna fölött köd van, de a raktár tele. Nézzük meg!'],
+    e07: ['Jó reggelt! A Garam fölött köd ül, de a bánya már dolgozik. Lássuk, mi gyűlt össze éjjel!', 'Szép reggelt! Antwerpenből levél jött, és a raktár is tele. Nézzük meg!']
   }[ERA];
   // reggeli meglepetések: r a nyersanyag, m a szorzó az éjszakai termésére, vagy g egy ajándék
   const EVS = {
+    e07: [
+      { t: 'Éjszakai műszak', x: 'A bányászok egész éjjel dolgoztak a tárnában. Reggelre megtelt a csille.', r: 'rez', m: 0.5 },
+      { t: 'Velencei futár', x: 'Éjjel futár érkezett Velencéből, és fizetett a rézért.', r: 'penz', m: 0.35 },
+      { t: 'Krakkói diák', x: 'Hazajött egy diák Krakkóból, és hajnalig mesélt az egyetemről.', g: { tudas: 2 } },
+      { t: 'Fugger-levél', x: 'Augsburgból aranyforint érkezett a tavalyi szállítmányért.', g: { forint: 2 } },
+      { t: 'Betört a víz', x: 'Éjjel víz tört be az egyik tárnába. Reggelig szivattyúztak.', r: 'rez', m: -0.3, bad: 1 },
+      { t: 'Dobzse aláírta', x: 'A király éjjel aláírt egy iratot, amit nem kellett volna. Egy báró már viszi is a vámot.', g: { penz: -120 }, bad: 1 }
+    ],
     e06: [
       { t: 'Virrasztó másolók', x: 'A könyvtárban egész éjjel másoltak. Reggelre kész lett egy új Corvina, aranyozott kezdőbetűkkel.', g: { kovako: 1 } },
       { t: 'Itáliai vendég', x: 'Éjjel megérkezett egy itáliai tudós Firenzéből. Hajnalig mesélt a régi görögökről.', g: { tudas: 2 } },
@@ -4662,6 +4673,16 @@ window.playDur = function (m) {
       ['e6_herkules', 'herkules_kut', '1480-as évek', 'A Herkules-kút', 'Mátyás visegrádi palotájában vörös márvány díszkút állt Herkules alakjával. Darabjait a régészek találták meg, és rekonstruálták.', 't'],
       ['e6_sereg', 'fekete_sereg1', '15. század vége', 'A Fekete sereg', 'Mátyás állandó zsoldosserege volt. A Fekete sereg nevet valószínűleg csak a király halála után kapta, talán a fekete páncélról vagy egy vezérről.', 'v'],
       ['e6_dobzse', 'vasar', '1490 után', 'Dobzse László', 'II. Ulászló a legenda szerint mindenre azt mondta, dobře, azaz rendben. Innen kapta a Dobzse László becenevet.', 'l']
+    ],
+    7: [
+      ['e7_dobzse', 'start', '1490-1516', 'Dobzse László', 'II. Ulászló cseh királyból lett magyar király Mátyás halála után. Az urak azért választották, mert engedékeny volt. A Dobzse becenevet a cseh dobře, azaz rendben szóról kapta.', 't'],
+      ['e7_thurzo', 'rezbanya1', '1495', 'A Thurzó–Fugger társaság', 'Thurzó János szepesi vállalkozó és az augsburgi Fugger Jakab közös vállalatot alapított a besztercebányai rézbányákra. Néhány évtizedig ez volt Európa egyik legnagyobb üzlete.', 't'],
+      ['e7_csille', 'banyaszhaz', '16. század', 'Bányásznyelv', 'A csille, a tárna, a bánya és sok más bányászszó a felvidéki bányavárosokból terjedt el. A bányászok közt sok német telepes is dolgozott, ezért több szó német eredetű.', 't'],
+      ['e7_bakocz', 'cehhaz1', '1506-1507', 'A Bakócz-kápolna', 'Bakócz Tamás esztergomi érsek vörös márvány kápolnája Magyarország egyik legszebb épen maradt reneszánsz épülete. A 19. században kb. 1600 darabra szedték szét, és a bazilika oldalában újra összerakták.', 't'],
+      ['e7_dozsa', 'iskola1', '1514', 'A keresztes hadból parasztháború', 'Bakócz Tamás 1514-ben a pápa megbízásából keresztes hadat hirdetett a török ellen. A parasztsereg Dózsa György vezetésével a földesurak ellen fordult. A felkelést leverték, és utána a jobbágyok terhei még nőttek.', 't'],
+      ['e7_tripartitum', 'patika', '1514', 'A Hármaskönyv', 'Werbőczy István Hármaskönyvét a király sosem szentesítette, mégis kb. 300 évig ebből ítélkeztek. Legfontosabb tétele, hogy minden nemes egyenlő szabadsággal bír.', 't'],
+      ['e7_maria', 'kereskedohaz', '1522', 'Habsburg Mária', 'II. Lajos felesége okos és bátor királyné volt. Lajos halála után évtizedekig Németalföld helytartójaként kormányzott, és nagy szerepe volt Európa politikájában.', 't'],
+      ['e7_brodarics', 'start', '1527', 'Brodarics István', 'II. Lajos kancellárja túlélte a mohácsi csatát, és 1527-ben leírta, mi történt. Az ő könyvéből tudjuk a legtöbbet a csatáról.', 't']
     ]
   };
   // napi kérdések: [állítás, igaz-e, magyarázat]
@@ -4672,7 +4693,8 @@ window.playDur = function (m) {
     3: [['A koronázási palást eredetileg miseruhának készült.', true, '1031-ben a székesfehérvári templom számára készült.'], ['A ma látható Szent Korona teljes egészében István korából való.', false, 'Részei későbbiek, a kutatók ma is vitatják az összeállítását.'], ['István első pénzén a LANCEA REGIS felirat áll.', true, 'Jelentése a király lándzsája.']],
     4: [['Az Aranybullát II. András adta ki 1222-ben.', true, 'A nemesek jogait rögzítette.'], ['A tatárjárás után IV. Béla megtiltotta a kővárak építését.', false, 'Épp ellenkezőleg, biztatta az építésüket.'], ['IV. Béla befogadta Kötöny kunjait.', true, '1239-ben, nem sokkal a tatárjárás előtt.']],
     5: [['Az aranyforint a firenzei arany mintájára készült.', true, 'Károly Róbert 1325-ben kezdte veretni.'], ['Nagy Lajos országát valóban hosszú ideig három tenger mosta.', false, 'Ez dicsérő túlzás, nem pontos földrajzi tény.'], ['A visegrádi királytalálkozón három király tárgyalt.', true, 'A magyar, a cseh és a lengyel király, 1335-ben.']],
-    6: [['A déli harangszót a nándorfehérvári győzelem után rendelték el először.', false, 'III. Kallixtusz pápa már az ostrom előtt elrendelte imára hívásként, a győzelem után lett a diadal emléke.'], ['Dugovics Titusz hőstettét korabeli források is leírják.', false, 'A történet csak a 19. században bukkant fel, valószínűleg legenda.'], ['Mátyás 80 ezer aranyforintért vásárolta vissza a Szent Koronát.', true, 'III. Frigyes császártól, 1463-ban.'], ['Mátyás könyvtárából ma több mint ezer Corvina maradt meg.', false, 'Csak kb. kétszáz, ebből kb. ötven Magyarországon.'], ['A kolozsvári bíró története népmese.', true, 'Az álruhás király történetei mesék, de jól mutatják, mit gondolt a nép Mátyásról.']]
+    6: [['A déli harangszót a nándorfehérvári győzelem után rendelték el először.', false, 'III. Kallixtusz pápa már az ostrom előtt elrendelte imára hívásként, a győzelem után lett a diadal emléke.'], ['Dugovics Titusz hőstettét korabeli források is leírják.', false, 'A történet csak a 19. században bukkant fel, valószínűleg legenda.'], ['Mátyás 80 ezer aranyforintért vásárolta vissza a Szent Koronát.', true, 'III. Frigyes császártól, 1463-ban.'], ['Mátyás könyvtárából ma több mint ezer Corvina maradt meg.', false, 'Csak kb. kétszáz, ebből kb. ötven Magyarországon.'], ['A kolozsvári bíró története népmese.', true, 'Az álruhás király történetei mesék, de jól mutatják, mit gondolt a nép Mátyásról.']],
+    7: [['II. Ulászló becenevét a cseh dobře, azaz rendben szóról kapta.', true, 'Mert szinte mindenre igent mondott.'], ['A Bakócz-kápolnát egyszer szétszedték és újra összerakták.', true, 'A 19. században, az esztergomi bazilika építésekor, kb. 1600 darabban.'], ['II. Lajos harmincéves volt a mohácsi csatában.', false, 'Mindössze húszéves volt.'], ['A Hármaskönyvet a király ünnepélyesen szentesítette.', false, 'Sosem szentesítette, mégis 1848-ig ebből ítélkeztek.'], ['A felvidéki réz Indiába is eljutott.', true, 'Antwerpenből portugál hajók vitték tovább.']],
   };
   const L = F[ERAN] || [], QQ = Q[ERAN] || [];
   const nameOf = id => { try { return DEF[id] ? DEF[id].name : id; } catch (e) { return id; } };
