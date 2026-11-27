@@ -5259,24 +5259,30 @@ function tickGb() {
     if (has && !R.built[id]) { R.built[id] = { era: CUR_ERA }; if (pending === id) { R.tr[id] = Math.max(0, (R.tr[id] || 0) - NEED_TR); pending = null; } ch = true; }
     // ha ebben a munkamenetben láttuk a városban, és eltűnt, azt te bontottad le; ha újra lerakod, megint a városé
     if (has) { seenGb.add(id); if (S.gbGone && S.gbGone[id]) delete S.gbGone[id]; const b = S.buildings.find(x => x.type === id); if (R.built[id] && (!R.built[id].pos || R.built[id].pos[0] !== b.i || R.built[id].pos[1] !== b.j)) { R.built[id].pos = [b.i, b.j, b.rot || 0]; ch = true; } }
-    else if (seenGb.has(id)) { seenGb.delete(id); S.gbGone = S.gbGone || {}; S.gbGone[id] = 1; }
     const fr = GBC[id].free; if (fr && S.techs && S.techs[fr[0]] && !R.freeGot[id]) { R.freeGot[id] = 1; ch = true; addTr(id, fr[1], 'Kutatás ajándéka'); }
   });
   if (ch) gsave();
 }
-// ami egy korábbi korban már felépült, az veled jön, a szintjével együtt
+// minden felépült nevezetes épület veled jön, minden korszakban; csak az marad el, amit te magad bontasz le
+// a korábbi korok mentéseiből is összeszedjük, mi épült már fel
+try { for (let e = 3; e < CUR_ERA; e++) { const o = JSON.parse(localStorage.getItem('panelvar-e0' + e + '-v1') || 'null'); if (!o || !o.buildings) continue; o.buildings.forEach(b => { const t = b.type === 'palota2' || b.type === 'palota3' ? 'palota1' : b.type; if (GBC[t] && GBC[t].era <= CUR_ERA && !R.built[t]) R.built[t] = { era: e }; }); } gsave(); } catch (e) {}
+if (!R.gone2) { R.gone2 = 1; try { delete S.gbGone; } catch (e) {} gsave(); }
+document.addEventListener('click', e => { try { if (!e.target.closest || !e.target.closest('#iDel')) return; const before = MINE.filter(id => S.buildings.some(b => b.type === id)); setTimeout(() => { before.forEach(id => { if (!S.buildings.some(b => b.type === id)) { S.gbGone = S.gbGone || {}; S.gbGone[id] = 1; save(); } }); }, 0); } catch (er) {} }, true);
+let gbNoRoom = '';
 function carryGb() {
-  if (!S.intro) return; let n = 0, back = 0;
+  if (!S || !S.intro || !S.buildings) return; try { if (openModal) return; } catch (e) {} try { if (typeof REAR !== 'undefined' && REAR) return; } catch (e) {}
+  let n = 0, back = 0; const miss = [];
   MINE.forEach(id => { if (!R.built[id] || S.buildings.some(b => b.type === id)) return; if ((S.gbGone || {})[id]) return;
-    // ugyanebben a korban felépült, de a város mentéséből hiányzik (például gépváltáskor): visszatesszük a régi helyére
-    if (R.built[id].era >= CUR_ERA && !R.built[id].pos) return;
-    let sp = null; const ps = R.built[id].pos; try { if (ps && R.built[id].era >= CUR_ERA && free(id, ps[0], ps[1], null, ps[2] || 0)) sp = ps; } catch (e) {} try { if (!sp) sp = freeSpot(id); } catch (e) {} if (!sp) return; S.buildings.push({ id: S.nextId++, type: id, i: sp[0], j: sp[1], t0: S.gt, built: S.gt, rot: sp[2] || 0 }); if (R.built[id].era >= CUR_ERA) back++; else n++; });
+    try { if (typeof REAR !== 'undefined' && REAR && REAR.tray && REAR.tray.some(b => b.type === id)) return; } catch (e) {}
+    let sp = null; const ps = R.built[id].pos; try { if (ps && R.built[id].era >= CUR_ERA && free(id, ps[0], ps[1], null, ps[2] || 0)) sp = ps; } catch (e) {} try { if (!sp) sp = freeSpot(id); } catch (e) {}
+    if (!sp) { miss.push(GBC[id].name); return; }
+    S.buildings.push({ id: S.nextId++, type: id, i: sp[0], j: sp[1], t0: S.gt, built: S.gt, rot: sp[2] || 0 }); if (R.built[id].era >= CUR_ERA) back++; else n++; });
   if (n || back) { try { connCache = null; } catch (e) {} save(); if (n) toast(trf('{0} nevezetes épület veled jött az előző korból, a szintjével együtt.', n)); if (back) setTimeout(() => toast(trf('{0} nevezetes épületed visszakerült a helyére, a szintjével együtt.', back)), n ? 3000 : 0); }
+  const key = miss.join('|'); if (miss.length && key !== gbNoRoom) { gbNoRoom = key; setTimeout(() => toast(trf('Ezek még nem fértek el a városban, de nem vesztek el: {0}. Nyiss új területet, és maguktól a helyükre kerülnek.', miss.join(', '))), 6000); }
 }
 setInterval(() => { try { tickGb(); } catch (e) {} }, 1500);
 setTimeout(() => { try { carryGb(); } catch (e) {} }, 4000);
-// lebontás után ne jöjjön vissza magától
-setInterval(() => { try { MINE.forEach(id => { if (R.built[id] && R.built[id].era === CUR_ERA && !S.buildings.some(b => b.type === id) && !openModal) { S.gbGone = S.gbGone || {}; } }); } catch (e) {} }, 5000);
+setInterval(() => { try { carryGb(); } catch (e) {} }, 8000);
 // kalandokból néha tervrajz jár
 try { if (typeof miniGive === 'function') { const _mg = miniGive; miniGive = function () { const r = _mg.apply(this, arguments); try { if (Math.random() < 0.5) { const id = randUnbuilt(); if (id) setTimeout(() => addTr(id, 1, 'Kaland'), 900); } } catch (e) {} return r; }; } } catch (e) {}
 // ---------- szomszédok nevezetes épületei ----------
