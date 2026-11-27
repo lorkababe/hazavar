@@ -8314,10 +8314,11 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   .ru-dest b{flex:1}.ru-dest small{font-weight:800;opacity:.75}.ru-dest.best{background:#FFE9A8;box-shadow:0 0 0 2px #E0A526}.ru-dest:disabled{opacity:.45;cursor:default}
   .ru-news{margin-top:8px;padding:8px 10px;border-radius:10px;background:#3A2618;color:#FFF4DF;font-size:13.5px;font-weight:700;animation:ruNews .5s ease-out}@keyframes ruNews{from{transform:translateY(-6px);opacity:0}}
   /* Kápolna */
-  .kp-wrap{display:grid;gap:3px;margin:0 auto;width:min(100%,420px);aspect-ratio:3/2;background:#3A2410;border-radius:10px;padding:3px}
+  .kp-wrap{display:grid;gap:3px;margin:0 auto;width:min(100%,640px);aspect-ratio:2/1;background:#3A2410;border-radius:10px;padding:3px;transition:gap .5s,padding .5s}.kp-wrap.done{gap:0;padding:0}.kp-wrap.done .kp-t{border-radius:0;box-shadow:none}
+  .kp-fact{min-height:40px;margin-top:10px;font-size:14px;line-height:1.35}
   .kp-t{border:0;padding:0;border-radius:4px;background-repeat:no-repeat;cursor:pointer;transition:outline .1s,transform .15s}
-  .kp-t.sel{outline:3px solid #E8C46A;transform:scale(.94)}.kp-t.ok{cursor:default}
-  .kp-prev{width:120px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .kp-t.sel{outline:3px solid #E8C46A;transform:scale(.94)}.kp-t.ok{box-shadow:inset 0 0 0 3px rgba(90,200,110,.9)}
+  .kp-prev{width:140px;aspect-ratio:2/1;object-fit:cover;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
   /* Hármaskönyv */
   .hk-stage{min-height:min(380px,50vh);background:linear-gradient(#F3E2BE,#E2C99A);display:flex;flex-direction:column;align-items:center;padding:12px;gap:10px}
   .hk-top{display:flex;align-items:flex-end;gap:10px;width:100%;justify-content:center}
@@ -8521,23 +8522,30 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
   // ---------- 4. A Bakócz-kápolna kirakója ----------
   function playKapolna() {
     if (!miniStart('kapolna')) return;
-    let lvl = 0; const LV = [[3, 2], [4, 3], [5, 4]]; let moves = 0, t0 = Date.now(), solved = 0;
-    const src = I('e07_bakocz_kapolna3.png');
-    const start = () => {
-      const [cw, ch] = LV[lvl], n = cw * ch; let order = [...Array(n).keys()]; do { order.sort(() => Math.random() - 0.5); } while (order.every((v, i) => v === i));
-      let sel = null;
+    let lvl = 0; const LV = [[4, 2], [5, 3], [6, 4]]; let moves = 0, t0 = Date.now(), solved = 0;
+    // három kép a kápolna világából; amíg a rajzolt képek nincsenek meg, a korszak meglévő képei állnak be helyettük
+    const PICS = [
+      { img: 'e07_mg_kirako1.jpg', alt: 'e07_korszaknyito.jpg', t: 'A kápolna belseje', f: 'A falakat vörös márvány borítja, ezt a mesterek a Gerecse hegyeiből hozták. A márvány oltárt firenzei szobrász faragta.' },
+      { img: 'e07_mg_kirako2.jpg', alt: 'e07_tripartitum.jpg', t: 'A Bakócz-graduale', f: 'Bakócz érsek egy pompás, festett kottáskönyvet is készíttetett. A graduale ma is megvan az esztergomi Főszékesegyházi Könyvtárban.' },
+      { img: 'e07_mg_kirako3.jpg', alt: 'e07_rezut.jpg', t: 'Esztergom, a Várhegy', f: 'Az esztergomi Várhegyen állt a királyi palota és az érseki székesegyház. A kápolna ma a bazilika oldalában áll.' }
+    ];
+    const pick = (k, cb) => { const im = new Image(); im.onload = () => cb(I(PICS[k].img), 1); im.onerror = () => cb(I(PICS[k].alt), 0); im.src = I(PICS[k].img); };
+    const start = () => pick(lvl, (src, real) => {
+      const [cw, ch] = LV[lvl], n = cw * ch; let order = [...Array(n).keys()]; do { order.sort(() => Math.random() - 0.5); } while (order.some((v, i) => v === i) && Math.random() < 0.85 || order.every((v, i) => v === i));
+      let sel = null; const P = real ? PICS[lvl] : { t: 'Egy kép a korszakból', f: PICS[lvl].f };
       modal(`${X_BTN}<div class="inner"><span class="eyebrow">${tr('ESZTERGOM, VÖRÖS MÁRVÁNY')}</span><h2>${tr('A Bakócz-kápolna')}</h2>
-        <p>${tr('A kápolnát darabjaira szedték, most újra össze kell rakni. Koppints két darabra, és helyet cserélnek.')}</p>
-        <div class="ag-hud"><span>${trf('{0}. szint a háromból', lvl + 1)}</span><span id="kpM"></span><img class="kp-prev" src="${src}" alt="${tr('így kell kinéznie')}"></div>
-        <div class="kp-wrap" id="kpSt" style="grid-template-columns:repeat(${cw},1fr);grid-template-rows:repeat(${ch},1fr)"></div></div>`, '', 'minimodal');
-      const host = $('kpSt'), draw = () => { host.innerHTML = order.map((p, k) => { const x = p % cw, y = Math.floor(p / cw); return `<button class="kp-t${p === k ? ' ok' : ''}" type="button" data-k="${k}" aria-label="${tr('darab')}" style="background-image:url(${src});background-size:${cw * 100}% ${ch * 100}%;background-position:${cw > 1 ? x / (cw - 1) * 100 : 0}% ${ch > 1 ? y / (ch - 1) * 100 : 0}%;background-color:#F6EBCF"></button>`; }).join(''); $('kpM').textContent = trf('{0} csere', moves);
+        <p>${tr('A régi képek darabjaira hullottak, rakd össze őket! Koppints két darabra, és helyet cserélnek. Ami a helyén van, azt zöld keret jelzi.')}</p>
+        <div class="ag-hud"><span>${trf('{0}. kép a háromból', lvl + 1)} · <b>${tr(P.t)}</b></span><span id="kpM"></span><img class="kp-prev" src="${src}" alt="${tr('így kell kinéznie')}"></div>
+        <div class="kp-wrap" id="kpSt" style="grid-template-columns:repeat(${cw},1fr);grid-template-rows:repeat(${ch},1fr)"></div><div class="kp-fact" id="kpF"></div></div>`, '', 'minimodal');
+      const host = $('kpSt'), draw = () => { const okN = order.filter((v, i) => v === i).length; $('kpM').textContent = trf('{0} / {1} darab a helyén · {2} csere', okN, n, moves);
+        host.innerHTML = order.map((p, k) => { const x = p % cw, y = Math.floor(p / cw); return `<button class="kp-t${p === k ? ' ok' : ''}" type="button" data-k="${k}" aria-label="${tr('darab')}" style="background-image:url(${src});background-size:${cw * 100}% ${ch * 100}%;background-position:${x / (cw - 1) * 100}% ${y / (ch - 1) * 100}%"></button>`; }).join('');
         host.querySelectorAll('.kp-t').forEach(b => b.onclick = () => { const k = +b.dataset.k; if (sel === null) { sel = k; b.classList.add('sel'); return; } if (sel !== k) { [order[sel], order[k]] = [order[k], order[sel]]; moves++; } sel = null; draw();
-          if (order.every((v, i) => v === i)) { try { sfxCollect(); } catch (e) {} solved++; setTimeout(() => { if (!alive('kpSt')) return; if (lvl < LV.length - 1) { lvl++; start(); } else finish(); }, 700); } }); };
+          if (order.every((v, i) => v === i)) { try { sfxCollect(); } catch (e) {} solved++; host.classList.add('done'); $('kpF').innerHTML = `<b>${tr('Tudtad?')}</b> ${tr(P.f)}`; setTimeout(() => { if (!alive('kpSt')) return; if (lvl < LV.length - 1) { lvl++; start(); } else finish(); }, 3200); } }); };
       draw();
-    };
+    });
     start();
-    function finish() { const sec = Math.round((Date.now() - t0) / 1000), good = moves <= 40, rew = { hirnev: good ? 4 : 2, tudas: 3, penz: 300 + Math.max(0, 60 - moves) * 15 };
-      done(good ? 'TÖKÉLETES MUNKA' : 'ÁLL A KÁPOLNA', good ? tr('Bakócz érsek elégedett') : tr('Egy kicsit kalapáltunk rajta, de áll'), [trf('{0} cserével, {1} másodperc alatt raktad össze mindhárom szintet.', moves, sec)], 'kapolna', rew,
+    function finish() { const sec = Math.round((Date.now() - t0) / 1000), good = moves <= 75, rew = { hirnev: good ? 4 : 2, tudas: 3, penz: 300 + Math.max(0, 100 - moves) * 10 };
+      done(good ? 'TÖKÉLETES MUNKA' : 'ÁLL A KÁPOLNA', good ? tr('Bakócz érsek elégedett') : tr('Egy kicsit kalapáltunk rajta, de áll'), [trf('{0} cserével, {1} másodperc alatt raktad össze mind a három képet.', moves, sec)], 'kapolna', rew,
         'A Bakócz-kápolnát Bakócz Tamás esztergomi érsek építtette 1506 és 1507 körül itáliai mesterekkel, vörös márványból. Ez Magyarország egyik legszebb épen maradt reneszánsz épülete. Amikor a 19. században felépítették az esztergomi bazilikát, a kápolnát kb. 1600 darabra szedték szét, és a bazilika oldalában pontosan újra összerakták. Pont úgy, ahogy te is.'); }
   }
 
@@ -9120,6 +9128,8 @@ window.NOGO=new Set(["-1,-3","-1,-4","-1,24","-1,25","-1,26","-1,27","-1,28","-1
 })();
 </script>
 <script>(function(){var pe=7,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
+<script>(function(){var pe=7,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
+<script>(function(){var pe=7,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
 <script>(function(){var pe=7,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
 <script>(function(){var pe=7,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
 <script>(function(){var pe=7,n=0,M={1:'e01.html',2:'e02.html',3:'e03.html',4:'e04.html',5:'e05.html',6:'e06.html',7:'e07.html'};var iv=setInterval(function(){n++;if(n>40)clearInterval(iv);try{if(/[?&]e\d/.test(location.search))return;var er=+localStorage.getItem("panelvar-era")||0;for(var q=7;q>er;q--){var sv=localStorage.getItem("panelvar-e0"+q+"-v1");if(sv&&sv.length>200){er=q;localStorage.setItem("panelvar-era",String(q));break;}}if(er>pe&&er<=7&&M[er]){clearInterval(iv);location.replace(M[er]);}}catch(e){}},1500);})();</script>
