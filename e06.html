@@ -3925,6 +3925,14 @@ setInterval(() => { try { if (!S || openModal) return; const g = document.getEle
   b.textContent = need === 'nandor' ? tr('Irány Nándorfehérvár!') : need === 'valasztas' ? tr('Királyválasztás!') : tr('Irány Bécs!'); b.onclick = () => keyEvent(need); } catch (e) {} }, 800);
 // ---------- a királyválasztás után Mátyás a kalauz ----------
 const isMatyas = () => !!(S && S.matyas);
+// azonnal cseréljük, még kirajzolás előtt, hogy betöltéskor ne villanjon fel Hunyadi
+const toMatyas = root => { if (!isMatyas() || !root || !root.querySelectorAll) return;
+  if (root.tagName === 'IMG' && (root.getAttribute('src') || '').includes('e06_hunyadi_')) root.src = root.getAttribute('src').replace('e06_hunyadi_', 'e06_matyas_');
+  root.querySelectorAll('img[src*="e06_hunyadi_"]').forEach(im => { im.src = im.getAttribute('src').replace('e06_hunyadi_', 'e06_matyas_'); });
+  root.querySelectorAll('b').forEach(x => { if (x.textContent === 'Hunyadi János') x.textContent = 'Mátyás király'; }); };
+try { new MutationObserver(ms => { if (!isMatyas()) return; ms.forEach(m => { if (m.type === 'attributes') toMatyas(m.target); else m.addedNodes.forEach(n => { if (n.nodeType === 1) toMatyas(n); else if (n.nodeType === 3 && n.parentNode) toMatyas(n.parentNode); }); }); })
+  .observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] }); } catch (e) {}
+try { toMatyas(document.body); } catch (e) {}
 setInterval(() => { try { if (!isMatyas()) return; document.querySelectorAll('img[src*="e06_hunyadi_"]').forEach(im => { im.src = im.getAttribute('src').replace('e06_hunyadi_', 'e06_matyas_'); });
   const g = document.getElementById('guide'); if (g) g.querySelectorAll('b').forEach(b => { if (b.textContent === 'Hunyadi János') b.textContent = 'Mátyás király'; }); } catch (e) {} }, 300);
 
@@ -5874,16 +5882,27 @@ const realId = id => String(id).startsWith('u_') ? String(id).slice(2) : null;
 function netLoadLib(cb) {
   if (window.supabase && window.supabase.createClient) return cb();
   const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-  s.onload = cb; s.onerror = () => toast('Nem sikerült elérni a szervert. Offline játszol, a mentés ezen a gépen marad.'); document.head.appendChild(s);
+  s.onload = cb; s.onerror = () => netWaitOff() || toast('Nem sikerült elérni a szervert. Offline játszol, a mentés ezen a gépen marad.'); document.head.appendChild(s);
 }
+// amíg a szerverről le nem jött a mentés, egy töltőfüggöny takarja a várost: így nem villan fel a régi állapot, és a reggeli ablak sem tűnik el az újratöltéssel
+function netWaitOn() {
+  let has = false; try { for (let k = 0; k < localStorage.length; k++) if (/^sb-.*-auth-token$/.test(localStorage.key(k))) has = true; } catch (e) {}
+  if (!has || document.getElementById('netWait')) return;
+  window.__netWait = true; const el = document.createElement('div'); el.id = 'netWait';
+  el.style.cssText = 'position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;background:#2A1C0E;color:#F3E2BE;font-weight:800;font-size:17px;transition:opacity .35s';
+  el.innerHTML = `<div style="width:46px;height:46px;border-radius:50%;border:5px solid rgba(243,226,190,.25);border-top-color:#E8C46A;animation:nwSpin 1s linear infinite"></div><div>${T('Betöltöm a városodat…')}</div><style>@keyframes nwSpin{to{transform:rotate(360deg)}}</style>`;
+  (document.body || document.documentElement).appendChild(el); setTimeout(netWaitOff, 9000);
+}
+function netWaitOff() { window.__netWait = false; const el = document.getElementById('netWait'); if (!el) return; el.style.opacity = '0'; setTimeout(() => el.remove(), 380); }
 function netBoot() {
   if (!ONLINE) return;
+  netWaitOn();
   netLoadLib(async () => {
     try {
       NET.sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'implicit' } });
       const { data } = await NET.sb.auth.getSession();
       if (data && data.session) netStart(data.session.user);
-      else showLogin();
+      else { netWaitOff(); showLogin(); }
       NET.sb.auth.onAuthStateChange((ev, ses) => { if (ses && ses.user && !NET.on) { const l = document.getElementById('netLogin'); if (l) l.remove(); netStart(ses.user); } });
     } catch (e) { console.warn(e); }
   });
@@ -5929,6 +5948,7 @@ async function netStart(user) {
   // előbb bejelentjük, hogy most itt fut a város, csak utána töltünk le és fel, különben a saját előző megnyitásunk léptetne ki
   await claimSess();
   try { await netPull(); } catch (e) { console.warn('pull', e); if (e && e.message === 'reload') return; }
+  netWaitOff();
   try { const r = await NET.sb.rpc('join_megye'); NET.megye = r.data; } catch (e) {}
   await netPushProfile(true); await netRefresh();
   toast(TF('Bejelentkezve. A mentésed a szerveren van, {0}. megye.', NET.megye || '?'));
@@ -6782,7 +6802,7 @@ function rearUI() {
 
   // ---- a nap ritmusa ----
   function check() {
-    if (typeof S === 'undefined' || !S) return; const now = Date.now(), vis = !document.hidden;
+    if (typeof S === 'undefined' || !S || window.__netWait) return; const now = Date.now(), vis = !document.hidden;
     if (vis) { markSeen(); if (!S.seenAt || now - S.seenAt > 60e3) S.seenAt = now; }
     if (S.night) {
       // hajnalban (5 és 7 között), ha játszol, már felkel a város; és ha egy másik gépről régi éjszaka maradt itt, azt is lezárjuk
@@ -6901,7 +6921,9 @@ function rearUI() {
   };
   setInterval(() => { try { updReady(); } catch (e) {} }, 1000);
 
-  try { fromAway(); } catch (e) {}
+  // a szerveres mentés letöltése után számoljuk, különben az újratöltés elvinné a reggeli ablakot
+  const afterSync = () => { if (window.__netWait) { setTimeout(afterSync, 400); return; } try { fromAway(); } catch (e) {} try { check(); } catch (e) {} };
+  afterSync();
   markSeen(); renderBar();
   setInterval(() => { try { check(); } catch (e) {} }, 15000);
   setTimeout(() => { try { check(); } catch (e) {} }, 4000);
