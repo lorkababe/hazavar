@@ -8354,6 +8354,9 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
       <div class="ag-stage cs-stage" id="csSt"><canvas id="csCv"></canvas><div class="cs-cover" id="csCo"><button class="btn coral" type="button" id="csGo">${tr('Indulás a tárnába')}</button></div></div></div>`, '', 'minimodal');
     const host = $('csSt'), cv = $('csCv'), cx = cv.getContext('2d'), load = src => { const im = new Image(); im.src = src; return im; };
     const IM = { bg: load(I('e07_mg_banya.jpg')), cart: load(I('e07_mg_csille.png')), man: load(I('e07_mg_banyasz.png')) }; Object.keys(KINDS).forEach(k => IM[k] = load(KINDS[k].img));
+    // ha már megvannak a rajzolt képek, azokat használjuk
+    [['o', 'e07_mg_rezerc.png'], ['g', 'e07_mg_malachit.png'], ['r', 'e07_mg_meddo.png'], ['l', 'e07_mg_mecses.png']].forEach(([k, n]) => { const im = new Image(); im.onload = () => { IM[k] = im; }; im.src = I(n); });
+    { const im = new Image(); im.onload = () => { IM.bg = im; IM.bgFull = 1; }; im.src = I('e07_mg_tarna.jpg'); }
     let over = false, started = false, got = 0, hits = 0, lamp = 1, t = 0, last = 0, spawn = 0.6, items = [], fx = [], cartX = 0.5, target = 0.5, face = 1, shake = 0, keys = {};
     const LEN = 50, hud = () => { $('csG').textContent = trf('{0} pont', got); $('csT').textContent = trf('{0} mp', Math.max(0, Math.ceil(LEN - t))); $('csH').textContent = '❤'.repeat(Math.max(0, 3 - hits)) + '♡'.repeat(Math.min(3, hits)); }; hud();
     const size = () => { const r = host.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px'; cx.setTransform(d, 0, 0, d, 0, 0); };
