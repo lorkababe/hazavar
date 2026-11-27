@@ -5894,7 +5894,9 @@ function rearGroups() { const m = {}, out = []; REAR.tray.forEach((b, k) => { if
 function rearUI() {
   let bar = document.getElementById('rearBar');
   if (!REAR) { if (bar) bar.remove(); const n = document.getElementById('nav'); if (n) n.hidden = false; return; }
-  if (!bar) { bar = document.createElement('div'); bar.id = 'rearBar'; bar.className = 'wood'; document.body.appendChild(bar); }
+  if (!bar) { bar = document.createElement('div'); bar.id = 'rearBar'; bar.className = 'wood'; document.body.appendChild(bar);
+    // görgővel vízszintesen lapozzuk a tálcát, és ne nagyítson közben a térkép
+    bar.addEventListener('wheel', e => { const t = bar.querySelector('.rb-tray'); if (!t) return; e.preventDefault(); e.stopPropagation(); const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; t.scrollLeft += d * (e.deltaMode === 1 ? 40 : 1); }, { passive: false }); }
   const n = document.getElementById('nav'); if (n) n.hidden = true; const pb = document.getElementById('placebar'); if (pb) pb.hidden = true;
   const cur = REAR.cur != null ? REAR.tray[REAR.cur] : null, sq = cur && (() => { const [w, h] = rDims(cur.type, 0); return w === h; })();
   bar.innerHTML = `<div class="rb-head"><b>${tr('Átrendezés')}</b><span>${REAR.tray.length ? (() => { const nb = REAR.tray.filter(b => !b.road).length, nr = REAR.tray.length - nb; return [nb ? trf('{0} épület', nb) : '', nr ? trf('{0} út', nr) : ''].filter(Boolean).join(', ') + ' ' + tr('a tálcán'); })() : tr('A tálca üres')}</span>
