@@ -8044,26 +8044,44 @@ window.__gbDev = { R, give: (id, n) => { R.tr[id] = (R.tr[id] || 0) + n; gsave()
     return false;
   };
 })();
-// ---------- a festett erdőre nem kerülhet épület: a fák tetején lógna. Az erdei épületek az erdő szélére kerülnek ----------
-(function forestTidy() {
-  if (typeof ROUGH !== 'object' || !ROUGH || typeof free !== 'function' || window.__fTidy) return; window.__fTidy = 1;
-  if (!Object.values(ROUGH).some(v => v === 'forest')) return;
-  const onTrees = (type, i, j, rot) => { let w = 1, h = 1; try { [w, h] = dimsT(type, rot || 0); } catch (e) {} for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (ROUGH[(i + a) + ',' + (j + c)] === 'forest') return true; return false; };
+// ---------- a festett térkép fáira, szikláira és partköveire nem kerülhet épület: csak a sima mezőre. A bányák mehetnek a sziklára, a vízi épületek a víz mellé ----------
+(function paintTidy() {
+  if (typeof free !== 'function' || window.__fTidy) return; window.__fTidy = 1;
+  const hasN = typeof window.NOGO === 'object' && window.NOGO && window.NOGO.size;
+  if (!hasN && !(typeof ROUGH === 'object' && ROUGH && Object.values(ROUGH).some(v => v === 'forest'))) return;
+  const badTile = (ter, k, i, j) => {
+    if (hasN) { if (!window.NOGO.has(k)) return false; if (ter === 'hill' && ((typeof ROUGH === 'object' && ROUGH[k] === 'hill') || (TERRAIN.hill && TERRAIN.hill.test(i, j)))) return false; if (ter === 'bank' && window.NEARW.has(k)) return false; return true; }
+    return ROUGH[k] === 'forest';
+  };
+  const onBad = (type, i, j, rot) => { let w = 1, h = 1; try { [w, h] = dimsT(type, rot || 0); } catch (e) {} const ter = (DEF[type] || {}).terrain; for (let a = 0; a < w; a++) for (let c = 0; c < h; c++) if (badTile(ter, (i + a) + ',' + (j + c), i + a, j + c)) return true; return false; };
+  window.onPaintBad = onBad;
   const _free = free;
-  free = function (type, i, j, ignore, rot) { if (!_free.apply(this, arguments)) return false; try { if (DEF[type] && !DEF[type].gb && DEF[type].cat !== 'ut' && onTrees(type, i, j, rot)) return false; } catch (e) {} return true; };
+  free = function (type, i, j, ignore, rot) { if (!_free.apply(this, arguments)) return false; try { if (DEF[type] && DEF[type].cat !== 'ut' && onBad(type, i, j, rot)) return false; } catch (e) {} return true; };
+  // a part mellé került épülethez a legközelebbi meglévő úttól a sima mezőn át vezetünk ösvényt
+  function roadTo(b) {
+    if (connected(b)) return; if (!connCache) computeConn(); const m = occ(); let w = 1, h = 1; try { [w, h] = dimsT(b.type, b.rot || 0); } catch (e) {}
+    const ok = (i, j) => { const k = key(i, j); return inArea(i, j) && !m[k] && !blocked(i, j) && !(hasN && window.NOGO.has(k)); };
+    const prev = new Map(), q = [];
+    for (let a = -3; a <= w + 2; a++) for (let c = -3; c <= h + 2; c++) { const i = b.i + a, j = b.j + c; if (a >= 0 && a < w && c >= 0 && c < h) continue; if (ok(i, j)) { prev.set(key(i, j), null); q.push([i, j]); } }
+    let hit = null; const fo = S.buildings.find(x => x.type === 'fo'), foR = new Set(); if (fo) { let fw = 3, fh = 3; try { [fw, fh] = dimsT('fo', fo.rot || 0); } catch (e) {} for (let a = -1; a <= fw; a++) for (let c = -1; c <= fh; c++) foR.add(key(fo.i + a, fo.j + c)); }
+    for (let x = 0; x < q.length && x < 8000; x++) { const [i, j] = q[x], k = key(i, j); if (connCache.has(k) || foR.has(k)) { hit = k; break; }
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ni = i + di, nj = j + dj, nk = key(ni, nj); if (prev.has(nk)) continue; if (!(S.roads[nk] && connCache.has(nk)) && !ok(ni, nj)) continue; prev.set(nk, k); q.push([ni, nj]); } }
+    if (!hit) return; for (let k = prev.get(hit); k; k = prev.get(k)) { if (!S.roads[k]) S.roads[k] = 1; } if (!S.roads[hit]) S.roads[hit] = 1; connCache = null;
+  }
   const failed = new Set();
   function tidy() {
     if (!S || !S.buildings || (typeof REAR !== 'undefined' && REAR)) return; try { if (openModal) return; } catch (e) {}
-    const fo = S.buildings.find(b => b.type === 'fo'); if (!fo) return; let moved = 0;
+    const fo = S.buildings.find(b => b.type === 'fo'); if (!fo) return; let moved = 0; const tiles = areaTiles(), mv = [];
     S.buildings.forEach(b => {
-      if (b.type === 'fo' || failed.has(b.id) || !DEF[b.type] || DEF[b.type].gb || !onTrees(b.type, b.i, b.j, b.rot || 0)) return;
+      if (b.type === 'fo' || failed.has(b.id) || !DEF[b.type] || DEF[b.type].cat === 'ut' || /^(fal|kapu)/.test(b.type) || !onBad(b.type, b.i, b.j, b.rot || 0)) return;
       let best = null; const rot = b.rot || 0;
-      areaTiles().forEach(([i, j]) => { if (!free(b.type, i, j, b, rot)) return; const d = Math.hypot(i - fo.i, j - fo.j); if (!best || d < best[2]) best = [i, j, d]; });
+      tiles.forEach(([i, j]) => { if (!free(b.type, i, j, b, rot)) return; const d = Math.hypot(i - fo.i, j - fo.j); if (!best || d < best[2]) best = [i, j, d]; });
       if (!best) { failed.add(b.id); return; }
-      b.i = best[0]; b.j = best[1]; delete b.far; moved++;
+      b.i = best[0]; b.j = best[1]; delete b.far; moved++; mv.push(b);
     });
-    if (moved) { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} try { if (typeof autoRoads === 'function' && autoRoads.length >= 2) autoRoads(S, true); } catch (e) {} try { save(); } catch (e) {}
-      setTimeout(() => { try { toast(trf('{0} épületet lehoztunk a fák tetejéről az erdő szélére, közelebb a városhoz.', moved)); } catch (e) {} }, 1200); }
+    if (moved) { try { connCache = null; } catch (e) {} try { shadowCache = null; } catch (e) {} try { if (typeof autoRoads === 'function' && autoRoads.length >= 2) autoRoads(S, true); } catch (e) {}
+      try { connCache = null; mv.forEach(roadTo); } catch (e) {} try { connCache = null; roadCache = null; } catch (e) {} try { save(); } catch (e) {}
+      setTimeout(() => { try { toast(trf('{0} épületet áthelyeztünk a fák és sziklák közül a sima mezőre, közelebb a városhoz.', moved)); } catch (e) {} }, 1200); }
   }
   setTimeout(tidy, 6000); setInterval(tidy, 12000);
 })();
